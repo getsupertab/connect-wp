@@ -1,0 +1,38 @@
+.wp-pwd {
+	position: relative;
+	display: inline-block;
+	margin-top: 0;
+}
+
+.wp-pwd input {
+	padding-right: 36px;
+}
+
+.wp-pwd .wp-hide-pw {
+	position: absolute;
+	top: 0;
+	right: 0;
+	height: 100%;
+	display: flex;
+	align-items: center;
+	background: none;
+	border: none;
+	cursor: pointer;
+	padding: 0 8px;
+	color: #787c82;
+}
+
+.wp-pwd .wp-hide-pw .dashicons {
+	position: static;
+	display: block;
+	line-height: 1;
+}
+
+.wp-pwd .wp-hide-pw:hover {
+	color: #135e96;
+}
+
+.wp-pwd .wp-hide-pw:focus {
+	color: #135e96;
+	outline: 1px dotted #135e96;
+}

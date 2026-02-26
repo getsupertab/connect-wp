@@ -9,6 +9,9 @@ declare( strict_types=1 );
 
 namespace Supertab_Connect;
 
+use Supertab_Connect\Admin\Notices;
+use Supertab_Connect\Admin\Onboarding;
+
 /**
  * Plugin singleton class.
  */
@@ -60,6 +63,25 @@ class Plugin {
 	 */
 	public function init(): void {
 		$this->load_textdomain();
+
+		if ( is_admin() ) {
+			$this->init_admin();
+		}
+	}
+
+	/**
+	 * Initialize admin components.
+	 *
+	 * @return void
+	 */
+	private function init_admin(): void {
+		$credentials  = new Credentials();
+
+		$onboarding = new Onboarding( $credentials );
+		$onboarding->register();
+
+		$notices = new Notices( $credentials );
+		$notices->register();
 	}
 
 	/**
