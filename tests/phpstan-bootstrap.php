@@ -11,3 +11,5 @@ define( 'SUPERTAB_CONNECT_VERSION', '0.1.0' );
 define( 'SUPERTAB_CONNECT_PLUGIN_FILE', dirname( __DIR__ ) . '/supertab-connect.php' );
 define( 'SUPERTAB_CONNECT_PLUGIN_DIR', dirname( __DIR__ ) . '/' );
 define( 'SUPERTAB_CONNECT_PLUGIN_URL', 'https://example.com/wp-content/plugins/supertab-connect/' );
+define( 'SUPERTAB_CONNECT_ENVIRONMENT', 'sbx' );
+define( 'SUPERTAB_CONNECT_API_BASE_URL', 'https://api-connect.sbx.supertab.co' );

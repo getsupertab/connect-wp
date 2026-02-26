@@ -66,7 +66,7 @@ class Plugin {
 
 		$credentials = new Credentials();
 
-		$license_handler = new RSL_License_Handler( $credentials );
+		$license_handler = new RSL_License_Handler( $credentials, SUPERTAB_CONNECT_API_BASE_URL );
 		$license_handler->register();
 
 		if ( is_admin() ) {

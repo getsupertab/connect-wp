@@ -27,6 +27,19 @@ define( 'SUPERTAB_CONNECT_PLUGIN_FILE', __FILE__ );
 define( 'SUPERTAB_CONNECT_PLUGIN_DIR', plugin_dir_path( __FILE__ ) );
 define( 'SUPERTAB_CONNECT_PLUGIN_URL', plugin_dir_url( __FILE__ ) );
 
+if ( ! defined( 'SUPERTAB_CONNECT_ENVIRONMENT' ) ) {
+	define( 'SUPERTAB_CONNECT_ENVIRONMENT', 'sbx' );
+}
+
+if ( ! defined( 'SUPERTAB_CONNECT_API_BASE_URL' ) ) {
+	define(
+		'SUPERTAB_CONNECT_API_BASE_URL',
+		'prod' === SUPERTAB_CONNECT_ENVIRONMENT // @phpstan-ignore identical.alwaysFalse (value is overridable in wp-config.php)
+			? 'https://api-connect.supertab.co'
+			: 'https://api-connect.sbx.supertab.co'
+	);
+}
+
 // Autoloader.
 if ( file_exists( __DIR__ . '/vendor/autoload.php' ) ) {
 	require_once __DIR__ . '/vendor/autoload.php';
