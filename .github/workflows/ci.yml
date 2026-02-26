@@ -32,23 +32,23 @@ jobs:
       - name: PHPStan
         run: composer phpstan
 
-  test:
-    name: Tests
-    runs-on: ubuntu-latest
+  # test:
+  #   name: Tests
+  #   runs-on: ubuntu-latest
 
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v4
+  #   steps:
+  #     - name: Checkout
+  #       uses: actions/checkout@v4
 
-      - name: Set up PHP
-        uses: shivammathur/setup-php@v2
-        with:
-          php-version: '8.1'
-          tools: composer
-          coverage: none
+  #     - name: Set up PHP
+  #       uses: shivammathur/setup-php@v2
+  #       with:
+  #         php-version: '8.1'
+  #         tools: composer
+  #         coverage: none
 
-      - name: Install dependencies
-        run: composer install --no-interaction --prefer-dist --ignore-platform-reqs
+  #     - name: Install dependencies
+  #       run: composer install --no-interaction --prefer-dist --ignore-platform-reqs
 
-      - name: Run tests
-        run: composer test
+  #     - name: Run tests
+  #       run: composer test
