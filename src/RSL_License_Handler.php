@@ -88,6 +88,10 @@ class RSL_License_Handler {
 
 		$body = wp_remote_retrieve_body( $response );
 
+		if ( '' === trim( (string) $body ) ) {
+			$this->send_error( 502, 'Bad Gateway' );
+			return;
+		}
 		$this->send_xml( $body );
 	}
 
