@@ -62,7 +62,7 @@ class Notices {
 			return;
 		}
 
-		$setup_url = admin_url( 'admin.php?page=' . Onboarding::PAGE_SLUG );
+		$setup_url = admin_url( 'options-general.php?page=' . Onboarding::PAGE_SLUG );
 
 		printf(
 			'<div class="notice notice-warning"><p>%s <a href="%s">%s</a></p></div>',
