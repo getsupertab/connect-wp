@@ -9,5 +9,8 @@
 		"WP_DEBUG_LOG": true,
 		"SCRIPT_DEBUG": true
 	},
+	"lifecycleScripts": {
+		"afterStart": "npx wp-env run cli wp rewrite flush --hard"
+	},
 	"testsEnvironment": false
 }

@@ -64,19 +64,23 @@ class Plugin {
 	public function init(): void {
 		$this->load_textdomain();
 
+		$credentials = new Credentials();
+
+		$license_handler = new RSL_License_Handler( $credentials );
+		$license_handler->register();
+
 		if ( is_admin() ) {
-			$this->init_admin();
+			$this->init_admin( $credentials );
 		}
 	}
 
 	/**
 	 * Initialize admin components.
 	 *
+	 * @param Credentials $credentials Credentials manager.
 	 * @return void
 	 */
-	private function init_admin(): void {
-		$credentials  = new Credentials();
-
+	private function init_admin( Credentials $credentials ): void {
 		$onboarding = new Onboarding( $credentials );
 		$onboarding->register();
 
