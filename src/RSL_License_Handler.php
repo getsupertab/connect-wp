@@ -92,6 +92,12 @@ class RSL_License_Handler {
 			$this->send_error( 502, 'Bad Gateway' );
 			return;
 		}
+
+		if ( false === simplexml_load_string( (string) $body, 'SimpleXMLElement', LIBXML_NOERROR | LIBXML_NOWARNING ) ) {
+			$this->send_error( 502, 'Bad Gateway' );
+			return;
+		}
+
 		$this->send_xml( $body );
 	}
 
