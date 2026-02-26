@@ -43,7 +43,7 @@ class Onboarding {
 	 * @param Credentials $credentials  Credentials manager.
 	 */
 	public function __construct( Credentials $credentials ) {
-		$this->credentials  = $credentials;
+		$this->credentials = $credentials;
 	}
 
 	/**
@@ -64,8 +64,8 @@ class Onboarding {
 	 * @return void
 	 */
 	public function register_page(): void {
-		$hook = add_submenu_page(
-			'', // No parent — hidden from menu.
+		add_submenu_page(
+			'options-general.php', // Register under Settings so WordPress populates $title.
 			__( 'Supertab Connect Setup', 'supertab-connect' ),
 			'',
 			'manage_options',
@@ -73,17 +73,14 @@ class Onboarding {
 			array( $this, 'render_page' )
 		);
 
-		// Hidden pages (empty parent slug) don't populate the global $title,
-		// which causes a PHP 8.1+ deprecation in admin-header.php strip_tags().
-		if ( $hook ) {
-			add_action(
-				"load-{$hook}",
-				function (): void {
-					global $title;
-					$title = __( 'Supertab Connect Setup', 'supertab-connect' );
-				}
-			);
-		}
+		// Remove from the Settings submenu to keep the page hidden.
+		// Runs on admin_head, after admin-header.php has already resolved $title.
+		add_action(
+			'admin_head',
+			function (): void {
+				remove_submenu_page( 'options-general.php', self::PAGE_SLUG );
+			}
+		);
 	}
 
 	/**
@@ -93,7 +90,7 @@ class Onboarding {
 	 * @return void
 	 */
 	public function enqueue_scripts( string $hook_suffix ): void {
-		if ( 'admin_page_' . self::PAGE_SLUG !== $hook_suffix ) {
+		if ( 'settings_page_' . self::PAGE_SLUG !== $hook_suffix ) {
 			return;
 		}
 
@@ -135,7 +132,7 @@ class Onboarding {
 			return;
 		}
 
-		wp_safe_redirect( admin_url( 'admin.php?page=' . self::PAGE_SLUG ) );
+		wp_safe_redirect( admin_url( 'options-general.php?page=' . self::PAGE_SLUG ) );
 		exit;
 	}
 
@@ -168,7 +165,7 @@ class Onboarding {
 						'page'  => self::PAGE_SLUG,
 						'error' => 'missing_fields',
 					),
-					admin_url( 'admin.php' )
+					admin_url( 'options-general.php' )
 				)
 			);
 			exit;
@@ -182,7 +179,7 @@ class Onboarding {
 					'page'  => self::PAGE_SLUG,
 					'setup' => 'success',
 				),
-				admin_url( 'admin.php' )
+				admin_url( 'options-general.php' )
 			)
 		);
 		exit;
