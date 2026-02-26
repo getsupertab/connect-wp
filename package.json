@@ -1,0 +1,14 @@
+{
+	"name": "supertab-connect",
+	"private": true,
+	"description": "Connect your WordPress site to the Supertab platform.",
+	"scripts": {
+		"dev": "wp-env start",
+		"stop": "wp-env stop",
+		"destroy": "wp-env destroy",
+		"wp-cli": "wp-env run cli wp"
+	},
+	"devDependencies": {
+		"@wordpress/env": "^11.0.0"
+	}
+}

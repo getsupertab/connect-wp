@@ -1,0 +1,28 @@
+# Dependencies
+/vendor/
+/node_modules/
+
+# wp-env
+/.wp-env/
+
+# IDE
+/.idea/
+/.vscode/
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Build artifacts
+*.min.js.map
+*.min.css.map
+
+# PHPStan cache
+/phpstan-cache/
+
+# PHPUnit
+/.phpunit.result.cache
+/.phpunit.cache/

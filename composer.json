@@ -1,0 +1,45 @@
+{
+	"name": "supertab/supertab-connect",
+	"description": "Connect your WordPress site to the Supertab platform.",
+	"type": "wordpress-plugin",
+	"license": "GPL-2.0-or-later",
+	"require": {
+		"php": ">=8.1"
+	},
+	"require-dev": {
+		"automattic/vipwpcs": "^3.0",
+		"phpstan/phpstan": "^2.0",
+		"szepeviktor/phpstan-wordpress": "^2.0",
+		"php-parallel-lint/php-parallel-lint": "^1.4",
+		"phpunit/phpunit": "^11.0",
+		"yoast/phpunit-polyfills": "^3.0"
+	},
+	"autoload": {
+		"psr-4": {
+			"Supertab_Connect\\": "src/"
+		}
+	},
+	"autoload-dev": {
+		"psr-4": {
+			"Supertab_Connect\\Tests\\": "tests/"
+		}
+	},
+	"config": {
+		"allow-plugins": {
+			"dealerdirect/phpcodesniffer-composer-installer": true
+		},
+		"sort-packages": true
+	},
+	"scripts": {
+		"lint": "parallel-lint --exclude vendor --exclude node_modules .",
+		"phpcs": "phpcs",
+		"phpcbf": "phpcbf",
+		"phpstan": "phpstan analyse --memory-limit=512M",
+		"test": "phpunit",
+		"check": [
+			"@lint",
+			"@phpcs",
+			"@phpstan"
+		]
+	}
+}
