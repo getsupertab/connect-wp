@@ -25,14 +25,6 @@ class RSL_License_Handler {
 	private const REQUEST_LICENSE_PATH = 'license.xml';
 
 	/**
-	 * Base URL for the Supertab Connect API.
-	 *
-	 * @var string
-	 */
-	// TODO: Add support for PROD.
-	private const API_BASE_URL = 'https://api-connect.sbx.supertab.co';
-
-	/**
 	 * Credentials instance.
 	 *
 	 * @var Credentials
@@ -40,12 +32,21 @@ class RSL_License_Handler {
 	private Credentials $credentials;
 
 	/**
+	 * Base URL for the Supertab Connect API.
+	 *
+	 * @var string
+	 */
+	private string $api_base_url;
+
+	/**
 	 * Constructor.
 	 *
-	 * @param Credentials $credentials Credentials manager.
+	 * @param Credentials $credentials  Credentials manager.
+	 * @param string      $api_base_url Base URL for the Supertab Connect API.
 	 */
-	public function __construct( Credentials $credentials ) {
-		$this->credentials = $credentials;
+	public function __construct( Credentials $credentials, string $api_base_url ) {
+		$this->credentials  = $credentials;
+		$this->api_base_url = $api_base_url;
 	}
 
 	/**
@@ -109,7 +110,7 @@ class RSL_License_Handler {
 	private function fetch_license() {
 		$url = sprintf(
 			'%s/merchants/systems/%s/license.xml',
-			self::API_BASE_URL,
+			$this->api_base_url,
 			rawurlencode( $this->credentials->get_website_urn() )
 		);
 
