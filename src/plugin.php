@@ -9,6 +9,10 @@ declare( strict_types=1 );
 
 namespace Supertab_Connect;
 
+use Supertab\Connect\Bot\DefaultBotDetector;
+use Supertab\Connect\Http\HttpClientInterface;
+use Supertab\Connect\Enum\EnforcementMode;
+use Supertab\Connect\SupertabConnect;
 use Supertab_Connect\Admin\Notices;
 use Supertab_Connect\Admin\Onboarding;
 use Supertab_Connect\Http\WP_Http_Client;
@@ -73,6 +77,11 @@ class Plugin {
 
 		if ( is_admin() ) {
 			$this->init_admin( $credentials );
+			return;
+		}
+
+		if ( $credentials->has_credentials() && ! defined( 'REST_REQUEST' ) ) {
+			$this->init_bot_protection( $credentials, $http_client );
 		}
 	}
 
@@ -88,6 +97,47 @@ class Plugin {
 
 		$notices = new Notices( $credentials );
 		$notices->register();
+	}
+
+	/**
+	 * Initialize bot protection for front-end requests.
+	 *
+	 * @param Credentials         $credentials Credentials manager.
+	 * @param HttpClientInterface $http_client HTTP client for SDK requests.
+	 * @return void
+	 */
+	private function init_bot_protection( Credentials $credentials, HttpClientInterface $http_client ): void {
+		$enforcement      = self::get_enforcement_mode();
+		$supertab_connect = new SupertabConnect(
+			apiKey: $credentials->get_merchant_api_key(),
+			enforcement: $enforcement,
+			httpClient: $http_client,
+		);
+		$bot_protection   = new Bot_Protection( $supertab_connect );
+		$bot_protection->register();
+	}
+
+	/**
+	 * Resolve the enforcement mode for bot protection.
+	 *
+	 * Checks for a SUPERTAB_CONNECT_ENFORCEMENT_MODE constant first,
+	 * then applies the 'supertab_connect_enforcement_mode' filter.
+	 * Defaults to SOFT.
+	 *
+	 * @return EnforcementMode
+	 */
+	private static function get_enforcement_mode(): EnforcementMode {
+		$default = EnforcementMode::SOFT;
+
+		if ( defined( 'SUPERTAB_CONNECT_ENFORCEMENT_MODE' ) ) {
+			$mode = EnforcementMode::tryFrom( SUPERTAB_CONNECT_ENFORCEMENT_MODE );
+			if ( null !== $mode ) {
+				$default = $mode;
+			}
+		}
+
+		/** This filter is documented in src/plugin.php */
+		return apply_filters( 'supertab_connect_enforcement_mode', $default );
 	}
 
 	/**
