@@ -11,6 +11,7 @@ namespace Supertab_Connect;
 
 use Supertab_Connect\Admin\Notices;
 use Supertab_Connect\Admin\Onboarding;
+use Supertab_Connect\Http\WP_Http_Client;
 
 /**
  * Plugin singleton class.
@@ -66,7 +67,8 @@ class Plugin {
 
 		$credentials = new Credentials();
 
-		$license_handler = new RSL_License_Handler( $credentials, SUPERTAB_CONNECT_API_BASE_URL );
+		$http_client     = new WP_Http_Client();
+		$license_handler = new RSL_License_Handler( $credentials, SUPERTAB_CONNECT_API_BASE_URL, $http_client );
 		$license_handler->register();
 
 		if ( is_admin() ) {

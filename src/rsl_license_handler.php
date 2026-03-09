@@ -3,7 +3,7 @@
  * RSL License handler.
  *
  * Intercepts requests for /license.xml and proxies the response
- * from the Supertab Connect API.
+ * from the Supertab Connect API via the Connect PHP SDK.
  *
  * @package Supertab_Connect
  */
@@ -11,6 +11,10 @@
 declare( strict_types=1 );
 
 namespace Supertab_Connect;
+
+use Supertab\Connect\Exception\SupertabConnectException;
+use Supertab\Connect\Http\HttpClientInterface;
+use Supertab\Connect\SupertabConnect;
 
 /**
  * Serves the license.xml file by proxying from the Supertab API.
@@ -39,14 +43,23 @@ class RSL_License_Handler {
 	private string $api_base_url;
 
 	/**
+	 * HTTP client for SDK requests.
+	 *
+	 * @var HttpClientInterface
+	 */
+	private HttpClientInterface $http_client;
+
+	/**
 	 * Constructor.
 	 *
-	 * @param Credentials $credentials  Credentials manager.
-	 * @param string      $api_base_url Base URL for the Supertab Connect API.
+	 * @param Credentials         $credentials  Credentials manager.
+	 * @param string              $api_base_url Base URL for the Supertab Connect API.
+	 * @param HttpClientInterface $http_client  HTTP client for SDK requests.
 	 */
-	public function __construct( Credentials $credentials, string $api_base_url ) {
+	public function __construct( Credentials $credentials, string $api_base_url, HttpClientInterface $http_client ) {
 		$this->credentials  = $credentials;
 		$this->api_base_url = $api_base_url;
+		$this->http_client  = $http_client;
 	}
 
 	/**
@@ -73,59 +86,28 @@ class RSL_License_Handler {
 			return;
 		}
 
-		$response = $this->fetch_license();
-
-		if ( is_wp_error( $response ) ) {
+		try {
+			$body = SupertabConnect::fetchLicenseXml(
+				$this->credentials->get_website_urn(),
+				$this->api_base_url,
+				$this->http_client
+			);
+		} catch ( SupertabConnectException $e ) {
 			$this->send_error( 502, 'Bad Gateway' );
 			return;
 		}
 
-		$status_code = wp_remote_retrieve_response_code( $response );
-
-		if ( 200 !== $status_code ) {
-			$this->send_error( (int) $status_code, wp_remote_retrieve_response_message( $response ) );
-			return;
-		}
-
-		$body = wp_remote_retrieve_body( $response );
-
-		if ( '' === trim( (string) $body ) ) {
+		if ( '' === trim( $body ) ) {
 			$this->send_error( 502, 'Bad Gateway' );
 			return;
 		}
 
-		if ( false === simplexml_load_string( (string) $body, 'SimpleXMLElement', LIBXML_NOERROR | LIBXML_NOWARNING ) ) {
+		if ( false === simplexml_load_string( $body, 'SimpleXMLElement', LIBXML_NOERROR | LIBXML_NOWARNING ) ) {
 			$this->send_error( 502, 'Bad Gateway' );
 			return;
 		}
 
 		$this->send_xml( $body );
-	}
-
-	/**
-	 * Fetch the license XML from the Supertab API.
-	 *
-	 * @return array<string, mixed>|\WP_Error The raw response or WP_Error on failure.
-	 */
-	private function fetch_license() {
-		$url = sprintf(
-			'%s/merchants/systems/%s/license.xml',
-			$this->api_base_url,
-			rawurlencode( $this->credentials->get_website_urn() )
-		);
-
-		$args = array(
-			'headers' => array(
-				'Accept' => 'application/xml',
-			),
-		);
-
-		if ( function_exists( 'vip_safe_wp_remote_get' ) ) {
-			return vip_safe_wp_remote_get( $url, '', 3, 3, 20, $args );
-		}
-
-		// phpcs:ignore WordPressVIPMinimum.Functions.RestrictedFunctions.wp_remote_get_wp_remote_get -- Fallback for non-VIP environments.
-		return wp_remote_get( $url, $args );
 	}
 
 	/**
