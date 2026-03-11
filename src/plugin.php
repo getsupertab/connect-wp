@@ -9,13 +9,12 @@ declare( strict_types=1 );
 
 namespace Supertab_Connect;
 
-use Supertab\Connect\Bot\DefaultBotDetector;
 use Supertab\Connect\Http\HttpClientInterface;
 use Supertab\Connect\Enum\EnforcementMode;
 use Supertab\Connect\SupertabConnect;
 use Supertab_Connect\Admin\Notices;
 use Supertab_Connect\Admin\Onboarding;
-use Supertab_Connect\Http\WP_Http_Client;
+use Supertab_Connect\Utils\WP_Http_Client;
 
 /**
  * Plugin singleton class.
@@ -110,8 +109,9 @@ class Plugin {
 		$enforcement      = self::get_enforcement_mode();
 		$supertab_connect = new SupertabConnect(
 			apiKey: $credentials->get_merchant_api_key(),
-			enforcement: $enforcement,
+			enforcement: EnforcementMode::DISABLED,
 			httpClient: $http_client,
+			baseUrl: 'https://api-connect.sbx.supertab.co'
 		);
 		$bot_protection   = new Bot_Protection( $supertab_connect );
 		$bot_protection->register();
