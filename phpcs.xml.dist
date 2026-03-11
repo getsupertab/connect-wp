@@ -8,6 +8,9 @@
 	<!-- What to scan -->
 	<file>.</file>
 
+	<!-- Strip absolute paths from output -->
+	<arg name="basepath" value="."/>
+
 	<!-- Only check PHP files -->
 	<arg name="extensions" value="php"/>
 
@@ -15,13 +18,13 @@
 	<arg value="sp"/>
 	<arg name="colors"/>
 
-	<!-- Parallel processing -->
+	<!-- Parallel processing and caching -->
 	<arg name="parallel" value="8"/>
+	<arg name="cache" value=".phpcs.cache"/>
 
-	<!-- Primary rulesets -->
+	<!-- Rulesets: WordPress (Core + Extra + Docs) plus VIP-Go -->
+	<rule ref="WordPress"/>
 	<rule ref="WordPress-VIP-Go"/>
-	<rule ref="WordPress-Extra"/>
-	<rule ref="WordPress-Docs"/>
 
 	<!-- Minimum supported WordPress version -->
 	<config name="minimum_wp_version" value="6.4"/>
