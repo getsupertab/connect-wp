@@ -11,7 +11,7 @@ fi
 echo "$STAGED_FILES" | xargs vendor/bin/phpcbf --standard=phpcs.xml.dist 2>/dev/null
 PHPCBF_EXIT=$?
 
-# Exit code 2+ means PHPCBF encountered errors it couldn't fix
+# Exit code 3 means PHPCBF encountered a processing error
 if [ $PHPCBF_EXIT -gt 2 ]; then
 	echo "PHPCBF encountered an error."
 	exit 1
