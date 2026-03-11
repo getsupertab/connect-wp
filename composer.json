@@ -41,6 +41,9 @@
 		"sort-packages": true
 	},
 	"scripts": {
+		"prepare": "git config core.hooksPath .hooks",
+		"post-install-cmd": "@prepare",
+		"post-update-cmd": "@prepare",
 		"lint": "parallel-lint --exclude vendor --exclude node_modules .",
 		"phpcs": "phpcs",
 		"phpcbf": "phpcbf",

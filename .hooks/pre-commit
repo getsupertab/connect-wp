@@ -1,0 +1,29 @@
+#!/bin/sh
+
+# Get staged PHP files (excluding deleted files)
+STAGED_FILES=$(git diff --cached --name-only --diff-filter=d -- '*.php')
+
+if [ -z "$STAGED_FILES" ]; then
+	exit 0
+fi
+
+# Run PHPCBF to auto-fix staged files (exit code 1 = fixes applied, which is OK)
+echo "$STAGED_FILES" | xargs vendor/bin/phpcbf --standard=phpcs.xml.dist 2>/dev/null
+PHPCBF_EXIT=$?
+
+# Exit code 2+ means PHPCBF encountered errors it couldn't fix
+if [ $PHPCBF_EXIT -gt 2 ]; then
+	echo "PHPCBF encountered an error."
+	exit 1
+fi
+
+# Re-stage any files that were fixed
+echo "$STAGED_FILES" | xargs git add
+
+# Run PHPCS to verify — block commit if violations remain
+echo "$STAGED_FILES" | xargs vendor/bin/phpcs --standard=phpcs.xml.dist
+if [ $? -ne 0 ]; then
+	echo ""
+	echo "PHPCS found violations that could not be auto-fixed. Please fix them before committing."
+	exit 1
+fi
