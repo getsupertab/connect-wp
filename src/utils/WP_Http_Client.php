@@ -7,10 +7,10 @@
 
 declare( strict_types=1 );
 
-namespace Supertab_Connect\Http;
+namespace Supertab_Connect\Utils;
 
-use Supertab\Connect\Exception\HttpException;
-use Supertab\Connect\Http\HttpClientInterface;
+use \Supertab\Connect\Exception\HttpException;
+use \Supertab\Connect\Http\HttpClientInterface;
 
 /**
  * HTTP client that uses WordPress HTTP API with VIP-safe fallbacks.
