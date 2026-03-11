@@ -12,9 +12,12 @@ declare( strict_types=1 );
 // Prevent direct access.
 defined( 'ABSPATH' ) || exit;
 
-$supertab_connect_nonce_action    = $template_data['nonce_action'];
-$supertab_connect_has_credentials = $template_data['has_credentials'];
-$supertab_connect_website_urn     = $template_data['website_urn'];
+$supertab_connect_nonce_action            = $template_data['nonce_action'];
+$supertab_connect_disconnect_nonce_action = $template_data['disconnect_nonce_action'];
+$supertab_connect_has_credentials         = $template_data['has_credentials'];
+$supertab_connect_disconnected            = $template_data['disconnected'];
+$supertab_connect_website_urn             = $template_data['website_urn'];
+$supertab_connect_show_form               = ! $supertab_connect_has_credentials || $supertab_connect_disconnected;
 
 // phpcs:ignore WordPress.Security.NonceVerification.Recommended -- Only reading query params for display logic.
 $supertab_connect_setup_status = isset( $_GET['setup'] ) ? sanitize_text_field( wp_unslash( $_GET['setup'] ) ) : '';
@@ -25,7 +28,7 @@ $supertab_connect_error_message = isset( $_GET['message'] ) ? sanitize_text_fiel
 $supertab_connect_error_message = rawurldecode( $supertab_connect_error_message );
 ?>
 <div class="wrap">
-	<h1><?php esc_html_e( 'Supertab Connect Setup', 'supertab-connect' ); ?></h1>
+	<h1><?php esc_html_e( 'Supertab Connect', 'supertab-connect' ); ?></h1>
 
 	<?php if ( 'success' === $supertab_connect_setup_status ) : ?>
 		<div class="notice notice-success">
@@ -50,19 +53,14 @@ $supertab_connect_error_message = rawurldecode( $supertab_connect_error_message 
 		</div>
 	<?php endif; ?>
 
-	<?php if ( $supertab_connect_has_credentials ) : ?>
-		<p><?php esc_html_e( 'Supertab Connect is configured and ready to use.', 'supertab-connect' ); ?></p>
-		<table class="form-table" role="presentation">
-			<tr>
-				<th scope="row"><?php esc_html_e( 'Merchant API Key', 'supertab-connect' ); ?></th>
-				<td><code>&bull;&bull;&bull;&bull;&bull;&bull;&bull;&bull;</code></td>
-			</tr>
-			<tr>
-				<th scope="row"><?php esc_html_e( 'Website URN', 'supertab-connect' ); ?></th>
-				<td><code><?php echo esc_html( $supertab_connect_website_urn ); ?></code></td>
-			</tr>
-		</table>
-	<?php else : ?>
+	<?php if ( $supertab_connect_show_form ) : ?>
+
+		<?php if ( $supertab_connect_disconnected ) : ?>
+			<div class="notice notice-info inline">
+				<p><?php esc_html_e( 'Current credentials remain active until new ones are saved.', 'supertab-connect' ); ?></p>
+			</div>
+		<?php endif; ?>
+
 		<p><?php esc_html_e( 'Enter your Supertab credentials to connect your site.', 'supertab-connect' ); ?></p>
 
 		<form method="post" action="">
@@ -103,6 +101,7 @@ $supertab_connect_error_message = rawurldecode( $supertab_connect_error_message 
 							id="supertab-website-urn"
 							name="website_urn"
 							class="regular-text"
+							value="<?php echo esc_attr( $supertab_connect_website_urn ); ?>"
 							required
 						/>
 					</td>
@@ -111,5 +110,25 @@ $supertab_connect_error_message = rawurldecode( $supertab_connect_error_message 
 
 			<?php submit_button( __( 'Save', 'supertab-connect' ) ); ?>
 		</form>
+
+	<?php else : ?>
+
+		<p><?php esc_html_e( 'Supertab Connect is configured and ready to use.', 'supertab-connect' ); ?></p>
+		<table class="form-table" role="presentation">
+			<tr>
+				<th scope="row"><?php esc_html_e( 'Merchant API Key', 'supertab-connect' ); ?></th>
+				<td><code>&bull;&bull;&bull;&bull;&bull;&bull;&bull;&bull;</code></td>
+			</tr>
+			<tr>
+				<th scope="row"><?php esc_html_e( 'Website URN', 'supertab-connect' ); ?></th>
+				<td><code><?php echo esc_html( $supertab_connect_website_urn ); ?></code></td>
+			</tr>
+		</table>
+
+		<form method="post" action="">
+			<?php wp_nonce_field( $supertab_connect_disconnect_nonce_action, 'supertab_connect_disconnect_nonce' ); ?>
+			<?php submit_button( __( 'Disconnect', 'supertab-connect' ), 'secondary', 'submit', true ); ?>
+		</form>
+
 	<?php endif; ?>
 </div>

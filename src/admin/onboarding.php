@@ -47,6 +47,13 @@ class Onboarding {
 	}
 
 	/**
+	 * Nonce action for the disconnect form.
+	 *
+	 * @var string
+	 */
+	private const DISCONNECT_NONCE_ACTION = 'supertab_connect_disconnect';
+
+	/**
 	 * Register hooks.
 	 *
 	 * @return void
@@ -56,30 +63,22 @@ class Onboarding {
 		add_action( 'admin_enqueue_scripts', array( $this, 'enqueue_scripts' ) );
 		add_action( 'admin_init', array( $this, 'handle_activation_redirect' ) );
 		add_action( 'admin_init', array( $this, 'handle_form_submission' ) );
+		add_action( 'admin_init', array( $this, 'handle_disconnect' ) );
 	}
 
 	/**
-	 * Register the hidden admin page.
+	 * Register the admin page under Settings.
 	 *
 	 * @return void
 	 */
 	public function register_page(): void {
 		add_submenu_page(
-			'options-general.php', // Register under Settings so WordPress populates $title.
-			__( 'Supertab Connect Setup', 'supertab-connect' ),
-			'',
+			'options-general.php',
+			__( 'Supertab Connect', 'supertab-connect' ),
+			__( 'Supertab Connect', 'supertab-connect' ),
 			'manage_options',
 			self::PAGE_SLUG,
 			array( $this, 'render_page' )
-		);
-
-		// Remove from the Settings submenu to keep the page hidden.
-		// Runs on admin_head, after admin-header.php has already resolved $title.
-		add_action(
-			'admin_head',
-			function (): void {
-				remove_submenu_page( 'options-general.php', self::PAGE_SLUG );
-			}
 		);
 	}
 
@@ -133,6 +132,40 @@ class Onboarding {
 		}
 
 		wp_safe_redirect( admin_url( 'options-general.php?page=' . self::PAGE_SLUG ) );
+		exit;
+	}
+
+	/**
+	 * Handle the disconnect request.
+	 *
+	 * Does not delete credentials — just redirects back with a flag
+	 * so the template shows the credentials form.
+	 *
+	 * @return void
+	 */
+	public function handle_disconnect(): void {
+		if ( ! isset( $_POST['supertab_connect_disconnect_nonce'] ) ) {
+			return;
+		}
+
+		// phpcs:ignore WordPress.Security.ValidatedSanitizedInput.InputNotSanitized -- Nonce value used only for verification.
+		if ( ! wp_verify_nonce( wp_unslash( $_POST['supertab_connect_disconnect_nonce'] ), self::DISCONNECT_NONCE_ACTION ) ) {
+			return;
+		}
+
+		if ( ! current_user_can( 'manage_options' ) ) {
+			return;
+		}
+
+		wp_safe_redirect(
+			add_query_arg(
+				array(
+					'page'         => self::PAGE_SLUG,
+					'disconnected' => '1',
+				),
+				admin_url( 'options-general.php' )
+			)
+		);
 		exit;
 	}
 
@@ -195,10 +228,15 @@ class Onboarding {
 			return;
 		}
 
+		// phpcs:ignore WordPress.Security.NonceVerification.Recommended -- Only reading query param for display logic.
+		$disconnected = isset( $_GET['disconnected'] ) && '1' === $_GET['disconnected'];
+
 		$template_data = array(
-			'nonce_action'    => self::NONCE_ACTION,
-			'has_credentials' => $this->credentials->has_credentials(),
-			'website_urn'     => $this->credentials->get_website_urn(),
+			'nonce_action'            => self::NONCE_ACTION,
+			'disconnect_nonce_action' => self::DISCONNECT_NONCE_ACTION,
+			'has_credentials'         => $this->credentials->has_credentials(),
+			'disconnected'            => $disconnected,
+			'website_urn'             => $this->credentials->get_website_urn(),
 		);
 
 		include SUPERTAB_CONNECT_PLUGIN_DIR . 'templates/onboarding.php';
