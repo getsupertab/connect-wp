@@ -75,7 +75,7 @@
             "dist": {
                 "type": "path",
                 "url": "/Users/tomstark/work/supertab/connect-sdk-php",
-                "reference": "a9278d18d33040a6702941188a8700eade37f025"
+                "reference": "b0cb350391ea0e2d7c220156dca8f5c2c17b27f4"
             },
             "require": {
                 "ext-curl": "*",
@@ -86,8 +86,8 @@
                 "php": ">=8.1"
             },
             "require-dev": {
-                "laravel/pint": "^1.27",
-                "phpunit/phpunit": "^10.5 || ^11.0"
+                "phpunit/phpunit": "^10.5 || ^11.0",
+                "squizlabs/php_codesniffer": "^3.11"
             },
             "type": "library",
             "autoload": {
@@ -105,10 +105,10 @@
                     "phpunit"
                 ],
                 "lint": [
-                    "pint"
+                    "phpcbf"
                 ],
                 "lint:check": [
-                    "pint --test"
+                    "phpcs"
                 ],
                 "demo": [
                     "php demo/bot.php"

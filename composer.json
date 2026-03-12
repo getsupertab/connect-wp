@@ -17,9 +17,9 @@
 		"yoast/phpunit-polyfills": "^2.0"
 	},
 	"autoload": {
-		"psr-4": {
-			"Supertab_Connect\\": "src/"
-		}
+		"classmap": [
+			"src/"
+		]
 	},
 	"autoload-dev": {
 		"psr-4": {
