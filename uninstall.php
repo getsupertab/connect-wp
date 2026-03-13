@@ -12,4 +12,9 @@ if ( ! defined( 'WP_UNINSTALL_PLUGIN' ) ) {
 	exit;
 }
 
-// Cleanup plugin data here.
+// Remove stored credentials.
+delete_option( 'supertab_connect_merchant_api_key' );
+delete_option( 'supertab_connect_website_urn' );
+
+// Remove activation transient if lingering.
+delete_transient( 'supertab_connect_activating' );

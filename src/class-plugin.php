@@ -109,9 +109,9 @@ class Plugin {
 		$enforcement      = self::get_enforcement_mode();
 		$supertab_connect = new SupertabConnect(
 			apiKey: $credentials->get_merchant_api_key(),
-			enforcement: EnforcementMode::DISABLED,
+			enforcement: $enforcement,
 			httpClient: $http_client,
-			baseUrl: 'https://api-connect.sbx.supertab.co'
+			baseUrl: SUPERTAB_CONNECT_API_BASE_URL
 		);
 		$bot_protection   = new Bot_Protection( $supertab_connect );
 		$bot_protection->register();
