@@ -63,8 +63,11 @@ class Credentials {
 	 * @return void
 	 */
 	public function save( string $merchant_api_key, string $website_urn ): void {
-		update_option( self::OPTION_MERCHANT_API_KEY, $merchant_api_key );
-		update_option( self::OPTION_WEBSITE_URN, $website_urn );
+		update_option( self::OPTION_MERCHANT_API_KEY, $merchant_api_key, false );
+		update_option( self::OPTION_WEBSITE_URN, $website_urn, false );
+
+		// Invalidate cached license XML since credentials changed.
+		delete_transient( 'supertab_connect_license_xml' );
 	}
 
 	/**
@@ -75,5 +78,8 @@ class Credentials {
 	public function delete(): void {
 		delete_option( self::OPTION_MERCHANT_API_KEY );
 		delete_option( self::OPTION_WEBSITE_URN );
+
+		// Invalidate cached license XML.
+		delete_transient( 'supertab_connect_license_xml' );
 	}
 }

@@ -16,5 +16,6 @@ if ( ! defined( 'WP_UNINSTALL_PLUGIN' ) ) {
 delete_option( 'supertab_connect_merchant_api_key' );
 delete_option( 'supertab_connect_website_urn' );
 
-// Remove activation transient if lingering.
+// Remove transients.
 delete_transient( 'supertab_connect_activating' );
+delete_transient( 'supertab_connect_license_xml' );

@@ -29,6 +29,20 @@ class RSL_License_Handler {
 	private const REQUEST_LICENSE_PATH = 'license.xml';
 
 	/**
+	 * Transient key for cached license XML.
+	 *
+	 * @var string
+	 */
+	private const CACHE_TRANSIENT_KEY = 'supertab_connect_license_xml';
+
+	/**
+	 * Cache TTL in seconds (5 minutes).
+	 *
+	 * @var int
+	 */
+	private const CACHE_TTL = 5 * MINUTE_IN_SECONDS;
+
+	/**
 	 * Credentials instance.
 	 *
 	 * @var Credentials
@@ -86,6 +100,28 @@ class RSL_License_Handler {
 			return;
 		}
 
+		$cached = get_transient( self::CACHE_TRANSIENT_KEY );
+		if ( is_string( $cached ) && '' !== $cached ) {
+			$this->send_xml( $cached );
+			return;
+		}
+
+		$body = $this->fetch_license_xml();
+		if ( null === $body ) {
+			$this->send_error( 502, 'Bad Gateway' );
+			return;
+		}
+
+		set_transient( self::CACHE_TRANSIENT_KEY, $body, self::CACHE_TTL );
+		$this->send_xml( $body );
+	}
+
+	/**
+	 * Fetch and validate license XML from the upstream API.
+	 *
+	 * @return string|null The XML body, or null on failure.
+	 */
+	private function fetch_license_xml(): ?string {
 		try {
 			$body = SupertabConnect::fetchLicenseXml(
 				$this->credentials->get_website_urn(),
@@ -93,21 +129,18 @@ class RSL_License_Handler {
 				$this->http_client
 			);
 		} catch ( SupertabConnectException $e ) {
-			$this->send_error( 502, 'Bad Gateway' );
-			return;
+			return null;
 		}
 
 		if ( '' === trim( $body ) ) {
-			$this->send_error( 502, 'Bad Gateway' );
-			return;
+			return null;
 		}
 
 		if ( false === simplexml_load_string( $body, 'SimpleXMLElement', LIBXML_NOERROR | LIBXML_NOWARNING ) ) {
-			$this->send_error( 502, 'Bad Gateway' );
-			return;
+			return null;
 		}
 
-		$this->send_xml( $body );
+		return $body;
 	}
 
 	/**
