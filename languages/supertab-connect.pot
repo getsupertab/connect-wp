@@ -1,0 +1,94 @@
+# Copyright (C) 2026 Supertab
+# This file is distributed under the GPL-2.0-or-later.
+msgid ""
+msgstr ""
+"Project-Id-Version: Supertab Connect 0.1.0\n"
+"Report-Msgid-Bugs-To: https://wordpress.org/support/plugin/supertab-connect\n"
+"Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
+"Language-Team: LANGUAGE <LL@li.org>\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"POT-Creation-Date: 2026-03-13T09:53:44+00:00\n"
+"PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
+"X-Generator: WP-CLI 2.12.0\n"
+"X-Domain: supertab-connect\n"
+
+#. Plugin Name of the plugin
+#: supertab-connect.php
+#: src/admin/class-onboarding.php:77
+#: src/admin/class-onboarding.php:78
+#: templates/onboarding.php:28
+msgid "Supertab Connect"
+msgstr ""
+
+#. Plugin URI of the plugin
+#. Author URI of the plugin
+#: supertab-connect.php
+msgid "https://supertab.co"
+msgstr ""
+
+#. Description of the plugin
+#: supertab-connect.php
+msgid "Connect your WordPress site to the Supertab platform."
+msgstr ""
+
+#. Author of the plugin
+#: supertab-connect.php
+msgid "Supertab"
+msgstr ""
+
+#: src/admin/class-notices.php:69
+msgid "Supertab Connect needs to be configured."
+msgstr ""
+
+#: src/admin/class-notices.php:71
+msgid "Set up now"
+msgstr ""
+
+#: templates/onboarding.php:32
+msgid "Credentials saved successfully."
+msgstr ""
+
+#: templates/onboarding.php:38
+msgid "Please fill in both the Merchant API Key and Website URN."
+msgstr ""
+
+#: templates/onboarding.php:46
+msgid "Current credentials remain active until new ones are saved."
+msgstr ""
+
+#: templates/onboarding.php:50
+msgid "Enter your Supertab credentials to connect your site."
+msgstr ""
+
+#: templates/onboarding.php:58
+#: templates/onboarding.php:105
+msgid "Merchant API Key"
+msgstr ""
+
+#: templates/onboarding.php:71
+#: templates/onboarding.php:72
+msgid "Show API key"
+msgstr ""
+
+#: templates/onboarding.php:73
+msgid "Hide API key"
+msgstr ""
+
+#: templates/onboarding.php:82
+#: templates/onboarding.php:109
+msgid "Website URN"
+msgstr ""
+
+#: templates/onboarding.php:97
+msgid "Save"
+msgstr ""
+
+#: templates/onboarding.php:102
+msgid "Supertab Connect is configured and ready to use."
+msgstr ""
+
+#: templates/onboarding.php:116
+msgid "Disconnect"
+msgstr ""
