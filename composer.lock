@@ -75,7 +75,7 @@
             "dist": {
                 "type": "path",
                 "url": "/Users/tomstark/work/supertab/connect-sdk-php",
-                "reference": "b0cb350391ea0e2d7c220156dca8f5c2c17b27f4"
+                "reference": "d0e4aec157070d11a50ad0e82a7fd7a6999712f2"
             },
             "require": {
                 "ext-curl": "*",

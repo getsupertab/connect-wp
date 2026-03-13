@@ -15,6 +15,7 @@ use Supertab\Connect\SupertabConnect;
 use Supertab_Connect\Admin\Notices;
 use Supertab_Connect\Admin\Onboarding;
 use Supertab_Connect\Utils\WP_Http_Client;
+use Supertab_Connect\Utils\WP_Transient_Cache;
 
 /**
  * Plugin singleton class.
@@ -111,7 +112,8 @@ class Plugin {
 			apiKey: $credentials->get_merchant_api_key(),
 			enforcement: $enforcement,
 			httpClient: $http_client,
-			baseUrl: SUPERTAB_CONNECT_API_BASE_URL
+			baseUrl: SUPERTAB_CONNECT_API_BASE_URL,
+			cache: new WP_Transient_Cache()
 		);
 		$bot_protection   = new Bot_Protection( $supertab_connect );
 		$bot_protection->register();
