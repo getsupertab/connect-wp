@@ -23,9 +23,6 @@ $supertab_connect_show_form               = ! $supertab_connect_has_credentials 
 $supertab_connect_setup_status = isset( $_GET['setup'] ) ? sanitize_text_field( wp_unslash( $_GET['setup'] ) ) : '';
 // phpcs:ignore WordPress.Security.NonceVerification.Recommended -- Only reading query params for display logic.
 $supertab_connect_error = isset( $_GET['error'] ) ? sanitize_text_field( wp_unslash( $_GET['error'] ) ) : '';
-// phpcs:ignore WordPress.Security.NonceVerification.Recommended -- Only reading query params for display logic.
-$supertab_connect_error_message = isset( $_GET['message'] ) ? sanitize_text_field( wp_unslash( $_GET['message'] ) ) : '';
-$supertab_connect_error_message = rawurldecode( $supertab_connect_error_message );
 ?>
 <div class="wrap">
 	<h1><?php esc_html_e( 'Supertab Connect', 'supertab-connect' ); ?></h1>
@@ -39,17 +36,6 @@ $supertab_connect_error_message = rawurldecode( $supertab_connect_error_message 
 	<?php if ( 'missing_fields' === $supertab_connect_error ) : ?>
 		<div class="notice notice-error">
 			<p><?php esc_html_e( 'Please fill in both the Merchant API Key and Website URN.', 'supertab-connect' ); ?></p>
-		</div>
-	<?php endif; ?>
-
-	<?php if ( 'verification_failed' === $supertab_connect_error ) : ?>
-		<div class="notice notice-error">
-			<p>
-				<?php esc_html_e( 'Credential verification failed.', 'supertab-connect' ); ?>
-				<?php if ( '' !== $supertab_connect_error_message ) : ?>
-					<?php echo esc_html( $supertab_connect_error_message ); ?>
-				<?php endif; ?>
-			</p>
 		</div>
 	<?php endif; ?>
 

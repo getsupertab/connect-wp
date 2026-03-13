@@ -57,7 +57,7 @@ class WP_Http_Client implements HttpClientInterface {
 			'body'    => $body,
 		);
 
-		// phpcs:ignore WordPressVIPMinimum.Functions.RestrictedFunctions.wp_remote_get_wp_remote_get -- Using wp_remote_post, not wp_remote_get.
+		// phpcs:ignore WordPressVIPMinimum.Functions.RestrictedFunctions.wp_remote_get_wp_remote_get -- wp_remote_post; no VIP-safe equivalent exists.
 		$response = wp_remote_post( $url, $args );
 
 		return $this->parse_response( $response );

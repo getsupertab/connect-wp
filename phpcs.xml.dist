@@ -18,9 +18,8 @@
 	<arg value="sp"/>
 	<arg name="colors"/>
 
-	<!-- Parallel processing and caching -->
+	<!-- Parallel processing -->
 	<arg name="parallel" value="8"/>
-	<arg name="cache" value=".phpcs.cache"/>
 
 	<!-- Rulesets: WordPress (Core + Extra + Docs) plus VIP-Go -->
 	<rule ref="WordPress"/>
