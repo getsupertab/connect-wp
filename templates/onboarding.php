@@ -12,17 +12,20 @@ declare( strict_types=1 );
 // Prevent direct access.
 defined( 'ABSPATH' ) || exit;
 
-$supertab_connect_nonce_action            = $template_data['nonce_action'];
-$supertab_connect_disconnect_nonce_action = $template_data['disconnect_nonce_action'];
-$supertab_connect_has_credentials         = $template_data['has_credentials'];
-$supertab_connect_disconnected            = $template_data['disconnected'];
-$supertab_connect_website_urn             = $template_data['website_urn'];
-$supertab_connect_show_form               = ! $supertab_connect_has_credentials || $supertab_connect_disconnected;
+$supertab_connect_nonce_action             = $template_data['nonce_action'];
+$supertab_connect_disconnect_nonce_action  = $template_data['disconnect_nonce_action'];
+$supertab_connect_has_credentials          = $template_data['has_credentials'];
+$supertab_connect_disconnected             = $template_data['disconnected'];
+$supertab_connect_website_urn              = $template_data['website_urn'];
+$supertab_connect_purge_cache_nonce_action = $template_data['purge_cache_nonce_action'];
+$supertab_connect_show_form                = ! $supertab_connect_has_credentials || $supertab_connect_disconnected;
 
 // phpcs:ignore WordPress.Security.NonceVerification.Recommended -- Only reading query params for display logic.
 $supertab_connect_setup_status = isset( $_GET['setup'] ) ? sanitize_text_field( wp_unslash( $_GET['setup'] ) ) : '';
 // phpcs:ignore WordPress.Security.NonceVerification.Recommended -- Only reading query params for display logic.
 $supertab_connect_error = isset( $_GET['error'] ) ? sanitize_text_field( wp_unslash( $_GET['error'] ) ) : '';
+// phpcs:ignore WordPress.Security.NonceVerification.Recommended -- Only reading query params for display logic.
+$supertab_connect_purged = isset( $_GET['purged'] ) && '1' === $_GET['purged'];
 ?>
 <div class="wrap">
 	<h1><?php esc_html_e( 'Supertab Connect', 'supertab-connect' ); ?></h1>
@@ -30,6 +33,12 @@ $supertab_connect_error = isset( $_GET['error'] ) ? sanitize_text_field( wp_unsl
 	<?php if ( 'success' === $supertab_connect_setup_status ) : ?>
 		<div class="notice notice-success">
 			<p><?php esc_html_e( 'Credentials saved successfully.', 'supertab-connect' ); ?></p>
+		</div>
+	<?php endif; ?>
+
+	<?php if ( $supertab_connect_purged ) : ?>
+		<div class="notice notice-success">
+			<p><?php esc_html_e( 'License cache purged successfully.', 'supertab-connect' ); ?></p>
 		</div>
 	<?php endif; ?>
 
@@ -114,6 +123,11 @@ $supertab_connect_error = isset( $_GET['error'] ) ? sanitize_text_field( wp_unsl
 		<form method="post" action="">
 			<?php wp_nonce_field( $supertab_connect_disconnect_nonce_action, 'supertab_connect_disconnect_nonce' ); ?>
 			<?php submit_button( __( 'Disconnect', 'supertab-connect' ), 'secondary', 'submit', true ); ?>
+		</form>
+
+		<form method="post" action="">
+			<?php wp_nonce_field( $supertab_connect_purge_cache_nonce_action, 'supertab_connect_purge_cache_nonce' ); ?>
+			<?php submit_button( __( 'Purge license cache', 'supertab-connect' ), 'secondary', 'submit', true ); ?>
 		</form>
 
 	<?php endif; ?>

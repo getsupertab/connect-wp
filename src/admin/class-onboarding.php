@@ -54,6 +54,13 @@ class Onboarding {
 	private const DISCONNECT_NONCE_ACTION = 'supertab_connect_disconnect';
 
 	/**
+	 * Nonce action for the purge license cache form.
+	 *
+	 * @var string
+	 */
+	private const PURGE_CACHE_NONCE_ACTION = 'supertab_connect_purge_cache';
+
+	/**
 	 * Register hooks.
 	 *
 	 * @return void
@@ -64,6 +71,7 @@ class Onboarding {
 		add_action( 'admin_init', array( $this, 'handle_activation_redirect' ) );
 		add_action( 'admin_init', array( $this, 'handle_form_submission' ) );
 		add_action( 'admin_init', array( $this, 'handle_disconnect' ) );
+		add_action( 'admin_init', array( $this, 'handle_purge_cache' ) );
 	}
 
 	/**
@@ -170,6 +178,39 @@ class Onboarding {
 	}
 
 	/**
+	 * Handle the purge license cache request.
+	 *
+	 * @return void
+	 */
+	public function handle_purge_cache(): void {
+		if ( ! isset( $_POST['supertab_connect_purge_cache_nonce'] ) ) {
+			return;
+		}
+
+		// phpcs:ignore WordPress.Security.ValidatedSanitizedInput.InputNotSanitized -- Nonce value used only for verification.
+		if ( ! wp_verify_nonce( wp_unslash( $_POST['supertab_connect_purge_cache_nonce'] ), self::PURGE_CACHE_NONCE_ACTION ) ) {
+			return;
+		}
+
+		if ( ! current_user_can( 'manage_options' ) ) {
+			return;
+		}
+
+		delete_transient( 'supertab_connect_license_xml' );
+
+		wp_safe_redirect(
+			add_query_arg(
+				array(
+					'page'   => self::PAGE_SLUG,
+					'purged' => '1',
+				),
+				admin_url( 'options-general.php' )
+			)
+		);
+		exit;
+	}
+
+	/**
 	 * Handle the setup form submission.
 	 *
 	 * @return void
@@ -232,11 +273,12 @@ class Onboarding {
 		$disconnected = isset( $_GET['disconnected'] ) && '1' === $_GET['disconnected'];
 
 		$template_data = array(
-			'nonce_action'            => self::NONCE_ACTION,
-			'disconnect_nonce_action' => self::DISCONNECT_NONCE_ACTION,
-			'has_credentials'         => $this->credentials->has_credentials(),
-			'disconnected'            => $disconnected,
-			'website_urn'             => $this->credentials->get_website_urn(),
+			'nonce_action'             => self::NONCE_ACTION,
+			'disconnect_nonce_action'  => self::DISCONNECT_NONCE_ACTION,
+			'has_credentials'          => $this->credentials->has_credentials(),
+			'disconnected'             => $disconnected,
+			'website_urn'              => $this->credentials->get_website_urn(),
+			'purge_cache_nonce_action' => self::PURGE_CACHE_NONCE_ACTION,
 		);
 
 		include SUPERTAB_CONNECT_PLUGIN_DIR . 'templates/onboarding.php';

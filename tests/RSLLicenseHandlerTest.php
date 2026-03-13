@@ -102,7 +102,7 @@ class RSLLicenseHandlerTest extends TestCase {
 		global $wp_test_transients;
 
 		$xml = '<?xml version="1.0"?><license><key>test</key></license>';
-		set_transient( 'supertab_connect_license_xml', $xml, 5 * MINUTE_IN_SECONDS );
+		set_transient( 'supertab_connect_license_xml', $xml, 0 );
 
 		$this->assertSame( $xml, $wp_test_transients['supertab_connect_license_xml'] );
 	}
