@@ -1,21 +1,42 @@
-# SOME DESCRIPTIVE TITLE.
-# Copyright (C) YEAR THE PACKAGE'S COPYRIGHT HOLDER
-# This file is distributed under the same license as the Supertab Connect package.
-# FIRST AUTHOR <EMAIL@ADDRESS>, YEAR.
-#
-#, fuzzy
+# Copyright (C) 2026 Supertab
+# This file is distributed under the GPL-2.0-or-later.
 msgid ""
 msgstr ""
-"Project-Id-Version: Supertab Connect\n"
-"Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-03-16 15:33+0100\n"
-"PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
+"Project-Id-Version: Supertab Connect 0.1.0\n"
+"Report-Msgid-Bugs-To: https://wordpress.org/support/plugin/supertab-connect\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
-"Language: \n"
 "MIME-Version: 1.0\n"
-"Content-Type: text/plain; charset=CHARSET\n"
+"Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
+"POT-Creation-Date: 2026-03-16T14:34:12+00:00\n"
+"PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
+"X-Generator: WP-CLI 2.12.0\n"
+"X-Domain: supertab-connect\n"
+
+#. Plugin Name of the plugin
+#: supertab-connect.php
+#: src/admin/class-onboarding.php:93
+#: src/admin/class-onboarding.php:94
+#: templates/onboarding.php:36
+msgid "Supertab Connect"
+msgstr ""
+
+#. Plugin URI of the plugin
+#. Author URI of the plugin
+#: supertab-connect.php
+msgid "https://supertab.co"
+msgstr ""
+
+#. Description of the plugin
+#: supertab-connect.php
+msgid "Connect your WordPress site to the Supertab platform."
+msgstr ""
+
+#. Author of the plugin
+#: supertab-connect.php
+msgid "Supertab"
+msgstr ""
 
 #: src/admin/class-notices.php:69
 msgid "Supertab Connect needs to be configured."
@@ -23,11 +44,6 @@ msgstr ""
 
 #: src/admin/class-notices.php:71
 msgid "Set up now"
-msgstr ""
-
-#: src/admin/class-onboarding.php:93 src/admin/class-onboarding.php:94
-#: templates/onboarding.php:36
-msgid "Supertab Connect"
 msgstr ""
 
 #: templates/onboarding.php:40
@@ -58,11 +74,13 @@ msgstr ""
 msgid "Enter your Supertab credentials to connect your site."
 msgstr ""
 
-#: templates/onboarding.php:81 templates/onboarding.php:127
+#: templates/onboarding.php:81
+#: templates/onboarding.php:127
 msgid "Merchant API Key"
 msgstr ""
 
-#: templates/onboarding.php:94 templates/onboarding.php:95
+#: templates/onboarding.php:94
+#: templates/onboarding.php:95
 msgid "Show API key"
 msgstr ""
 
@@ -70,7 +88,8 @@ msgstr ""
 msgid "Hide API key"
 msgstr ""
 
-#: templates/onboarding.php:105 templates/onboarding.php:131
+#: templates/onboarding.php:105
+#: templates/onboarding.php:131
 msgid "Website URN"
 msgstr ""
 
