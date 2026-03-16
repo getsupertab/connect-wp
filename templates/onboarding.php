@@ -164,7 +164,7 @@ $supertab_connect_bot_protection_updated = isset( $_GET['bot_protection'] ) && '
 		<!-- Crawler Authentication Protocol -->
 		<h2><?php esc_html_e( 'Crawler Authentication Protocol', 'supertab-connect' ); ?></h2>
 
-		<p>When trying to access your content, bots need to present license tokens to the Crawler Authentication Protocol for verification. This allows you to distinguish licensed access from unauthorized scraping, monitor usage against declared terms, and optionally enforce access without blocking compliant bots.</p>
+		<p><?php esc_html_e( 'When trying to access your content, bots need to present license tokens to the Crawler Authentication Protocol for verification. This allows you to distinguish licensed access from unauthorized scraping, monitor usage against declared terms, and optionally enforce access without blocking compliant bots.', 'supertab-connect' ); ?></p>
 
 		<form method="post" action="">
 			<?php wp_nonce_field( $supertab_connect_bot_protection_nonce_action, 'supertab_connect_bot_protection_nonce' ); ?>

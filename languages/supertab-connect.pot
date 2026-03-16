@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: Supertab Connect\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-03-16 15:30+0100\n"
+"POT-Creation-Date: 2026-03-16 15:33+0100\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -92,6 +92,10 @@ msgstr ""
 
 #: templates/onboarding.php:165
 msgid "Crawler Authentication Protocol"
+msgstr ""
+
+#: templates/onboarding.php:167
+msgid "When trying to access your content, bots need to present license tokens to the Crawler Authentication Protocol for verification. This allows you to distinguish licensed access from unauthorized scraping, monitor usage against declared terms, and optionally enforce access without blocking compliant bots."
 msgstr ""
 
 #: templates/onboarding.php:180
