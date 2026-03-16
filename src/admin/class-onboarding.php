@@ -61,6 +61,13 @@ class Onboarding {
 	private const PURGE_CACHE_NONCE_ACTION = 'supertab_connect_purge_cache';
 
 	/**
+	 * Nonce action for the bot protection toggle form.
+	 *
+	 * @var string
+	 */
+	private const BOT_PROTECTION_NONCE_ACTION = 'supertab_connect_bot_protection';
+
+	/**
 	 * Register hooks.
 	 *
 	 * @return void
@@ -72,6 +79,7 @@ class Onboarding {
 		add_action( 'admin_init', array( $this, 'handle_form_submission' ) );
 		add_action( 'admin_init', array( $this, 'handle_disconnect' ) );
 		add_action( 'admin_init', array( $this, 'handle_purge_cache' ) );
+		add_action( 'admin_init', array( $this, 'handle_bot_protection' ) );
 	}
 
 	/**
@@ -211,6 +219,40 @@ class Onboarding {
 	}
 
 	/**
+	 * Handle the bot protection toggle.
+	 *
+	 * @return void
+	 */
+	public function handle_bot_protection(): void {
+		if ( ! isset( $_POST['supertab_connect_bot_protection_nonce'] ) ) {
+			return;
+		}
+
+		// phpcs:ignore WordPress.Security.ValidatedSanitizedInput.InputNotSanitized -- Nonce value used only for verification.
+		if ( ! wp_verify_nonce( wp_unslash( $_POST['supertab_connect_bot_protection_nonce'] ), self::BOT_PROTECTION_NONCE_ACTION ) ) {
+			return;
+		}
+
+		if ( ! current_user_can( 'manage_options' ) ) {
+			return;
+		}
+
+		$enabled = isset( $_POST['bot_protection_enabled'] );
+		$this->credentials->set_bot_protection_enabled( $enabled );
+
+		wp_safe_redirect(
+			add_query_arg(
+				array(
+					'page'           => self::PAGE_SLUG,
+					'bot_protection' => 'updated',
+				),
+				admin_url( 'options-general.php' )
+			)
+		);
+		exit;
+	}
+
+	/**
 	 * Handle the setup form submission.
 	 *
 	 * @return void
@@ -273,12 +315,15 @@ class Onboarding {
 		$disconnected = isset( $_GET['disconnected'] ) && '1' === $_GET['disconnected'];
 
 		$template_data = array(
-			'nonce_action'             => self::NONCE_ACTION,
-			'disconnect_nonce_action'  => self::DISCONNECT_NONCE_ACTION,
-			'has_credentials'          => $this->credentials->has_credentials(),
-			'disconnected'             => $disconnected,
-			'website_urn'              => $this->credentials->get_website_urn(),
-			'purge_cache_nonce_action' => self::PURGE_CACHE_NONCE_ACTION,
+			'nonce_action'                => self::NONCE_ACTION,
+			'disconnect_nonce_action'     => self::DISCONNECT_NONCE_ACTION,
+			'has_credentials'             => $this->credentials->has_credentials(),
+			'disconnected'                => $disconnected,
+			'website_urn'                 => $this->credentials->get_website_urn(),
+			'license_url'                 => home_url( '/license.xml' ),
+			'purge_cache_nonce_action'    => self::PURGE_CACHE_NONCE_ACTION,
+			'bot_protection_nonce_action' => self::BOT_PROTECTION_NONCE_ACTION,
+			'bot_protection_enabled'      => $this->credentials->is_bot_protection_enabled(),
 		);
 
 		include SUPERTAB_CONNECT_PLUGIN_DIR . 'templates/onboarding.php';

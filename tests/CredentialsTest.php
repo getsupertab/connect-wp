@@ -105,6 +105,34 @@ class CredentialsTest extends TestCase {
 		$this->assertArrayNotHasKey( 'supertab_connect_license_xml', $wp_test_transients );
 	}
 
+	public function test_is_bot_protection_enabled_returns_false_by_default(): void {
+		$credentials = new Credentials();
+		$this->assertFalse( $credentials->is_bot_protection_enabled() );
+	}
+
+	public function test_set_bot_protection_enabled_stores_value(): void {
+		$credentials = new Credentials();
+		$credentials->set_bot_protection_enabled( true );
+
+		$this->assertTrue( $credentials->is_bot_protection_enabled() );
+	}
+
+	public function test_set_bot_protection_enabled_can_disable(): void {
+		$credentials = new Credentials();
+		$credentials->set_bot_protection_enabled( true );
+		$credentials->set_bot_protection_enabled( false );
+
+		$this->assertFalse( $credentials->is_bot_protection_enabled() );
+	}
+
+	public function test_delete_removes_bot_protection_setting(): void {
+		$credentials = new Credentials();
+		$credentials->set_bot_protection_enabled( true );
+		$credentials->delete();
+
+		$this->assertFalse( $credentials->is_bot_protection_enabled() );
+	}
+
 	public function test_save_overwrites_existing_credentials(): void {
 		$credentials = new Credentials();
 		$credentials->save( 'old-key', 'old-urn' );

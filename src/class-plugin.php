@@ -80,7 +80,7 @@ class Plugin {
 			return;
 		}
 
-		if ( $credentials->has_credentials() && ! defined( 'REST_REQUEST' ) ) {
+		if ( $credentials->has_credentials() && $credentials->is_bot_protection_enabled() && ! defined( 'REST_REQUEST' ) ) {
 			$this->init_bot_protection( $credentials, $http_client );
 		}
 	}

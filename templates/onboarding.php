@@ -12,13 +12,16 @@ declare( strict_types=1 );
 // Prevent direct access.
 defined( 'ABSPATH' ) || exit;
 
-$supertab_connect_nonce_action             = $template_data['nonce_action'];
-$supertab_connect_disconnect_nonce_action  = $template_data['disconnect_nonce_action'];
-$supertab_connect_has_credentials          = $template_data['has_credentials'];
-$supertab_connect_disconnected             = $template_data['disconnected'];
-$supertab_connect_website_urn              = $template_data['website_urn'];
-$supertab_connect_purge_cache_nonce_action = $template_data['purge_cache_nonce_action'];
-$supertab_connect_show_form                = ! $supertab_connect_has_credentials || $supertab_connect_disconnected;
+$supertab_connect_nonce_action                = $template_data['nonce_action'];
+$supertab_connect_disconnect_nonce_action     = $template_data['disconnect_nonce_action'];
+$supertab_connect_has_credentials             = $template_data['has_credentials'];
+$supertab_connect_disconnected                = $template_data['disconnected'];
+$supertab_connect_website_urn                 = $template_data['website_urn'];
+$supertab_connect_license_url                 = $template_data['license_url'];
+$supertab_connect_purge_cache_nonce_action    = $template_data['purge_cache_nonce_action'];
+$supertab_connect_bot_protection_nonce_action = $template_data['bot_protection_nonce_action'];
+$supertab_connect_bot_protection_enabled      = $template_data['bot_protection_enabled'];
+$supertab_connect_show_form                   = ! $supertab_connect_has_credentials || $supertab_connect_disconnected;
 
 // phpcs:ignore WordPress.Security.NonceVerification.Recommended -- Only reading query params for display logic.
 $supertab_connect_setup_status = isset( $_GET['setup'] ) ? sanitize_text_field( wp_unslash( $_GET['setup'] ) ) : '';
@@ -26,6 +29,8 @@ $supertab_connect_setup_status = isset( $_GET['setup'] ) ? sanitize_text_field( 
 $supertab_connect_error = isset( $_GET['error'] ) ? sanitize_text_field( wp_unslash( $_GET['error'] ) ) : '';
 // phpcs:ignore WordPress.Security.NonceVerification.Recommended -- Only reading query params for display logic.
 $supertab_connect_purged = isset( $_GET['purged'] ) && '1' === $_GET['purged'];
+// phpcs:ignore WordPress.Security.NonceVerification.Recommended -- Only reading query params for display logic.
+$supertab_connect_bot_protection_updated = isset( $_GET['bot_protection'] ) && 'updated' === $_GET['bot_protection'];
 ?>
 <div class="wrap">
 	<h1><?php esc_html_e( 'Supertab Connect', 'supertab-connect' ); ?></h1>
@@ -42,11 +47,20 @@ $supertab_connect_purged = isset( $_GET['purged'] ) && '1' === $_GET['purged'];
 		</div>
 	<?php endif; ?>
 
+	<?php if ( $supertab_connect_bot_protection_updated ) : ?>
+		<div class="notice notice-success">
+			<p><?php esc_html_e( 'CAP settings updated.', 'supertab-connect' ); ?></p>
+		</div>
+	<?php endif; ?>
+
 	<?php if ( 'missing_fields' === $supertab_connect_error ) : ?>
 		<div class="notice notice-error">
 			<p><?php esc_html_e( 'Please fill in both the Merchant API Key and Website URN.', 'supertab-connect' ); ?></p>
 		</div>
 	<?php endif; ?>
+
+	<!-- Credentials -->
+	<h2><?php esc_html_e( 'Credentials', 'supertab-connect' ); ?></h2>
 
 	<?php if ( $supertab_connect_show_form ) : ?>
 
@@ -103,12 +117,11 @@ $supertab_connect_purged = isset( $_GET['purged'] ) && '1' === $_GET['purged'];
 				</tr>
 			</table>
 
-			<?php submit_button( __( 'Save', 'supertab-connect' ) ); ?>
+			<?php submit_button( '', 'primary', 'submit-credentials', false ); ?>
 		</form>
 
 	<?php else : ?>
 
-		<p><?php esc_html_e( 'Supertab Connect is configured and ready to use.', 'supertab-connect' ); ?></p>
 		<table class="form-table" role="presentation">
 			<tr>
 				<th scope="row"><?php esc_html_e( 'Merchant API Key', 'supertab-connect' ); ?></th>
@@ -122,12 +135,52 @@ $supertab_connect_purged = isset( $_GET['purged'] ) && '1' === $_GET['purged'];
 
 		<form method="post" action="">
 			<?php wp_nonce_field( $supertab_connect_disconnect_nonce_action, 'supertab_connect_disconnect_nonce' ); ?>
-			<?php submit_button( __( 'Disconnect', 'supertab-connect' ), 'secondary', 'submit', true ); ?>
+			<?php submit_button( __( 'Disconnect', 'supertab-connect' ), 'secondary', 'submit', false ); ?>
 		</form>
+
+		<p>&nbsp;</p>
+
+		<!-- RSL License -->
+		<h2><?php esc_html_e( 'Your RSL License', 'supertab-connect' ); ?></h2>
+
+		<table class="form-table" role="presentation">
+			<tr>
+				<th scope="row"><?php esc_html_e( 'License URL', 'supertab-connect' ); ?></th>
+				<td>
+					<a href="<?php echo esc_url( $supertab_connect_license_url ); ?>" target="_blank">
+						<?php echo esc_html( $supertab_connect_license_url ); ?>
+					</a>
+				</td>
+			</tr>
+		</table>
 
 		<form method="post" action="">
 			<?php wp_nonce_field( $supertab_connect_purge_cache_nonce_action, 'supertab_connect_purge_cache_nonce' ); ?>
-			<?php submit_button( __( 'Purge license cache', 'supertab-connect' ), 'secondary', 'submit', true ); ?>
+			<?php submit_button( __( 'Purge license.xml from cache', 'supertab-connect' ), 'secondary', 'submit', false ); ?>
+		</form>
+
+		<p>&nbsp;</p>
+
+		<!-- Crawler Authentication Protocol -->
+		<h2><?php esc_html_e( 'Crawler Authentication Protocol', 'supertab-connect' ); ?></h2>
+
+		<p>When trying to access your content, bots need to present license tokens to the Crawler Authentication Protocol for verification. This allows you to distinguish licensed access from unauthorized scraping, monitor usage against declared terms, and optionally enforce access without blocking compliant bots.</p>
+
+		<form method="post" action="">
+			<?php wp_nonce_field( $supertab_connect_bot_protection_nonce_action, 'supertab_connect_bot_protection_nonce' ); ?>
+			<fieldset>
+				<label for="supertab-bot-protection-enabled">
+					<input
+						type="checkbox"
+						id="supertab-bot-protection-enabled"
+						name="bot_protection_enabled"
+						value="1"
+						<?php checked( $supertab_connect_bot_protection_enabled ); ?>
+					/>
+					<?php esc_html_e( 'Enable CAP', 'supertab-connect' ); ?>
+				</label>
+			</fieldset>
+			<?php submit_button( '', 'primary', 'submit', true ); ?>
 		</form>
 
 	<?php endif; ?>

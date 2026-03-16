@@ -29,6 +29,13 @@ class Credentials {
 	private const OPTION_WEBSITE_URN = 'supertab_connect_website_urn';
 
 	/**
+	 * Option name for the bot protection enabled flag.
+	 *
+	 * @var string
+	 */
+	private const OPTION_BOT_PROTECTION_ENABLED = 'supertab_connect_bot_protection_enabled';
+
+	/**
 	 * Get the Merchant API Key.
 	 *
 	 * @return string The API key, or empty string if not set.
@@ -56,6 +63,25 @@ class Credentials {
 	}
 
 	/**
+	 * Check if bot protection is enabled.
+	 *
+	 * @return bool True if bot protection is enabled.
+	 */
+	public function is_bot_protection_enabled(): bool {
+		return (bool) get_option( self::OPTION_BOT_PROTECTION_ENABLED, false );
+	}
+
+	/**
+	 * Set the bot protection enabled flag.
+	 *
+	 * @param bool $enabled Whether bot protection should be enabled.
+	 * @return void
+	 */
+	public function set_bot_protection_enabled( bool $enabled ): void {
+		update_option( self::OPTION_BOT_PROTECTION_ENABLED, $enabled );
+	}
+
+	/**
 	 * Save credentials.
 	 *
 	 * @param string $merchant_api_key The Merchant API Key.
@@ -78,6 +104,7 @@ class Credentials {
 	public function delete(): void {
 		delete_option( self::OPTION_MERCHANT_API_KEY );
 		delete_option( self::OPTION_WEBSITE_URN );
+		delete_option( self::OPTION_BOT_PROTECTION_ENABLED );
 
 		// Invalidate cached license XML.
 		delete_transient( 'supertab_connect_license_xml' );
