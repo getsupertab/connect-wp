@@ -12,7 +12,7 @@
 		[
 			"@semantic-release/exec",
 			{
-				"prepareCmd": "composer install --no-dev --no-interaction --prefer-dist --optimize-autoloader --ignore-platform-reqs && sed -i \"s/define( 'SUPERTAB_CONNECT_VERSION', '[^']*'/define( 'SUPERTAB_CONNECT_VERSION', '${nextRelease.version}'/\" supertab-connect.php"
+				"prepareCmd": "composer install --no-dev --no-interaction --prefer-dist --optimize-autoloader --ignore-platform-reqs && git config core.hooksPath /dev/null && sed -i \"s/define( 'SUPERTAB_CONNECT_VERSION', '[^']*'/define( 'SUPERTAB_CONNECT_VERSION', '${nextRelease.version}'/\" supertab-connect.php"
 			}
 		],
 		[
