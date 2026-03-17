@@ -12,7 +12,6 @@
 	"devDependencies": {
 		"@semantic-release/exec": "^7.0.0",
 		"@semantic-release/git": "^10.0.0",
-		"@semantic-release/wordpress": "^1.0.0",
 		"@wordpress/env": "^11.0.0",
 		"semantic-release": "^24.0.0"
 	}

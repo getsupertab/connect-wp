@@ -43,7 +43,8 @@ phpunit.xml.dist
 # Tests
 tests
 
-# Release config
+# Build / release
+build-zip.sh
 .releaserc.json
 
 # Documentation
