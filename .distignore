@@ -49,6 +49,7 @@ build-zip.sh
 
 # Documentation
 README.md
+internal-docs
 
 # OS files
 .DS_Store
