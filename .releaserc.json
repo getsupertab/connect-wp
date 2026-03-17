@@ -1,0 +1,44 @@
+{
+	"branches": [
+		"main",
+		{
+			"name": "beta",
+			"prerelease": true
+		}
+	],
+	"plugins": [
+		"@semantic-release/commit-analyzer",
+		"@semantic-release/release-notes-generator",
+		[
+			"@semantic-release/exec",
+			{
+				"prepareCmd": "composer install --no-dev --no-interaction --prefer-dist --optimize-autoloader --ignore-platform-reqs && sed -i \"s/define( 'SUPERTAB_CONNECT_VERSION', '[^']*'/define( 'SUPERTAB_CONNECT_VERSION', '${nextRelease.version}'/\" supertab-connect.php"
+			}
+		],
+		[
+			"@semantic-release/wordpress",
+			{
+				"type": "plugin",
+				"slug": "supertab-connect"
+			}
+		],
+		[
+			"@semantic-release/git",
+			{
+				"assets": ["supertab-connect.php"],
+				"message": "chore(release): ${nextRelease.version}\n\n${nextRelease.notes}"
+			}
+		],
+		[
+			"@semantic-release/github",
+			{
+				"assets": [
+					{
+						"path": "supertab-connect.zip",
+						"label": "supertab-connect-${nextRelease.version}.zip"
+					}
+				]
+			}
+		]
+	]
+}

@@ -1,0 +1,58 @@
+# Version control
+.git
+.gitignore
+.gitattributes
+
+# GitHub
+.github
+
+# Claude / AI
+.claude
+CLAUDE.md
+
+# IDE / editor
+.vscode
+.editorconfig
+
+# Node / npm (dev-only tooling)
+node_modules
+package.json
+package-lock.json
+.nvmrc
+
+# WordPress local dev environment
+.wp-env.json
+.wp-env
+
+# Composer config (vendor is rebuilt in CI)
+composer.json
+composer.lock
+
+# Code quality / static analysis
+phpcs.xml.dist
+phpstan.neon.dist
+phpunit.xml.dist
+.phpcs.cache
+.php-cs-fixer.cache
+.phpunit.result.cache
+.phpunit.cache
+
+# Git hooks
+.hooks
+
+# Tests
+tests
+
+# Release config
+.releaserc.json
+
+# Documentation
+README.md
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Source maps
+*.min.js.map
+*.min.css.map
