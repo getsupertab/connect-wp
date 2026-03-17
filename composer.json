@@ -5,7 +5,7 @@
 	"license": "GPL-2.0-or-later",
 	"require": {
 		"php": ">=8.1",
-		"getsupertab/connect-sdk-php": "dev-main"
+		"getsupertab/connect-sdk-php": "v1.0.0-beta"
 	},
 	"require-dev": {
 		"automattic/vipwpcs": "^3.0",
@@ -27,15 +27,6 @@
 			"Supertab_Connect\\Tests\\": "tests/"
 		}
 	},
-	"repositories": [
-		{
-			"type": "path",
-			"url": "/Users/tomstark/work/supertab/connect-sdk-php",
-			"options": {
-				"symlink": false
-			}
-		}
-	],
 	"config": {
 		"allow-plugins": {
 			"dealerdirect/phpcodesniffer-composer-installer": true

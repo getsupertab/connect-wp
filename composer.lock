@@ -4,7 +4,7 @@
         "Read more about it at https://getcomposer.org/doc/01-basic-usage.md#installing-dependencies",
         "This file is @generated automatically"
     ],
-    "content-hash": "21b177c6a30bb9278acf2522a97851a5",
+    "content-hash": "bd4a93f815d473d3fc35f52c5943b897",
     "packages": [
         {
             "name": "firebase/php-jwt",
@@ -71,11 +71,17 @@
         },
         {
             "name": "getsupertab/connect-sdk-php",
-            "version": "dev-main",
+            "version": "v1.0.0-beta",
+            "source": {
+                "type": "git",
+                "url": "https://github.com/getsupertab/connect-sdk-php.git",
+                "reference": "810c1f1942704fd8231ef003f41521c83d46fdab"
+            },
             "dist": {
-                "type": "path",
-                "url": "/Users/tomstark/work/supertab/connect-sdk-php",
-                "reference": "d0e4aec157070d11a50ad0e82a7fd7a6999712f2"
+                "type": "zip",
+                "url": "https://api.github.com/repos/getsupertab/connect-sdk-php/zipball/810c1f1942704fd8231ef003f41521c83d46fdab",
+                "reference": "810c1f1942704fd8231ef003f41521c83d46fdab",
+                "shasum": ""
             },
             "require": {
                 "ext-curl": "*",
@@ -95,28 +101,7 @@
                     "Supertab\\Connect\\": "src/"
                 }
             },
-            "autoload-dev": {
-                "psr-4": {
-                    "Supertab\\Connect\\Tests\\": "tests/"
-                }
-            },
-            "scripts": {
-                "test": [
-                    "phpunit"
-                ],
-                "lint": [
-                    "phpcbf"
-                ],
-                "lint:check": [
-                    "phpcs"
-                ],
-                "demo": [
-                    "php demo/bot.php"
-                ],
-                "demo:local": [
-                    "php demo/run-local.php"
-                ]
-            },
+            "notification-url": "https://packagist.org/downloads/",
             "license": [
                 "MIT"
             ],
@@ -126,7 +111,7 @@
                     "homepage": "https://supertab.co"
                 }
             ],
-            "description": "Supertab Connect SDK for PHP — License token verification and enforcement",
+            "description": "Supertab Connect PHP SDK",
             "homepage": "https://github.com/getsupertab/connect-sdk-php",
             "keywords": [
                 "connect",
@@ -135,10 +120,11 @@
                 "rsl",
                 "supertab"
             ],
-            "transport-options": {
-                "symlink": false,
-                "relative": false
-            }
+            "support": {
+                "issues": "https://github.com/getsupertab/connect-sdk-php/issues",
+                "source": "https://github.com/getsupertab/connect-sdk-php/tree/v1.0.0-beta"
+            },
+            "time": "2026-03-17T10:03:35+00:00"
         }
     ],
     "packages-dev": [
@@ -1031,11 +1017,11 @@
         },
         {
             "name": "phpstan/phpstan",
-            "version": "2.1.40",
+            "version": "2.1.41",
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/phpstan/phpstan/zipball/9b2c7aeb83a75d8680ea5e7c9b7fca88052b766b",
-                "reference": "9b2c7aeb83a75d8680ea5e7c9b7fca88052b766b",
+                "url": "https://api.github.com/repos/phpstan/phpstan/zipball/a2eae8f20856b3afe74bf1f9726ce8c11438e300",
+                "reference": "a2eae8f20856b3afe74bf1f9726ce8c11438e300",
                 "shasum": ""
             },
             "require": {
@@ -1080,7 +1066,7 @@
                     "type": "github"
                 }
             ],
-            "time": "2026-02-23T15:04:35+00:00"
+            "time": "2026-03-16T18:24:10+00:00"
         },
         {
             "name": "phpunit/php-code-coverage",
@@ -2846,7 +2832,7 @@
     "aliases": [],
     "minimum-stability": "stable",
     "stability-flags": {
-        "getsupertab/connect-sdk-php": 20
+        "getsupertab/connect-sdk-php": 10
     },
     "prefer-stable": false,
     "prefer-lowest": false,
