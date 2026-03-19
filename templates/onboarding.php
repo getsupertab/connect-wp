@@ -12,16 +12,14 @@ declare( strict_types=1 );
 // Prevent direct access.
 defined( 'ABSPATH' ) || exit;
 
-$supertab_connect_nonce_action                = $template_data['nonce_action'];
-$supertab_connect_disconnect_nonce_action     = $template_data['disconnect_nonce_action'];
-$supertab_connect_has_credentials             = $template_data['has_credentials'];
-$supertab_connect_disconnected                = $template_data['disconnected'];
-$supertab_connect_website_urn                 = $template_data['website_urn'];
-$supertab_connect_license_url                 = $template_data['license_url'];
-$supertab_connect_purge_cache_nonce_action    = $template_data['purge_cache_nonce_action'];
-$supertab_connect_bot_protection_nonce_action = $template_data['bot_protection_nonce_action'];
-$supertab_connect_bot_protection_enabled      = $template_data['bot_protection_enabled'];
-$supertab_connect_show_form                   = ! $supertab_connect_has_credentials || $supertab_connect_disconnected;
+$supertab_connect_nonce_action           = $template_data['nonce_action'];
+$supertab_connect_has_website_urn        = $template_data['has_website_urn'];
+$supertab_connect_has_merchant_api_key   = $template_data['has_merchant_api_key'];
+$supertab_connect_disconnected           = $template_data['disconnected'];
+$supertab_connect_website_urn            = $template_data['website_urn'];
+$supertab_connect_license_url            = $template_data['license_url'];
+$supertab_connect_bot_protection_enabled = $template_data['bot_protection_enabled'];
+$supertab_connect_show_api_key_form      = ! $supertab_connect_has_merchant_api_key || $supertab_connect_disconnected;
 
 // phpcs:ignore WordPress.Security.NonceVerification.Recommended -- Only reading query params for display logic.
 $supertab_connect_setup_status = isset( $_GET['setup'] ) ? sanitize_text_field( wp_unslash( $_GET['setup'] ) ) : '';
@@ -29,15 +27,13 @@ $supertab_connect_setup_status = isset( $_GET['setup'] ) ? sanitize_text_field( 
 $supertab_connect_error = isset( $_GET['error'] ) ? sanitize_text_field( wp_unslash( $_GET['error'] ) ) : '';
 // phpcs:ignore WordPress.Security.NonceVerification.Recommended -- Only reading query params for display logic.
 $supertab_connect_purged = isset( $_GET['purged'] ) && '1' === $_GET['purged'];
-// phpcs:ignore WordPress.Security.NonceVerification.Recommended -- Only reading query params for display logic.
-$supertab_connect_bot_protection_updated = isset( $_GET['bot_protection'] ) && 'updated' === $_GET['bot_protection'];
 ?>
 <div class="wrap">
 	<h1><?php esc_html_e( 'Supertab Connect', 'supertab-connect' ); ?></h1>
 
 	<?php if ( 'success' === $supertab_connect_setup_status ) : ?>
 		<div class="notice notice-success">
-			<p><?php esc_html_e( 'Credentials saved successfully.', 'supertab-connect' ); ?></p>
+			<p><?php esc_html_e( 'Settings saved successfully.', 'supertab-connect' ); ?></p>
 		</div>
 	<?php endif; ?>
 
@@ -47,141 +43,133 @@ $supertab_connect_bot_protection_updated = isset( $_GET['bot_protection'] ) && '
 		</div>
 	<?php endif; ?>
 
-	<?php if ( $supertab_connect_bot_protection_updated ) : ?>
-		<div class="notice notice-success">
-			<p><?php esc_html_e( 'CAP settings updated.', 'supertab-connect' ); ?></p>
-		</div>
-	<?php endif; ?>
-
-	<?php if ( 'missing_fields' === $supertab_connect_error ) : ?>
+	<?php if ( 'missing_urn' === $supertab_connect_error ) : ?>
 		<div class="notice notice-error">
-			<p><?php esc_html_e( 'Please fill in both the Merchant API Key and Website URN.', 'supertab-connect' ); ?></p>
+			<p><?php esc_html_e( 'Please enter a Website URN.', 'supertab-connect' ); ?></p>
 		</div>
 	<?php endif; ?>
 
-	<!-- Credentials -->
-	<h2><?php esc_html_e( 'Credentials', 'supertab-connect' ); ?></h2>
+	<?php if ( 'missing_api_key' === $supertab_connect_error ) : ?>
+		<div class="notice notice-error">
+			<p><?php esc_html_e( 'Please enter a Merchant API Key.', 'supertab-connect' ); ?></p>
+		</div>
+	<?php endif; ?>
 
-	<?php if ( $supertab_connect_show_form ) : ?>
+	<form method="post" action="">
+		<?php wp_nonce_field( $supertab_connect_nonce_action, 'supertab_connect_nonce' ); ?>
 
-		<?php if ( $supertab_connect_disconnected ) : ?>
-			<div class="notice notice-info inline">
-				<p><?php esc_html_e( 'Current credentials remain active until new ones are saved.', 'supertab-connect' ); ?></p>
-			</div>
-		<?php endif; ?>
-
-		<p><?php esc_html_e( 'Enter your Supertab credentials to connect your site.', 'supertab-connect' ); ?></p>
-
-		<form method="post" action="">
-			<?php wp_nonce_field( $supertab_connect_nonce_action, 'supertab_connect_nonce' ); ?>
-
-			<table class="form-table" role="presentation">
-				<tr>
-					<th scope="row">
-						<label for="supertab-merchant-api-key"><?php esc_html_e( 'Merchant API Key', 'supertab-connect' ); ?></label>
-					</th>
-					<td>
-						<div class="wp-pwd">
-							<input
-								type="password"
-								id="supertab-merchant-api-key"
-								name="merchant_api_key"
-								class="regular-text"
-								required
-							/>
-							<button type="button"
-								class="wp-hide-pw hide-if-no-js"
-								aria-label="<?php esc_attr_e( 'Show API key', 'supertab-connect' ); ?>"
-								data-show-label="<?php esc_attr_e( 'Show API key', 'supertab-connect' ); ?>"
-								data-hide-label="<?php esc_attr_e( 'Hide API key', 'supertab-connect' ); ?>"
-							>
-								<span class="dashicons dashicons-visibility" aria-hidden="true"></span>
-							</button>
-						</div>
-					</td>
-				</tr>
-				<tr>
-					<th scope="row">
-						<label for="supertab-website-urn"><?php esc_html_e( 'Website URN', 'supertab-connect' ); ?></label>
-					</th>
-					<td>
-						<input
-							type="text"
-							id="supertab-website-urn"
-							name="website_urn"
-							class="regular-text"
-							value="<?php echo esc_attr( $supertab_connect_website_urn ); ?>"
-							required
-						/>
-					</td>
-				</tr>
-			</table>
-
-			<?php submit_button( '', 'primary', 'submit-credentials', false ); ?>
-		</form>
-
-	<?php else : ?>
-
-		<table class="form-table" role="presentation">
-			<tr>
-				<th scope="row"><?php esc_html_e( 'Merchant API Key', 'supertab-connect' ); ?></th>
-				<td><code>&bull;&bull;&bull;&bull;&bull;&bull;&bull;&bull;</code></td>
-			</tr>
-			<tr>
-				<th scope="row"><?php esc_html_e( 'Website URN', 'supertab-connect' ); ?></th>
-				<td><code><?php echo esc_html( $supertab_connect_website_urn ); ?></code></td>
-			</tr>
-		</table>
-
-		<form method="post" action="">
-			<?php wp_nonce_field( $supertab_connect_disconnect_nonce_action, 'supertab_connect_disconnect_nonce' ); ?>
-			<?php submit_button( __( 'Disconnect', 'supertab-connect' ), 'secondary', 'submit', false ); ?>
-		</form>
-
-		<p>&nbsp;</p>
-
-		<!-- RSL License -->
+		<!-- Your RSL License -->
 		<h2><?php esc_html_e( 'Your RSL License', 'supertab-connect' ); ?></h2>
 
 		<table class="form-table" role="presentation">
 			<tr>
-				<th scope="row"><?php esc_html_e( 'License URL', 'supertab-connect' ); ?></th>
+				<th scope="row">
+					<label for="supertab-website-urn"><?php esc_html_e( 'Website URN', 'supertab-connect' ); ?></label>
+				</th>
 				<td>
-					<a href="<?php echo esc_url( $supertab_connect_license_url ); ?>" target="_blank">
-						<?php echo esc_html( $supertab_connect_license_url ); ?>
-					</a>
+					<input
+						type="text"
+						id="supertab-website-urn"
+						name="website_urn"
+						class="regular-text"
+						value="<?php echo esc_attr( $supertab_connect_website_urn ); ?>"
+					/>
 				</td>
 			</tr>
+			<?php if ( $supertab_connect_has_website_urn ) : ?>
+				<tr>
+					<th scope="row"><?php esc_html_e( 'License URL', 'supertab-connect' ); ?></th>
+					<td>
+						<a href="<?php echo esc_url( $supertab_connect_license_url ); ?>" target="_blank">
+							<?php echo esc_html( $supertab_connect_license_url ); ?>
+						</a>
+					</td>
+				</tr>
+			<?php endif; ?>
 		</table>
 
-		<form method="post" action="">
-			<?php wp_nonce_field( $supertab_connect_purge_cache_nonce_action, 'supertab_connect_purge_cache_nonce' ); ?>
-			<?php submit_button( __( 'Purge license.xml from cache', 'supertab-connect' ), 'secondary', 'submit', false ); ?>
-		</form>
+		<?php if ( $supertab_connect_has_website_urn ) : ?>
+			<?php submit_button( __( 'Purge license.xml from cache', 'supertab-connect' ), 'secondary', 'submit-purge-cache', false ); ?>
+		<?php endif; ?>
 
 		<p>&nbsp;</p>
 
-		<!-- Crawler Authentication Protocol -->
-		<h2><?php esc_html_e( 'Crawler Authentication Protocol', 'supertab-connect' ); ?></h2>
+		<?php if ( $supertab_connect_has_website_urn ) : ?>
+			<!-- License Verification -->
+			<h2><?php esc_html_e( 'License Verification', 'supertab-connect' ); ?></h2>
 
-		<p><?php esc_html_e( 'When trying to access your content, bots need to present license tokens to the Crawler Authentication Protocol for verification. This allows you to distinguish licensed access from unauthorized scraping, monitor usage against declared terms, and optionally enforce access without blocking compliant bots.', 'supertab-connect' ); ?></p>
+			<?php if ( $supertab_connect_show_api_key_form ) : ?>
 
-		<form method="post" action="">
-			<?php wp_nonce_field( $supertab_connect_bot_protection_nonce_action, 'supertab_connect_bot_protection_nonce' ); ?>
-			<fieldset>
-				<label for="supertab-bot-protection-enabled">
-					<input
-						type="checkbox"
-						id="supertab-bot-protection-enabled"
-						name="bot_protection_enabled"
-						value="1"
-						<?php checked( $supertab_connect_bot_protection_enabled ); ?>
-					/>
-					<?php esc_html_e( 'Enable CAP', 'supertab-connect' ); ?>
-				</label>
-			</fieldset>
-			<?php submit_button( '', 'primary', 'submit', true ); ?>
-		</form>
+				<?php if ( $supertab_connect_disconnected ) : ?>
+					<div class="notice notice-info inline">
+						<p><?php esc_html_e( 'Current API key remains active until a new one is saved.', 'supertab-connect' ); ?></p>
+					</div>
+				<?php endif; ?>
 
-	<?php endif; ?>
+				<p><?php esc_html_e( 'Enter your Merchant API Key to enable license verification.', 'supertab-connect' ); ?></p>
+
+				<table class="form-table" role="presentation">
+					<tr>
+						<th scope="row">
+							<label for="supertab-merchant-api-key"><?php esc_html_e( 'Merchant API Key', 'supertab-connect' ); ?></label>
+						</th>
+						<td>
+							<div class="wp-pwd">
+								<input
+									type="password"
+									id="supertab-merchant-api-key"
+									name="merchant_api_key"
+									class="regular-text"
+									required
+								/>
+								<button type="button"
+									class="wp-hide-pw hide-if-no-js"
+									aria-label="<?php esc_attr_e( 'Show API key', 'supertab-connect' ); ?>"
+									data-show-label="<?php esc_attr_e( 'Show API key', 'supertab-connect' ); ?>"
+									data-hide-label="<?php esc_attr_e( 'Hide API key', 'supertab-connect' ); ?>"
+								>
+									<span class="dashicons dashicons-visibility" aria-hidden="true"></span>
+								</button>
+							</div>
+						</td>
+					</tr>
+				</table>
+
+			<?php else : ?>
+
+				<table class="form-table" role="presentation">
+					<tr>
+						<th scope="row"><?php esc_html_e( 'Merchant API Key', 'supertab-connect' ); ?></th>
+						<td><code>&bull;&bull;&bull;&bull;&bull;&bull;&bull;&bull;&bull;&bull;&bull;&bull;&bull;&bull;&bull;&bull;</code></td>
+					</tr>
+				</table>
+
+				<?php submit_button( __( 'Change API key', 'supertab-connect' ), 'secondary', 'submit-disconnect', false ); ?>
+
+				<p>&nbsp;</p>
+
+				<!-- Crawler Authentication Protocol -->
+				<h3><?php esc_html_e( 'Crawler Authentication Protocol', 'supertab-connect' ); ?></h3>
+
+				<p><?php esc_html_e( 'When trying to access your content, bots need to present license tokens to the Crawler Authentication Protocol for verification. This allows you to distinguish licensed access from unauthorized scraping, monitor usage against declared terms, and optionally enforce access without blocking compliant bots.', 'supertab-connect' ); ?></p>
+
+				<fieldset>
+					<label for="supertab-bot-protection-enabled">
+						<input
+							type="checkbox"
+							id="supertab-bot-protection-enabled"
+							name="bot_protection_enabled"
+							value="1"
+							<?php checked( $supertab_connect_bot_protection_enabled ); ?>
+						/>
+						<?php esc_html_e( 'Enable CAP', 'supertab-connect' ); ?>
+					</label>
+				</fieldset>
+
+			<?php endif; ?>
+		<?php endif; ?>
+
+		<?php submit_button( '', 'primary', 'submit-settings' ); ?>
+
+	</form>
 </div>

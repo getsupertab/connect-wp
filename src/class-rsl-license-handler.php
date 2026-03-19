@@ -96,7 +96,7 @@ class RSL_License_Handler {
 			return;
 		}
 
-		if ( ! $this->credentials->has_credentials() ) {
+		if ( ! $this->credentials->has_website_urn() ) {
 			return;
 		}
 

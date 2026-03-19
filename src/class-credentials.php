@@ -59,7 +59,25 @@ class Credentials {
 	 * @return bool True if credentials exist.
 	 */
 	public function has_credentials(): bool {
-		return '' !== $this->get_merchant_api_key() && '' !== $this->get_website_urn();
+		return $this->has_merchant_api_key() && $this->has_website_urn();
+	}
+
+	/**
+	 * Check if the Website URN is configured.
+	 *
+	 * @return bool True if URN exists.
+	 */
+	public function has_website_urn(): bool {
+		return '' !== $this->get_website_urn();
+	}
+
+	/**
+	 * Check if the Merchant API Key is configured.
+	 *
+	 * @return bool True if API key exists.
+	 */
+	public function has_merchant_api_key(): bool {
+		return '' !== $this->get_merchant_api_key();
 	}
 
 	/**
@@ -94,6 +112,29 @@ class Credentials {
 
 		// Invalidate cached license XML since credentials changed.
 		delete_transient( 'supertab_connect_license_xml' );
+	}
+
+	/**
+	 * Save the Website URN.
+	 *
+	 * @param string $website_urn The Website URN.
+	 * @return void
+	 */
+	public function save_website_urn( string $website_urn ): void {
+		update_option( self::OPTION_WEBSITE_URN, $website_urn, false );
+
+		// Invalidate cached license XML since URN changed.
+		delete_transient( 'supertab_connect_license_xml' );
+	}
+
+	/**
+	 * Save the Merchant API Key.
+	 *
+	 * @param string $merchant_api_key The Merchant API Key.
+	 * @return void
+	 */
+	public function save_merchant_api_key( string $merchant_api_key ): void {
+		update_option( self::OPTION_MERCHANT_API_KEY, $merchant_api_key, false );
 	}
 
 	/**

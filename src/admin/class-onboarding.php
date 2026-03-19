@@ -24,7 +24,7 @@ class Onboarding {
 	public const PAGE_SLUG = 'supertab-connect-setup';
 
 	/**
-	 * Nonce action for the setup form.
+	 * Nonce action for the settings form.
 	 *
 	 * @var string
 	 */
@@ -47,27 +47,6 @@ class Onboarding {
 	}
 
 	/**
-	 * Nonce action for the disconnect form.
-	 *
-	 * @var string
-	 */
-	private const DISCONNECT_NONCE_ACTION = 'supertab_connect_disconnect';
-
-	/**
-	 * Nonce action for the purge license cache form.
-	 *
-	 * @var string
-	 */
-	private const PURGE_CACHE_NONCE_ACTION = 'supertab_connect_purge_cache';
-
-	/**
-	 * Nonce action for the bot protection toggle form.
-	 *
-	 * @var string
-	 */
-	private const BOT_PROTECTION_NONCE_ACTION = 'supertab_connect_bot_protection';
-
-	/**
 	 * Register hooks.
 	 *
 	 * @return void
@@ -77,9 +56,6 @@ class Onboarding {
 		add_action( 'admin_enqueue_scripts', array( $this, 'enqueue_scripts' ) );
 		add_action( 'admin_init', array( $this, 'handle_activation_redirect' ) );
 		add_action( 'admin_init', array( $this, 'handle_form_submission' ) );
-		add_action( 'admin_init', array( $this, 'handle_disconnect' ) );
-		add_action( 'admin_init', array( $this, 'handle_purge_cache' ) );
-		add_action( 'admin_init', array( $this, 'handle_bot_protection' ) );
 	}
 
 	/**
@@ -152,108 +128,9 @@ class Onboarding {
 	}
 
 	/**
-	 * Handle the disconnect request.
+	 * Handle the settings form submission.
 	 *
-	 * Does not delete credentials — just redirects back with a flag
-	 * so the template shows the credentials form.
-	 *
-	 * @return void
-	 */
-	public function handle_disconnect(): void {
-		if ( ! isset( $_POST['supertab_connect_disconnect_nonce'] ) ) {
-			return;
-		}
-
-		// phpcs:ignore WordPress.Security.ValidatedSanitizedInput.InputNotSanitized -- Nonce value used only for verification.
-		if ( ! wp_verify_nonce( wp_unslash( $_POST['supertab_connect_disconnect_nonce'] ), self::DISCONNECT_NONCE_ACTION ) ) {
-			return;
-		}
-
-		if ( ! current_user_can( 'manage_options' ) ) {
-			return;
-		}
-
-		wp_safe_redirect(
-			add_query_arg(
-				array(
-					'page'         => self::PAGE_SLUG,
-					'disconnected' => '1',
-				),
-				admin_url( 'options-general.php' )
-			)
-		);
-		exit;
-	}
-
-	/**
-	 * Handle the purge license cache request.
-	 *
-	 * @return void
-	 */
-	public function handle_purge_cache(): void {
-		if ( ! isset( $_POST['supertab_connect_purge_cache_nonce'] ) ) {
-			return;
-		}
-
-		// phpcs:ignore WordPress.Security.ValidatedSanitizedInput.InputNotSanitized -- Nonce value used only for verification.
-		if ( ! wp_verify_nonce( wp_unslash( $_POST['supertab_connect_purge_cache_nonce'] ), self::PURGE_CACHE_NONCE_ACTION ) ) {
-			return;
-		}
-
-		if ( ! current_user_can( 'manage_options' ) ) {
-			return;
-		}
-
-		delete_transient( 'supertab_connect_license_xml' );
-
-		wp_safe_redirect(
-			add_query_arg(
-				array(
-					'page'   => self::PAGE_SLUG,
-					'purged' => '1',
-				),
-				admin_url( 'options-general.php' )
-			)
-		);
-		exit;
-	}
-
-	/**
-	 * Handle the bot protection toggle.
-	 *
-	 * @return void
-	 */
-	public function handle_bot_protection(): void {
-		if ( ! isset( $_POST['supertab_connect_bot_protection_nonce'] ) ) {
-			return;
-		}
-
-		// phpcs:ignore WordPress.Security.ValidatedSanitizedInput.InputNotSanitized -- Nonce value used only for verification.
-		if ( ! wp_verify_nonce( wp_unslash( $_POST['supertab_connect_bot_protection_nonce'] ), self::BOT_PROTECTION_NONCE_ACTION ) ) {
-			return;
-		}
-
-		if ( ! current_user_can( 'manage_options' ) ) {
-			return;
-		}
-
-		$enabled = isset( $_POST['bot_protection_enabled'] );
-		$this->credentials->set_bot_protection_enabled( $enabled );
-
-		wp_safe_redirect(
-			add_query_arg(
-				array(
-					'page'           => self::PAGE_SLUG,
-					'bot_protection' => 'updated',
-				),
-				admin_url( 'options-general.php' )
-			)
-		);
-		exit;
-	}
-
-	/**
-	 * Handle the setup form submission.
+	 * Dispatches to the appropriate action based on which submit button was pressed.
 	 *
 	 * @return void
 	 */
@@ -271,30 +148,87 @@ class Onboarding {
 			return;
 		}
 
-		$merchant_api_key = isset( $_POST['merchant_api_key'] ) ? sanitize_text_field( wp_unslash( $_POST['merchant_api_key'] ) ) : '';
-		$website_urn      = isset( $_POST['website_urn'] ) ? sanitize_text_field( wp_unslash( $_POST['website_urn'] ) ) : '';
+		if ( isset( $_POST['submit-purge-cache'] ) ) {
+			$this->process_purge_cache();
+		} elseif ( isset( $_POST['submit-disconnect'] ) ) {
+			$this->process_disconnect();
+		} else {
+			$this->process_save_settings();
+		}
+	}
 
-		if ( '' === $merchant_api_key || '' === $website_urn ) {
-			wp_safe_redirect(
-				add_query_arg(
-					array(
-						'page'  => self::PAGE_SLUG,
-						'error' => 'missing_fields',
-					),
-					admin_url( 'options-general.php' )
-				)
-			);
-			exit;
+	/**
+	 * Save all settings from the form.
+	 *
+	 * @return void
+	 */
+	private function process_save_settings(): void {
+		// phpcs:ignore WordPress.Security.NonceVerification.Missing -- Nonce verified in handle_form_submission().
+		$website_urn = isset( $_POST['website_urn'] ) ? sanitize_text_field( wp_unslash( $_POST['website_urn'] ) ) : '';
+
+		if ( '' === $website_urn ) {
+			$this->redirect( array( 'error' => 'missing_urn' ) );
 		}
 
-		$this->credentials->save( $merchant_api_key, $website_urn );
+		// phpcs:ignore WordPress.Security.NonceVerification.Missing -- Nonce verified in handle_form_submission().
+		$merchant_api_key = isset( $_POST['merchant_api_key'] ) ? sanitize_text_field( wp_unslash( $_POST['merchant_api_key'] ) ) : '';
 
+		// API key field is only present when entering a new key.
+		// phpcs:ignore WordPress.Security.NonceVerification.Missing -- Nonce verified in handle_form_submission().
+		if ( isset( $_POST['merchant_api_key'] ) && '' === $merchant_api_key ) {
+			$this->redirect( array( 'error' => 'missing_api_key' ) );
+		}
+
+		$this->credentials->save_website_urn( $website_urn );
+
+		if ( '' !== $merchant_api_key ) {
+			$this->credentials->save_merchant_api_key( $merchant_api_key );
+		}
+
+		// Bot protection checkbox is only present when API key is already saved.
+		// phpcs:ignore WordPress.Security.NonceVerification.Missing -- Nonce verified in handle_form_submission().
+		if ( ! isset( $_POST['merchant_api_key'] ) ) {
+			// phpcs:ignore WordPress.Security.NonceVerification.Missing -- Nonce verified in handle_form_submission().
+			$enabled = isset( $_POST['bot_protection_enabled'] );
+			$this->credentials->set_bot_protection_enabled( $enabled );
+		}
+
+		$this->redirect( array( 'setup' => 'success' ) );
+	}
+
+	/**
+	 * Purge the license XML cache.
+	 *
+	 * @return void
+	 */
+	private function process_purge_cache(): void {
+		delete_transient( 'supertab_connect_license_xml' );
+
+		$this->redirect( array( 'purged' => '1' ) );
+	}
+
+	/**
+	 * Disconnect the Merchant API Key.
+	 *
+	 * Does not delete the API key — just redirects back with a flag
+	 * so the template shows the API key form.
+	 *
+	 * @return void
+	 */
+	private function process_disconnect(): void {
+		$this->redirect( array( 'disconnected' => '1' ) );
+	}
+
+	/**
+	 * Redirect back to the setup page with query args.
+	 *
+	 * @param array<string, string> $args Query arguments to append.
+	 * @return void
+	 */
+	private function redirect( array $args ): void {
 		wp_safe_redirect(
 			add_query_arg(
-				array(
-					'page'  => self::PAGE_SLUG,
-					'setup' => 'success',
-				),
+				array_merge( array( 'page' => self::PAGE_SLUG ), $args ),
 				admin_url( 'options-general.php' )
 			)
 		);
@@ -315,15 +249,13 @@ class Onboarding {
 		$disconnected = isset( $_GET['disconnected'] ) && '1' === $_GET['disconnected'];
 
 		$template_data = array(
-			'nonce_action'                => self::NONCE_ACTION,
-			'disconnect_nonce_action'     => self::DISCONNECT_NONCE_ACTION,
-			'has_credentials'             => $this->credentials->has_credentials(),
-			'disconnected'                => $disconnected,
-			'website_urn'                 => $this->credentials->get_website_urn(),
-			'license_url'                 => home_url( '/license.xml' ),
-			'purge_cache_nonce_action'    => self::PURGE_CACHE_NONCE_ACTION,
-			'bot_protection_nonce_action' => self::BOT_PROTECTION_NONCE_ACTION,
-			'bot_protection_enabled'      => $this->credentials->is_bot_protection_enabled(),
+			'nonce_action'           => self::NONCE_ACTION,
+			'has_website_urn'        => $this->credentials->has_website_urn(),
+			'has_merchant_api_key'   => $this->credentials->has_merchant_api_key(),
+			'disconnected'           => $disconnected,
+			'website_urn'            => $this->credentials->get_website_urn(),
+			'license_url'            => home_url( '/license.xml' ),
+			'bot_protection_enabled' => $this->credentials->is_bot_protection_enabled(),
 		);
 
 		include SUPERTAB_CONNECT_PLUGIN_DIR . 'templates/onboarding.php';
