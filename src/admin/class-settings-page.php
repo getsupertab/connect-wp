@@ -1,6 +1,6 @@
 <?php
 /**
- * Onboarding screen controller.
+ * Settings page controller.
  *
  * @package Supertab_Connect
  */
@@ -9,41 +9,41 @@ declare( strict_types=1 );
 
 namespace Supertab_Connect\Admin;
 
-use Supertab_Connect\Credentials;
+use Supertab_Connect\Settings;
 
 /**
- * Handles the onboarding setup page for entering OAuth credentials.
+ * Handles the plugin settings page.
  */
-class Onboarding {
+class Settings_Page {
 
 	/**
 	 * Admin page slug.
 	 *
 	 * @var string
 	 */
-	public const PAGE_SLUG = 'supertab-connect-setup';
+	public const PAGE_SLUG = 'supertab-connect-settings';
 
 	/**
 	 * Nonce action for the settings form.
 	 *
 	 * @var string
 	 */
-	private const NONCE_ACTION = 'supertab_connect_setup';
+	private const NONCE_ACTION = 'supertab_connect_settings';
 
 	/**
-	 * Credentials instance.
+	 * Settings instance.
 	 *
-	 * @var Credentials
+	 * @var Settings
 	 */
-	private Credentials $credentials;
+	private Settings $settings;
 
 	/**
 	 * Constructor.
 	 *
-	 * @param Credentials $credentials  Credentials manager.
+	 * @param Settings $settings Settings manager.
 	 */
-	public function __construct( Credentials $credentials ) {
-		$this->credentials = $credentials;
+	public function __construct( Settings $settings ) {
+		$this->settings = $settings;
 	}
 
 	/**
@@ -75,7 +75,7 @@ class Onboarding {
 	}
 
 	/**
-	 * Enqueue scripts for the setup page.
+	 * Enqueue scripts for the settings page.
 	 *
 	 * @param string $hook_suffix The current admin page hook suffix.
 	 * @return void
@@ -86,15 +86,15 @@ class Onboarding {
 		}
 
 		wp_enqueue_style(
-			'supertab-connect-onboarding',
-			plugins_url( 'assets/css/onboarding.css', SUPERTAB_CONNECT_PLUGIN_FILE ),
+			'supertab-connect-settings',
+			plugins_url( 'assets/css/settings.css', SUPERTAB_CONNECT_PLUGIN_FILE ),
 			array(),
 			SUPERTAB_CONNECT_VERSION
 		);
 
 		wp_enqueue_script(
-			'supertab-connect-onboarding',
-			plugins_url( 'assets/js/onboarding.js', SUPERTAB_CONNECT_PLUGIN_FILE ),
+			'supertab-connect-settings',
+			plugins_url( 'assets/js/settings.js', SUPERTAB_CONNECT_PLUGIN_FILE ),
 			array(),
 			SUPERTAB_CONNECT_VERSION,
 			true
@@ -102,7 +102,7 @@ class Onboarding {
 	}
 
 	/**
-	 * Redirect to setup page after plugin activation.
+	 * Redirect to settings page after plugin activation.
 	 *
 	 * @return void
 	 */
@@ -118,8 +118,8 @@ class Onboarding {
 			return;
 		}
 
-		// Don't redirect if credentials already exist.
-		if ( $this->credentials->has_credentials() ) {
+		// Don't redirect if settings already configured.
+		if ( $this->settings->has_credentials() ) {
 			return;
 		}
 
@@ -179,10 +179,10 @@ class Onboarding {
 			$this->redirect( array( 'error' => 'missing_api_key' ) );
 		}
 
-		$this->credentials->save_website_urn( $website_urn );
+		$this->settings->save_website_urn( $website_urn );
 
 		if ( '' !== $merchant_api_key ) {
-			$this->credentials->save_merchant_api_key( $merchant_api_key );
+			$this->settings->save_merchant_api_key( $merchant_api_key );
 		}
 
 		// Bot protection checkbox is only present when API key is already saved.
@@ -190,7 +190,7 @@ class Onboarding {
 		if ( ! isset( $_POST['merchant_api_key'] ) ) {
 			// phpcs:ignore WordPress.Security.NonceVerification.Missing -- Nonce verified in handle_form_submission().
 			$enabled = isset( $_POST['bot_protection_enabled'] );
-			$this->credentials->set_bot_protection_enabled( $enabled );
+			$this->settings->set_bot_protection_enabled( $enabled );
 		}
 
 		$this->redirect( array( 'setup' => 'success' ) );
@@ -220,7 +220,7 @@ class Onboarding {
 	}
 
 	/**
-	 * Redirect back to the setup page with query args.
+	 * Redirect back to the settings page with query args.
 	 *
 	 * @param array<string, string> $args Query arguments to append.
 	 * @return void
@@ -236,7 +236,7 @@ class Onboarding {
 	}
 
 	/**
-	 * Render the setup page.
+	 * Render the settings page.
 	 *
 	 * @return void
 	 */
@@ -250,14 +250,14 @@ class Onboarding {
 
 		$template_data = array(
 			'nonce_action'           => self::NONCE_ACTION,
-			'has_website_urn'        => $this->credentials->has_website_urn(),
-			'has_merchant_api_key'   => $this->credentials->has_merchant_api_key(),
+			'has_website_urn'        => $this->settings->has_website_urn(),
+			'has_merchant_api_key'   => $this->settings->has_merchant_api_key(),
 			'disconnected'           => $disconnected,
-			'website_urn'            => $this->credentials->get_website_urn(),
+			'website_urn'            => $this->settings->get_website_urn(),
 			'license_url'            => home_url( '/license.xml' ),
-			'bot_protection_enabled' => $this->credentials->is_bot_protection_enabled(),
+			'bot_protection_enabled' => $this->settings->is_bot_protection_enabled(),
 		);
 
-		include SUPERTAB_CONNECT_PLUGIN_DIR . 'templates/onboarding.php';
+		include SUPERTAB_CONNECT_PLUGIN_DIR . 'templates/settings.php';
 	}
 }

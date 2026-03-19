@@ -1,6 +1,6 @@
 <?php
 /**
- * Credential storage and retrieval.
+ * Plugin settings storage and retrieval.
  *
  * @package Supertab_Connect
  */
@@ -10,9 +10,9 @@ declare( strict_types=1 );
 namespace Supertab_Connect;
 
 /**
- * Manages Supertab API credentials.
+ * Manages Supertab Connect plugin settings.
  */
-class Credentials {
+class Settings {
 
 	/**
 	 * Option name for the Merchant API Key.
@@ -138,7 +138,7 @@ class Credentials {
 	}
 
 	/**
-	 * Delete all stored credentials.
+	 * Delete all stored settings.
 	 *
 	 * @return void
 	 */

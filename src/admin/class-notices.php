@@ -9,7 +9,7 @@ declare( strict_types=1 );
 
 namespace Supertab_Connect\Admin;
 
-use Supertab_Connect\Credentials;
+use Supertab_Connect\Settings;
 
 /**
  * Displays admin notices for plugin configuration state.
@@ -17,19 +17,19 @@ use Supertab_Connect\Credentials;
 class Notices {
 
 	/**
-	 * Credentials instance.
+	 * Settings instance.
 	 *
-	 * @var Credentials
+	 * @var Settings
 	 */
-	private Credentials $credentials;
+	private Settings $settings;
 
 	/**
 	 * Constructor.
 	 *
-	 * @param Credentials $credentials Credentials manager.
+	 * @param Settings $settings Settings manager.
 	 */
-	public function __construct( Credentials $credentials ) {
-		$this->credentials = $credentials;
+	public function __construct( Settings $settings ) {
+		$this->settings = $settings;
 	}
 
 	/**
@@ -51,18 +51,18 @@ class Notices {
 			return;
 		}
 
-		if ( $this->credentials->has_credentials() ) {
+		if ( $this->settings->has_credentials() ) {
 			return;
 		}
 
 		// Don't show on the setup page itself.
 		// phpcs:ignore WordPress.Security.NonceVerification.Recommended -- Only reading page parameter for display logic.
 		$current_page = isset( $_GET['page'] ) ? sanitize_text_field( wp_unslash( $_GET['page'] ) ) : '';
-		if ( Onboarding::PAGE_SLUG === $current_page ) {
+		if ( Settings_Page::PAGE_SLUG === $current_page ) {
 			return;
 		}
 
-		$setup_url = admin_url( 'options-general.php?page=' . Onboarding::PAGE_SLUG );
+		$setup_url = admin_url( 'options-general.php?page=' . Settings_Page::PAGE_SLUG );
 
 		printf(
 			'<div class="notice notice-warning"><p>%s <a href="%s">%s</a></p></div>',

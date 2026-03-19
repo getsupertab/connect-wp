@@ -1,6 +1,6 @@
 <?php
 /**
- * Onboarding setup page template.
+ * Settings page template.
  *
  * @package Supertab_Connect
  *

@@ -10,7 +10,7 @@ declare( strict_types=1 );
 namespace Supertab_Connect\Tests;
 
 use PHPUnit\Framework\TestCase;
-use Supertab_Connect\Credentials;
+use Supertab_Connect\Settings;
 use Supertab_Connect\RSL_License_Handler;
 use Supertab\Connect\Http\HttpClientInterface;
 use Supertab\Connect\Exception\HttpException;
@@ -20,7 +20,7 @@ class RSLLicenseHandlerTest extends TestCase {
 
 	use AssertionRenames;
 
-	private Credentials $credentials;
+	private Settings $settings;
 
 	private HttpClientInterface $http_client;
 
@@ -28,7 +28,7 @@ class RSLLicenseHandlerTest extends TestCase {
 		parent::setUp();
 		wp_stubs_reset();
 
-		$this->credentials = new Credentials();
+		$this->settings = new Settings();
 		$this->http_client = $this->createMock( HttpClientInterface::class );
 	}
 
@@ -39,7 +39,7 @@ class RSLLicenseHandlerTest extends TestCase {
 
 	private function create_handler(): RSL_License_Handler {
 		return new RSL_License_Handler(
-			$this->credentials,
+			$this->settings,
 			'https://api-connect.sbx.supertab.co',
 			$this->http_client
 		);
@@ -53,7 +53,7 @@ class RSLLicenseHandlerTest extends TestCase {
 	}
 
 	public function test_ignores_non_license_requests(): void {
-		$this->credentials->save( 'key', 'urn' );
+		$this->settings->save( 'key', 'urn' );
 		$handler = $this->create_handler();
 
 		// Should return without calling send_xml or send_error.
@@ -68,7 +68,7 @@ class RSLLicenseHandlerTest extends TestCase {
 	public function test_skips_when_no_credentials(): void {
 		$handler = $this->create_handler();
 
-		$this->assertFalse( $this->credentials->has_credentials() );
+		$this->assertFalse( $this->settings->has_credentials() );
 	}
 
 	public function test_register_adds_parse_request_action(): void {
@@ -108,7 +108,7 @@ class RSLLicenseHandlerTest extends TestCase {
 	}
 
 	public function test_handler_constructed_with_correct_dependencies(): void {
-		$this->credentials->save( 'test-key', 'test-urn' );
+		$this->settings->save( 'test-key', 'test-urn' );
 		$handler = $this->create_handler();
 
 		$this->assertInstanceOf( RSL_License_Handler::class, $handler );

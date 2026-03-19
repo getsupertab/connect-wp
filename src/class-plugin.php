@@ -13,7 +13,7 @@ use Supertab\Connect\Http\HttpClientInterface;
 use Supertab\Connect\Enum\EnforcementMode;
 use Supertab\Connect\SupertabConnect;
 use Supertab_Connect\Admin\Notices;
-use Supertab_Connect\Admin\Onboarding;
+use Supertab_Connect\Admin\Settings_Page;
 use Supertab_Connect\Utils\WP_Http_Client;
 use Supertab_Connect\Utils\WP_Transient_Cache;
 
@@ -69,47 +69,47 @@ class Plugin {
 	public function init(): void {
 		$this->load_textdomain();
 
-		$credentials = new Credentials();
+		$settings = new Settings();
 
 		$http_client     = new WP_Http_Client();
-		$license_handler = new RSL_License_Handler( $credentials, SUPERTAB_CONNECT_API_BASE_URL, $http_client );
+		$license_handler = new RSL_License_Handler( $settings, SUPERTAB_CONNECT_API_BASE_URL, $http_client );
 		$license_handler->register();
 
 		if ( is_admin() ) {
-			$this->init_admin( $credentials );
+			$this->init_admin( $settings );
 			return;
 		}
 
-		if ( $credentials->has_merchant_api_key() && $credentials->is_bot_protection_enabled() && ! defined( 'REST_REQUEST' ) ) {
-			$this->init_bot_protection( $credentials, $http_client );
+		if ( $settings->has_merchant_api_key() && $settings->is_bot_protection_enabled() && ! defined( 'REST_REQUEST' ) ) {
+			$this->init_bot_protection( $settings, $http_client );
 		}
 	}
 
 	/**
 	 * Initialize admin components.
 	 *
-	 * @param Credentials $credentials Credentials manager.
+	 * @param Settings $settings Settings manager.
 	 * @return void
 	 */
-	private function init_admin( Credentials $credentials ): void {
-		$onboarding = new Onboarding( $credentials );
-		$onboarding->register();
+	private function init_admin( Settings $settings ): void {
+		$settings_page = new Settings_Page( $settings );
+		$settings_page->register();
 
-		$notices = new Notices( $credentials );
+		$notices = new Notices( $settings );
 		$notices->register();
 	}
 
 	/**
 	 * Initialize bot protection for front-end requests.
 	 *
-	 * @param Credentials         $credentials Credentials manager.
+	 * @param Settings            $settings    Settings manager.
 	 * @param HttpClientInterface $http_client HTTP client for SDK requests.
 	 * @return void
 	 */
-	private function init_bot_protection( Credentials $credentials, HttpClientInterface $http_client ): void {
+	private function init_bot_protection( Settings $settings, HttpClientInterface $http_client ): void {
 		$enforcement      = self::get_enforcement_mode();
 		$supertab_connect = new SupertabConnect(
-			apiKey: $credentials->get_merchant_api_key(),
+			apiKey: $settings->get_merchant_api_key(),
 			enforcement: $enforcement,
 			httpClient: $http_client,
 			baseUrl: SUPERTAB_CONNECT_API_BASE_URL,
