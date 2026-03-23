@@ -122,7 +122,6 @@ $supertab_connect_purged = isset( $_GET['purged'] ) && '1' === $_GET['purged'];
 									id="supertab-merchant-api-key"
 									name="merchant_api_key"
 									class="regular-text"
-									required
 								/>
 								<button type="button"
 									class="wp-hide-pw hide-if-no-js"
