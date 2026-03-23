@@ -114,4 +114,9 @@ class BotProtectionTest extends TestCase {
 		$this->assertTrue( $this->is_active( 'archives/2026/my-post' ) );
 		$this->assertFalse( $this->is_active( 'archives/2025/old-post' ) );
 	}
+
+	public function test_wildcard_matches_deeply_nested_paths(): void {
+		$this->settings->set_active_paths( array( 'archives/*' ) );
+		$this->assertTrue( $this->is_active( 'archives/2026/category/my-post' ) );
+	}
 }
