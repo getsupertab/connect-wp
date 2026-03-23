@@ -57,7 +57,7 @@
 			var btn = document.createElement( 'button' );
 			btn.type = 'button';
 			btn.className = 'button supertab-remove-path';
-			btn.setAttribute( 'aria-label', 'Remove path' );
+			btn.setAttribute( 'aria-label', supertabConnectSettings.i18n.removePath );
 
 			var icon = document.createElement( 'span' );
 			icon.className = 'dashicons dashicons-no-alt';

@@ -7,6 +7,8 @@
  * @package Supertab_Connect
  */
 
+declare( strict_types=1 );
+
 // Prevent direct access and verify uninstall context.
 if ( ! defined( 'WP_UNINSTALL_PLUGIN' ) ) {
 	exit;

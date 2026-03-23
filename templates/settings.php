@@ -174,20 +174,26 @@ $supertab_connect_purged = isset( $_GET['purged'] ) && '1' === $_GET['purged'];
 
 					<p class="description">
 						<?php
-						printf(
-							/* translators: 1: wildcard character */
-							esc_html__( 'Define which specific parts of your website Crawler Authentication Protocol should be active on. Paths support %1$s for wildcards.', 'supertab-connect' ),
-							'<code>*</code>'
+						echo wp_kses(
+							sprintf(
+								/* translators: 1: wildcard character wrapped in code tags */
+								__( 'Define which specific parts of your website Crawler Authentication Protocol should be active on. Paths support %1$s for wildcards.', 'supertab-connect' ),
+								'<code>*</code>'
+							),
+							array( 'code' => array() )
 						);
 						?>
 					</p>
 
 					<p>
 						<?php
-						printf(
-							/* translators: 1: wildcard character */
-							esc_html__( 'Use %1$s for entire site (default).', 'supertab-connect' ),
-							'<code>*</code>',
+						echo wp_kses(
+							sprintf(
+								/* translators: 1: wildcard character wrapped in code tags */
+								__( 'Use %1$s for entire site (default).', 'supertab-connect' ),
+								'<code>*</code>'
+							),
+							array( 'code' => array() )
 						);
 						?>
 					</p>

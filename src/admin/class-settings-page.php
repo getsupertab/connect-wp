@@ -100,6 +100,16 @@ class Settings_Page {
 			SUPERTAB_CONNECT_VERSION,
 			true
 		);
+
+		wp_localize_script(
+			'supertab-connect-settings',
+			'supertabConnectSettings',
+			array(
+				'i18n' => array(
+					'removePath' => __( 'Remove path', 'supertab-connect' ),
+				),
+			)
+		);
 	}
 
 	/**

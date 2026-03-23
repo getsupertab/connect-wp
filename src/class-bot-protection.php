@@ -142,7 +142,7 @@ class Bot_Protection {
 		status_header( $result->status );
 
 		foreach ( $result->headers as $name => $value ) {
-			header( "{$name}: {$value}" );
+			header( str_replace( array( "\r", "\n" ), '', "{$name}: {$value}" ) );
 		}
 
 		// phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- Response body from SDK, must be served verbatim.
