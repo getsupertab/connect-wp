@@ -36,6 +36,13 @@ class Settings {
 	private const OPTION_BOT_PROTECTION_ENABLED = 'supertab_connect_bot_protection_enabled';
 
 	/**
+	 * Option name for active paths.
+	 *
+	 * @var string
+	 */
+	private const OPTION_ACTIVE_PATHS = 'supertab_connect_active_paths';
+
+	/**
 	 * Get the Merchant API Key.
 	 *
 	 * @return string The API key, or empty string if not set.
@@ -100,6 +107,26 @@ class Settings {
 	}
 
 	/**
+	 * Get the active paths for bot protection.
+	 *
+	 * @return array<int, string> Array of path patterns. Defaults to ['*'] (all paths).
+	 */
+	public function get_active_paths(): array {
+		$paths = get_option( self::OPTION_ACTIVE_PATHS, array( '*' ) );
+		return is_array( $paths ) ? $paths : array( '*' );
+	}
+
+	/**
+	 * Set the active paths for bot protection.
+	 *
+	 * @param array<int, string> $paths Array of path patterns.
+	 * @return void
+	 */
+	public function set_active_paths( array $paths ): void {
+		update_option( self::OPTION_ACTIVE_PATHS, $paths );
+	}
+
+	/**
 	 * Save credentials.
 	 *
 	 * @param string $merchant_api_key The Merchant API Key.
@@ -111,7 +138,7 @@ class Settings {
 		update_option( self::OPTION_WEBSITE_URN, $website_urn, false );
 
 		// Invalidate cached license XML since credentials changed.
-		delete_transient( 'supertab_connect_license_xml' );
+		delete_transient( RSL_License_Handler::CACHE_TRANSIENT_KEY );
 	}
 
 	/**
@@ -124,7 +151,7 @@ class Settings {
 		update_option( self::OPTION_WEBSITE_URN, $website_urn, false );
 
 		// Invalidate cached license XML since URN changed.
-		delete_transient( 'supertab_connect_license_xml' );
+		delete_transient( RSL_License_Handler::CACHE_TRANSIENT_KEY );
 	}
 
 	/**
@@ -146,8 +173,9 @@ class Settings {
 		delete_option( self::OPTION_MERCHANT_API_KEY );
 		delete_option( self::OPTION_WEBSITE_URN );
 		delete_option( self::OPTION_BOT_PROTECTION_ENABLED );
+		delete_option( self::OPTION_ACTIVE_PATHS );
 
 		// Invalidate cached license XML.
-		delete_transient( 'supertab_connect_license_xml' );
+		delete_transient( RSL_License_Handler::CACHE_TRANSIENT_KEY );
 	}
 }

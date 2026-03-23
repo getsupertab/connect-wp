@@ -33,7 +33,7 @@ class RSL_License_Handler {
 	 *
 	 * @var string
 	 */
-	private const CACHE_TRANSIENT_KEY = 'supertab_connect_license_xml';
+	public const CACHE_TRANSIENT_KEY = 'supertab_connect_license_xml';
 
 	/**
 	 * Cache TTL in seconds (0 = no expiration).

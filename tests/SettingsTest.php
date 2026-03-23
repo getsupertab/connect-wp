@@ -205,4 +205,24 @@ class SettingsTest extends TestCase {
 
 		$this->assertSame( 'my-api-key', $settings->get_merchant_api_key() );
 	}
+
+	public function test_get_active_paths_returns_default_wildcard(): void {
+		$settings = new Settings();
+		$this->assertSame( array( '*' ), $settings->get_active_paths() );
+	}
+
+	public function test_set_active_paths_stores_paths(): void {
+		$settings = new Settings();
+		$settings->set_active_paths( array( 'blog/*', 'pricing' ) );
+
+		$this->assertSame( array( 'blog/*', 'pricing' ), $settings->get_active_paths() );
+	}
+
+	public function test_delete_removes_active_paths(): void {
+		$settings = new Settings();
+		$settings->set_active_paths( array( 'blog/*' ) );
+		$settings->delete();
+
+		$this->assertSame( array( '*' ), $settings->get_active_paths() );
+	}
 }

@@ -19,6 +19,8 @@ $supertab_connect_disconnected           = $template_data['disconnected'];
 $supertab_connect_website_urn            = $template_data['website_urn'];
 $supertab_connect_license_url            = $template_data['license_url'];
 $supertab_connect_bot_protection_enabled = $template_data['bot_protection_enabled'];
+$supertab_connect_active_paths           = $template_data['active_paths'];
+$supertab_connect_site_url               = $template_data['site_url'];
 $supertab_connect_show_api_key_form      = ! $supertab_connect_has_merchant_api_key || $supertab_connect_disconnected;
 
 // phpcs:ignore WordPress.Security.NonceVerification.Recommended -- Only reading query params for display logic.
@@ -165,6 +167,56 @@ $supertab_connect_purged = isset( $_GET['purged'] ) && '1' === $_GET['purged'];
 						<?php esc_html_e( 'Enable CAP', 'supertab-connect' ); ?>
 					</label>
 				</fieldset>
+
+				<!-- Active Paths -->
+				<div id="supertab-active-paths-section"<?php echo $supertab_connect_bot_protection_enabled ? '' : ' style="display:none;"'; ?>>
+					<h4><?php esc_html_e( 'Active Paths', 'supertab-connect' ); ?></h4>
+
+					<p class="description">
+						<?php
+						printf(
+							/* translators: 1: wildcard character */
+							esc_html__( 'Define which specific parts of your website Crawler Authentication Protocol should be active on. Paths support %1$s for wildcards.', 'supertab-connect' ),
+							'<code>*</code>'
+						);
+						?>
+					</p>
+
+					<p>
+						<?php
+						printf(
+							/* translators: 1: wildcard character */
+							esc_html__( 'Use %1$s for entire site (default).', 'supertab-connect' ),
+							'<code>*</code>',
+						);
+						?>
+					</p>
+
+					<div id="supertab-active-paths-list" class="supertab-active-paths-list">
+						<?php foreach ( $supertab_connect_active_paths as $supertab_connect_path ) : ?>
+							<div class="supertab-active-path-row">
+								<span class="supertab-path-prefix"><?php echo esc_html( $supertab_connect_site_url ); ?></span>
+								<input
+									type="text"
+									name="active_paths[]"
+									value="<?php echo esc_attr( $supertab_connect_path ); ?>"
+									class="regular-text supertab-path-input"
+									placeholder="*"
+								/>
+								<button type="button"
+									class="button supertab-remove-path"
+									aria-label="<?php esc_attr_e( 'Remove path', 'supertab-connect' ); ?>"
+								>
+									<span class="dashicons dashicons-no-alt" aria-hidden="true"></span>
+								</button>
+							</div>
+						<?php endforeach; ?>
+					</div>
+
+					<button type="button" class="button" id="supertab-add-path">
+						<?php esc_html_e( 'Add Path', 'supertab-connect' ); ?>
+					</button>
+				</div>
 
 			<?php endif; ?>
 		<?php endif; ?>

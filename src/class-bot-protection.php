@@ -35,6 +35,13 @@ class Bot_Protection {
 	private SupertabConnect $supertab_connect;
 
 	/**
+	 * Settings instance.
+	 *
+	 * @var Settings
+	 */
+	private Settings $settings;
+
+	/**
 	 * Signal headers to add to the response.
 	 *
 	 * @var array<string, string>
@@ -45,9 +52,11 @@ class Bot_Protection {
 	 * Constructor.
 	 *
 	 * @param SupertabConnect $supertab_connect SDK instance for request handling.
+	 * @param Settings        $settings         Settings manager.
 	 */
-	public function __construct( SupertabConnect $supertab_connect ) {
+	public function __construct( SupertabConnect $supertab_connect, Settings $settings ) {
 		$this->supertab_connect = $supertab_connect;
+		$this->settings         = $settings;
 	}
 
 	/**
@@ -68,6 +77,10 @@ class Bot_Protection {
 	 */
 	public function maybe_handle_request( \WP $wp ): void {
 		if ( self::EXCLUDED_PATH === $wp->request ) {
+			return;
+		}
+
+		if ( ! $this->is_path_active( $wp->request ) ) {
 			return;
 		}
 
@@ -95,6 +108,28 @@ class Bot_Protection {
 	 */
 	public function add_signal_headers( array $headers ): array {
 		return array_merge( $headers, $this->signal_headers );
+	}
+
+	/**
+	 * Check if the given request path matches any active path pattern.
+	 *
+	 * @param string $request_path The request path to check.
+	 * @return bool True if the path is active.
+	 */
+	private function is_path_active( string $request_path ): bool {
+		$active_paths = $this->settings->get_active_paths();
+
+		foreach ( $active_paths as $pattern ) {
+			if ( '*' === $pattern ) {
+				return true;
+			}
+
+			if ( fnmatch( $pattern, $request_path ) ) {
+				return true;
+			}
+		}
+
+		return false;
 	}
 
 	/**

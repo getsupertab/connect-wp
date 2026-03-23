@@ -115,7 +115,7 @@ class Plugin {
 			baseUrl: SUPERTAB_CONNECT_API_BASE_URL,
 			cache: new WP_Transient_Cache()
 		);
-		$bot_protection   = new Bot_Protection( $supertab_connect );
+		$bot_protection   = new Bot_Protection( $supertab_connect, $settings );
 		$bot_protection->register();
 	}
 

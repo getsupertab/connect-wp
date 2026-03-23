@@ -9,6 +9,7 @@ declare( strict_types=1 );
 
 namespace Supertab_Connect\Admin;
 
+use Supertab_Connect\RSL_License_Handler;
 use Supertab_Connect\Settings;
 
 /**
@@ -185,12 +186,40 @@ class Settings_Page {
 			$this->settings->save_merchant_api_key( $merchant_api_key );
 		}
 
-		// Bot protection checkbox is only present when API key is already saved.
+		// Bot protection settings are only present when API key is already saved.
 		// phpcs:ignore WordPress.Security.NonceVerification.Missing -- Nonce verified in handle_form_submission().
 		if ( ! isset( $_POST['merchant_api_key'] ) ) {
 			// phpcs:ignore WordPress.Security.NonceVerification.Missing -- Nonce verified in handle_form_submission().
 			$enabled = isset( $_POST['bot_protection_enabled'] );
 			$this->settings->set_bot_protection_enabled( $enabled );
+
+			// phpcs:ignore WordPress.Security.NonceVerification.Missing -- Nonce verified in handle_form_submission().
+			$raw_paths = isset( $_POST['active_paths'] ) && is_array( $_POST['active_paths'] )
+				// phpcs:ignore WordPress.Security.NonceVerification.Missing, WordPress.Security.ValidatedSanitizedInput.InputNotSanitized -- Nonce verified in handle_form_submission(). Sanitized via sanitize_text_field.
+				? array_map( 'sanitize_text_field', wp_unslash( $_POST['active_paths'] ) )
+				: array();
+
+			$paths = array_values(
+				array_unique(
+					array_filter(
+						array_map(
+							static function ( string $path ): string {
+								return ltrim( $path, '/' );
+							},
+							$raw_paths
+						),
+						static function ( string $path ): bool {
+							return '' !== $path;
+						}
+					)
+				)
+			);
+
+			if ( empty( $paths ) ) {
+				$paths = array( '*' );
+			}
+
+			$this->settings->set_active_paths( $paths );
 		}
 
 		$this->redirect( array( 'setup' => 'success' ) );
@@ -202,7 +231,7 @@ class Settings_Page {
 	 * @return void
 	 */
 	private function process_purge_cache(): void {
-		delete_transient( 'supertab_connect_license_xml' );
+		delete_transient( RSL_License_Handler::CACHE_TRANSIENT_KEY );
 
 		$this->redirect( array( 'purged' => '1' ) );
 	}
@@ -256,6 +285,8 @@ class Settings_Page {
 			'website_urn'            => $this->settings->get_website_urn(),
 			'license_url'            => home_url( '/license.xml' ),
 			'bot_protection_enabled' => $this->settings->is_bot_protection_enabled(),
+			'active_paths'           => $this->settings->get_active_paths(),
+			'site_url'               => home_url( '/' ),
 		);
 
 		include SUPERTAB_CONNECT_PLUGIN_DIR . 'templates/settings.php';
