@@ -117,14 +117,17 @@ class Bot_Protection {
 	 * @return bool True if the path is active.
 	 */
 	private function is_path_active( string $request_path ): bool {
-		$active_paths = $this->settings->get_active_paths();
+		$active_paths    = $this->settings->get_active_paths();
+		$normalized_path = rtrim( $request_path, '/' );
 
 		foreach ( $active_paths as $pattern ) {
 			if ( '*' === $pattern ) {
 				return true;
 			}
 
-			if ( fnmatch( $pattern, $request_path ) ) {
+			$normalized_pattern = rtrim( $pattern, '/' );
+
+			if ( fnmatch( $normalized_pattern, $normalized_path ) ) {
 				return true;
 			}
 		}
