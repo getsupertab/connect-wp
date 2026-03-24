@@ -65,7 +65,7 @@ class Notices {
 		$setup_url = admin_url( 'options-general.php?page=' . Settings_Page::PAGE_SLUG );
 
 		printf(
-			'<div class="notice notice-warning"><p>%s <a href="%s">%s</a></p></div>',
+			'<div class="notice notice-warning is-dismissible"><p>%s <a href="%s">%s</a></p></div>',
 			esc_html__( 'Supertab Connect needs to be configured.', 'supertab-connect' ),
 			esc_url( $setup_url ),
 			esc_html__( 'Set up now', 'supertab-connect' )

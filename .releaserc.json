@@ -12,13 +12,13 @@
 		[
 			"@semantic-release/exec",
 			{
-				"prepareCmd": "composer install --no-dev --no-interaction --prefer-dist --optimize-autoloader --ignore-platform-reqs && git config core.hooksPath /dev/null && sed -i \"s/define( 'SUPERTAB_CONNECT_VERSION', '[^']*'/define( 'SUPERTAB_CONNECT_VERSION', '${nextRelease.version}'/\" supertab-connect.php && sed -i \"s/Version:\\s*.*/Version:           ${nextRelease.version}/\" supertab-connect.php && bash build-zip.sh ${nextRelease.version}"
+				"prepareCmd": "composer install --no-dev --no-interaction --prefer-dist --optimize-autoloader --ignore-platform-reqs && git config core.hooksPath /dev/null && sed -i \"s/define( 'SUPERTAB_CONNECT_VERSION', '[^']*'/define( 'SUPERTAB_CONNECT_VERSION', '${nextRelease.version}'/\" supertab-connect.php && sed -i \"s/Version:\\s*.*/Version:           ${nextRelease.version}/\" supertab-connect.php && sed -i \"s/Stable tag:.*/Stable tag: ${nextRelease.version}/\" readme.txt && bash build-zip.sh ${nextRelease.version}"
 			}
 		],
 		[
 			"@semantic-release/git",
 			{
-				"assets": ["supertab-connect.php"],
+				"assets": ["supertab-connect.php", "readme.txt"],
 				"message": "chore(release): ${nextRelease.version}\n\n${nextRelease.notes}"
 			}
 		],

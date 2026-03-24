@@ -97,6 +97,37 @@ class Plugin {
 
 		$notices = new Notices( $settings );
 		$notices->register();
+
+		add_action( 'admin_init', array( $this, 'add_privacy_policy_content' ) );
+	}
+
+	/**
+	 * Register privacy policy content for the Supertab Connect service.
+	 *
+	 * @return void
+	 */
+	public function add_privacy_policy_content(): void {
+		if ( ! function_exists( 'wp_add_privacy_policy_content' ) ) {
+			return;
+		}
+
+		$content = sprintf(
+			/* translators: 1: link to Supertab Connect privacy policy */
+			__( 'This plugin connects to the Supertab Connect API (%1$s) to provide the following functionality:', 'supertab-connect' ),
+			'<a href="https://supertab.co" target="_blank">supertab.co</a>'
+		);
+
+		$content .= '<ul>';
+		$content .= '<li>' . __( '<strong>RSL License Serving</strong> — Your Website URN is sent to retrieve the license XML file for your site.', 'supertab-connect' ) . '</li>';
+		$content .= '<li>' . __( '<strong>Crawler Authentication Protocol</strong> — When enabled, page URLs and user agent strings from bot requests are sent to verify license tokens and record usage events.', 'supertab-connect' ) . '</li>';
+		$content .= '</ul>';
+
+		$content .= __( 'No personal data from your site visitors is collected or transmitted. Only bot request metadata (URL and user agent) is sent when the Crawler Authentication Protocol is enabled by the site administrator.', 'supertab-connect' );
+
+		wp_add_privacy_policy_content(
+			'Supertab Connect',
+			wp_kses_post( $content )
+		);
 	}
 
 	/**

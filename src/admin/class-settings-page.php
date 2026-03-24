@@ -67,8 +67,8 @@ class Settings_Page {
 	public function register_page(): void {
 		add_submenu_page(
 			'options-general.php',
-			__( 'Supertab Connect', 'supertab-connect' ),
-			__( 'Supertab Connect', 'supertab-connect' ),
+			'Supertab Connect',
+			'Supertab Connect',
 			'manage_options',
 			self::PAGE_SLUG,
 			array( $this, 'render_page' )
