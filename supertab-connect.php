@@ -3,7 +3,7 @@
  * Plugin Name:       Supertab Connect
  * Plugin URI:        https://supertab.co
  * Description:       Connect your WordPress site to the Supertab Connect platform.
- * Version:           1.0.0-beta.8
+ * Version:           1.0.0
  * Requires at least: 6.4
  * Requires PHP:      8.1
  * Author:            Supertab
@@ -22,7 +22,7 @@ declare( strict_types=1 );
 defined( 'ABSPATH' ) || exit;
 
 // Plugin constants.
-define( 'SUPERTAB_CONNECT_VERSION', '1.0.0-beta.8' );
+define( 'SUPERTAB_CONNECT_VERSION', '1.0.0' );
 define( 'SUPERTAB_CONNECT_PLUGIN_FILE', __FILE__ );
 define( 'SUPERTAB_CONNECT_PLUGIN_DIR', plugin_dir_path( __FILE__ ) );
 define( 'SUPERTAB_CONNECT_PLUGIN_URL', plugin_dir_url( __FILE__ ) );
