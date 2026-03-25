@@ -2,6 +2,8 @@
 .git
 .gitignore
 .gitattributes
+.gitkeep
+.distignore
 
 # GitHub
 .github
@@ -23,10 +25,6 @@ package-lock.json
 # WordPress local dev environment
 .wp-env.json
 .wp-env
-
-# Composer config (vendor is rebuilt in CI)
-composer.json
-composer.lock
 
 # Code quality / static analysis
 phpcs.xml.dist
