@@ -71,8 +71,6 @@ class Plugin {
 	 * @return void
 	 */
 	public function init(): void {
-		$this->load_textdomain();
-
 		$settings = new Settings();
 
 		$http_client     = new WP_Http_Client();
@@ -175,18 +173,5 @@ class Plugin {
 
 		/** This filter is documented in src/plugin.php */
 		return apply_filters( 'supertab_connect_enforcement_mode', $default );
-	}
-
-	/**
-	 * Load plugin text domain for translations.
-	 *
-	 * @return void
-	 */
-	private function load_textdomain(): void {
-		load_plugin_textdomain(
-			'supertab-connect',
-			false,
-			dirname( plugin_basename( SUPERTAB_CONNECT_PLUGIN_FILE ) ) . '/languages'
-		);
 	}
 }
