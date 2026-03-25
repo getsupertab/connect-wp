@@ -9,6 +9,10 @@ declare( strict_types=1 );
 
 namespace Supertab_Connect;
 
+if ( ! defined( 'ABSPATH' ) ) {
+	exit;
+}
+
 use Supertab\Connect\Http\HttpClientInterface;
 use Supertab\Connect\Enum\EnforcementMode;
 use Supertab\Connect\SupertabConnect;

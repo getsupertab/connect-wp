@@ -9,6 +9,10 @@ declare( strict_types=1 );
 
 namespace Supertab_Connect\Admin;
 
+if ( ! defined( 'ABSPATH' ) ) {
+	exit;
+}
+
 use Supertab_Connect\Settings;
 
 /**

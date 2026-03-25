@@ -12,6 +12,10 @@ declare( strict_types=1 );
 
 namespace Supertab_Connect;
 
+if ( ! defined( 'ABSPATH' ) ) {
+	exit;
+}
+
 use Supertab\Connect\Exception\SupertabConnectException;
 use Supertab\Connect\Http\HttpClientInterface;
 use Supertab\Connect\SupertabConnect;
