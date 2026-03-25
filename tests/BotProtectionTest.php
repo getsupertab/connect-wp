@@ -119,4 +119,29 @@ class BotProtectionTest extends TestCase {
 		$this->settings->set_active_paths( array( 'archives/*' ) );
 		$this->assertTrue( $this->is_active( 'archives/2026/category/my-post' ) );
 	}
+
+	public function test_path_with_trailing_slash_matches_pattern_without(): void {
+		$this->settings->set_active_paths( array( 'sample-page' ) );
+		$this->assertTrue( $this->is_active( 'sample-page/' ) );
+	}
+
+	public function test_pattern_with_trailing_slash_matches_path_without(): void {
+		$this->settings->set_active_paths( array( 'sample-page/' ) );
+		$this->assertTrue( $this->is_active( 'sample-page' ) );
+	}
+
+	public function test_both_trailing_slashes_match(): void {
+		$this->settings->set_active_paths( array( 'sample-page/' ) );
+		$this->assertTrue( $this->is_active( 'sample-page/' ) );
+	}
+
+	public function test_root_path_does_not_match_specific_pattern(): void {
+		$this->settings->set_active_paths( array( 'sample-page' ) );
+		$this->assertFalse( $this->is_active( '' ) );
+	}
+
+	public function test_wildcard_pattern_with_trailing_slash_matches(): void {
+		$this->settings->set_active_paths( array( 'blog/*/' ) );
+		$this->assertTrue( $this->is_active( 'blog/my-post' ) );
+	}
 }
