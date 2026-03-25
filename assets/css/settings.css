@@ -1,0 +1,97 @@
+.wp-pwd {
+	position: relative;
+	display: inline-block;
+	margin-top: 0;
+}
+
+.wp-pwd input {
+	padding-right: 36px;
+}
+
+.wp-pwd .wp-hide-pw {
+	position: absolute;
+	top: 0;
+	right: 0;
+	height: 100%;
+	display: flex;
+	align-items: center;
+	background: none;
+	border: none;
+	cursor: pointer;
+	padding: 0 8px;
+	color: #787c82;
+}
+
+.wp-pwd .wp-hide-pw .dashicons {
+	position: static;
+	display: block;
+	line-height: 1;
+}
+
+.wp-pwd .wp-hide-pw:hover {
+	color: #135e96;
+}
+
+.wp-pwd .wp-hide-pw:focus {
+	color: #135e96;
+	outline: 1px dotted #135e96;
+}
+
+/* Active Paths */
+.supertab-active-paths-list {
+	margin-top: 20px;
+}
+
+.supertab-active-path-row {
+	display: flex;
+	align-items: center;
+	margin-bottom: 8px;
+}
+
+.supertab-path-prefix {
+	background: #f0f0f1;
+	border: 1px solid #8c8f94;
+	border-right: none;
+	border-radius: 4px 0 0 4px;
+	padding: 0 8px;
+	line-height: 30px;
+	height: 30px;
+	font-size: 13px;
+	color: #50575e;
+	white-space: nowrap;
+	box-sizing: border-box;
+}
+
+.supertab-path-input {
+	border-radius: 0 4px 4px 0 !important;
+	margin: 0 !important;
+}
+
+.supertab-remove-path {
+	margin-left: 4px !important;
+	min-width: 30px;
+	height: 30px;
+	padding: 0 !important;
+	display: inline-flex !important;
+	align-items: center;
+	justify-content: center;
+}
+
+.supertab-active-path-row:first-child .supertab-remove-path {
+	display: none !important;
+}
+
+.supertab-remove-path .dashicons {
+	font-size: 16px;
+	width: 16px;
+	height: 16px;
+}
+
+#supertab-add-path {
+	margin-top: 4px;
+}
+
+#supertab-active-paths-section h4 {
+	margin-top: 1.5em;
+	margin-bottom: 0.5em;
+}

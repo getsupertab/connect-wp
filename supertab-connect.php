@@ -2,13 +2,13 @@
 /**
  * Plugin Name:       Supertab Connect
  * Plugin URI:        https://supertab.co
- * Description:       Connect your WordPress site to the Supertab platform.
- * Version:           0.1.0
+ * Description:       Connect your WordPress site to the Supertab Connect platform.
+ * Version:           1.0.0-beta.8
  * Requires at least: 6.4
  * Requires PHP:      8.1
  * Author:            Supertab
  * Author URI:        https://supertab.co
- * License:           GPL-2.0-or-later
+ * License:           GPLv2 or later
  * License URI:       https://www.gnu.org/licenses/gpl-2.0.html
  * Text Domain:       supertab-connect
  * Domain Path:       /languages
@@ -22,19 +22,19 @@ declare( strict_types=1 );
 defined( 'ABSPATH' ) || exit;
 
 // Plugin constants.
-define( 'SUPERTAB_CONNECT_VERSION', '0.1.0' );
+define( 'SUPERTAB_CONNECT_VERSION', '1.0.0-beta.8' );
 define( 'SUPERTAB_CONNECT_PLUGIN_FILE', __FILE__ );
 define( 'SUPERTAB_CONNECT_PLUGIN_DIR', plugin_dir_path( __FILE__ ) );
 define( 'SUPERTAB_CONNECT_PLUGIN_URL', plugin_dir_url( __FILE__ ) );
 
 if ( ! defined( 'SUPERTAB_CONNECT_ENVIRONMENT' ) ) {
-	define( 'SUPERTAB_CONNECT_ENVIRONMENT', 'sbx' );
+	define( 'SUPERTAB_CONNECT_ENVIRONMENT', 'prod' );
 }
 
 if ( ! defined( 'SUPERTAB_CONNECT_API_BASE_URL' ) ) {
 	define(
 		'SUPERTAB_CONNECT_API_BASE_URL',
-		'prod' === SUPERTAB_CONNECT_ENVIRONMENT // @phpstan-ignore identical.alwaysFalse (value is overridable in wp-config.php)
+		'prod' === SUPERTAB_CONNECT_ENVIRONMENT // @phpstan-ignore identical.alwaysTrue (value is overridable in wp-config.php)
 			? 'https://api-connect.supertab.co'
 			: 'https://api-connect.sbx.supertab.co'
 	);

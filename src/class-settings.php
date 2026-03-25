@@ -1,6 +1,6 @@
 <?php
 /**
- * Credential storage and retrieval.
+ * Plugin settings storage and retrieval.
  *
  * @package Supertab_Connect
  */
@@ -10,9 +10,9 @@ declare( strict_types=1 );
 namespace Supertab_Connect;
 
 /**
- * Manages Supertab API credentials.
+ * Manages Supertab Connect plugin settings.
  */
-class Credentials {
+class Settings {
 
 	/**
 	 * Option name for the Merchant API Key.
@@ -34,6 +34,13 @@ class Credentials {
 	 * @var string
 	 */
 	private const OPTION_BOT_PROTECTION_ENABLED = 'supertab_connect_bot_protection_enabled';
+
+	/**
+	 * Option name for active paths.
+	 *
+	 * @var string
+	 */
+	private const OPTION_ACTIVE_PATHS = 'supertab_connect_active_paths';
 
 	/**
 	 * Get the Merchant API Key.
@@ -59,7 +66,25 @@ class Credentials {
 	 * @return bool True if credentials exist.
 	 */
 	public function has_credentials(): bool {
-		return '' !== $this->get_merchant_api_key() && '' !== $this->get_website_urn();
+		return $this->has_merchant_api_key() && $this->has_website_urn();
+	}
+
+	/**
+	 * Check if the Website URN is configured.
+	 *
+	 * @return bool True if URN exists.
+	 */
+	public function has_website_urn(): bool {
+		return '' !== $this->get_website_urn();
+	}
+
+	/**
+	 * Check if the Merchant API Key is configured.
+	 *
+	 * @return bool True if API key exists.
+	 */
+	public function has_merchant_api_key(): bool {
+		return '' !== $this->get_merchant_api_key();
 	}
 
 	/**
@@ -82,6 +107,26 @@ class Credentials {
 	}
 
 	/**
+	 * Get the active paths for bot protection.
+	 *
+	 * @return array<int, string> Array of path patterns. Defaults to ['*'] (all paths).
+	 */
+	public function get_active_paths(): array {
+		$paths = get_option( self::OPTION_ACTIVE_PATHS, array( '*' ) );
+		return is_array( $paths ) ? $paths : array( '*' );
+	}
+
+	/**
+	 * Set the active paths for bot protection.
+	 *
+	 * @param array<int, string> $paths Array of path patterns.
+	 * @return void
+	 */
+	public function set_active_paths( array $paths ): void {
+		update_option( self::OPTION_ACTIVE_PATHS, $paths );
+	}
+
+	/**
 	 * Save credentials.
 	 *
 	 * @param string $merchant_api_key The Merchant API Key.
@@ -93,11 +138,34 @@ class Credentials {
 		update_option( self::OPTION_WEBSITE_URN, $website_urn, false );
 
 		// Invalidate cached license XML since credentials changed.
-		delete_transient( 'supertab_connect_license_xml' );
+		delete_transient( RSL_License_Handler::CACHE_TRANSIENT_KEY );
 	}
 
 	/**
-	 * Delete all stored credentials.
+	 * Save the Website URN.
+	 *
+	 * @param string $website_urn The Website URN.
+	 * @return void
+	 */
+	public function save_website_urn( string $website_urn ): void {
+		update_option( self::OPTION_WEBSITE_URN, $website_urn, false );
+
+		// Invalidate cached license XML since URN changed.
+		delete_transient( RSL_License_Handler::CACHE_TRANSIENT_KEY );
+	}
+
+	/**
+	 * Save the Merchant API Key.
+	 *
+	 * @param string $merchant_api_key The Merchant API Key.
+	 * @return void
+	 */
+	public function save_merchant_api_key( string $merchant_api_key ): void {
+		update_option( self::OPTION_MERCHANT_API_KEY, $merchant_api_key, false );
+	}
+
+	/**
+	 * Delete all stored settings.
 	 *
 	 * @return void
 	 */
@@ -105,8 +173,9 @@ class Credentials {
 		delete_option( self::OPTION_MERCHANT_API_KEY );
 		delete_option( self::OPTION_WEBSITE_URN );
 		delete_option( self::OPTION_BOT_PROTECTION_ENABLED );
+		delete_option( self::OPTION_ACTIVE_PATHS );
 
 		// Invalidate cached license XML.
-		delete_transient( 'supertab_connect_license_xml' );
+		delete_transient( RSL_License_Handler::CACHE_TRANSIENT_KEY );
 	}
 }

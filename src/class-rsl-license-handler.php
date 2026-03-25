@@ -33,7 +33,7 @@ class RSL_License_Handler {
 	 *
 	 * @var string
 	 */
-	private const CACHE_TRANSIENT_KEY = 'supertab_connect_license_xml';
+	public const CACHE_TRANSIENT_KEY = 'supertab_connect_license_xml';
 
 	/**
 	 * Cache TTL in seconds (0 = no expiration).
@@ -43,11 +43,11 @@ class RSL_License_Handler {
 	private const CACHE_TTL = 0;
 
 	/**
-	 * Credentials instance.
+	 * Settings instance.
 	 *
-	 * @var Credentials
+	 * @var Settings
 	 */
-	private Credentials $credentials;
+	private Settings $settings;
 
 	/**
 	 * Base URL for the Supertab Connect API.
@@ -66,12 +66,12 @@ class RSL_License_Handler {
 	/**
 	 * Constructor.
 	 *
-	 * @param Credentials         $credentials  Credentials manager.
+	 * @param Settings            $settings     Settings manager.
 	 * @param string              $api_base_url Base URL for the Supertab Connect API.
 	 * @param HttpClientInterface $http_client  HTTP client for SDK requests.
 	 */
-	public function __construct( Credentials $credentials, string $api_base_url, HttpClientInterface $http_client ) {
-		$this->credentials  = $credentials;
+	public function __construct( Settings $settings, string $api_base_url, HttpClientInterface $http_client ) {
+		$this->settings     = $settings;
 		$this->api_base_url = $api_base_url;
 		$this->http_client  = $http_client;
 	}
@@ -96,7 +96,7 @@ class RSL_License_Handler {
 			return;
 		}
 
-		if ( ! $this->credentials->has_credentials() ) {
+		if ( ! $this->settings->has_website_urn() ) {
 			return;
 		}
 
@@ -124,7 +124,7 @@ class RSL_License_Handler {
 	private function fetch_license_xml(): ?string {
 		try {
 			$body = SupertabConnect::fetchLicenseXml(
-				$this->credentials->get_website_urn(),
+				$this->settings->get_website_urn(),
 				$this->api_base_url,
 				$this->http_client
 			);

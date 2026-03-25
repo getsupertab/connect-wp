@@ -43,11 +43,13 @@ phpunit.xml.dist
 # Tests
 tests
 
-# Release config
+# Build / release
+build-zip.sh
 .releaserc.json
 
 # Documentation
 README.md
+internal-docs
 
 # OS files
 .DS_Store
