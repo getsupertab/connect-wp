@@ -5,7 +5,7 @@
 	"license": "GPL-2.0-or-later",
 	"require": {
 		"php": ">=8.1",
-		"getsupertab/connect-sdk-php": "v1.0.0-beta"
+		"getsupertab/connect-sdk-php": "v1.0.0"
 	},
 	"require-dev": {
 		"automattic/vipwpcs": "^3.0",
