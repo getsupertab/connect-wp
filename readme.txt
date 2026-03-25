@@ -40,6 +40,17 @@ Verifies that bots accessing your content present valid license tokens. This all
 * Optional bot protection via the Crawler Authentication Protocol
 * Configurable path patterns for selective enforcement (supports wildcards)
 
+== External Services ==
+
+This plugin connects to the [Supertab Connect API](https://api-connect.supertab.co) to provide its functionality:
+
+* **RSL License Serving** — Your Website URN is sent to retrieve your site's license XML file. This happens on every request to `/license.xml` (cached locally after first fetch).
+* **Crawler Authentication Protocol** — When enabled by the site administrator, page URLs and user agent strings from bot requests are sent to verify license tokens and record usage events.
+
+No personal data from your site visitors is collected or transmitted.
+
+[Supertab Terms of Use and Privacy Policy](https://www.supertab.co/legal)
+
 == Installation ==
 
 1. Upload the `supertab-connect` folder to the `/wp-content/plugins/` directory, or install through the WordPress plugin screen directly.
@@ -65,10 +76,10 @@ Yes. When CAP is enabled, you can specify path patterns with wildcard support to
 
 == Changelog ==
 
-= 1.0.0-beta.5 =
+= 1.0.0 =
 * Initial release
 
 == Upgrade Notice ==
 
-= 1.0.0-beta.5 =
+= 1.0.0 =
 Initial release.

@@ -114,7 +114,7 @@ class Plugin {
 		$content = sprintf(
 			/* translators: 1: link to Supertab Connect privacy policy */
 			__( 'This plugin connects to the Supertab Connect API (%1$s) to provide the following functionality:', 'supertab-connect' ),
-			'<a href="https://supertab.co" target="_blank">supertab.co</a>'
+			'<a href="https://www.supertab.co/legal" target="_blank">supertab.co</a>'
 		);
 
 		$content .= '<ul>';
