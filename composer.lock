@@ -4,7 +4,7 @@
         "Read more about it at https://getcomposer.org/doc/01-basic-usage.md#installing-dependencies",
         "This file is @generated automatically"
     ],
-    "content-hash": "8f4681e5335d0dd8e348414225b9d2bf",
+    "content-hash": "75282c63351edfc2cac2899343f78b1f",
     "packages": [
         {
             "name": "firebase/php-jwt",
@@ -71,16 +71,16 @@
         },
         {
             "name": "getsupertab/connect-sdk-php",
-            "version": "v1.0.0",
+            "version": "v1.1.0",
             "source": {
                 "type": "git",
                 "url": "https://github.com/getsupertab/connect-sdk-php.git",
-                "reference": "e98a07532ed2d872596b34254d8117516945796b"
+                "reference": "3757705a60fa2aea5e4d65b9a1f284dcc1c64a97"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/getsupertab/connect-sdk-php/zipball/e98a07532ed2d872596b34254d8117516945796b",
-                "reference": "e98a07532ed2d872596b34254d8117516945796b",
+                "url": "https://api.github.com/repos/getsupertab/connect-sdk-php/zipball/3757705a60fa2aea5e4d65b9a1f284dcc1c64a97",
+                "reference": "3757705a60fa2aea5e4d65b9a1f284dcc1c64a97",
                 "shasum": ""
             },
             "require": {
@@ -122,9 +122,9 @@
             ],
             "support": {
                 "issues": "https://github.com/getsupertab/connect-sdk-php/issues",
-                "source": "https://github.com/getsupertab/connect-sdk-php/tree/v1.0.0"
+                "source": "https://github.com/getsupertab/connect-sdk-php/tree/v1.1.0"
             },
-            "time": "2026-03-25T11:27:09+00:00"
+            "time": "2026-03-31T14:13:25+00:00"
         }
     ],
     "packages-dev": [
