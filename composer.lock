@@ -4,20 +4,20 @@
         "Read more about it at https://getcomposer.org/doc/01-basic-usage.md#installing-dependencies",
         "This file is @generated automatically"
     ],
-    "content-hash": "75282c63351edfc2cac2899343f78b1f",
+    "content-hash": "2cceb1ad2d2492b6788e90a9049eafc9",
     "packages": [
         {
             "name": "firebase/php-jwt",
-            "version": "v7.0.3",
+            "version": "v7.0.5",
             "source": {
                 "type": "git",
                 "url": "https://github.com/firebase/php-jwt.git",
-                "reference": "28aa0694bcfdfa5e2959c394d5a1ee7a5083629e"
+                "reference": "47ad26bab5e7c70ae8a6f08ed25ff83631121380"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/firebase/php-jwt/zipball/28aa0694bcfdfa5e2959c394d5a1ee7a5083629e",
-                "reference": "28aa0694bcfdfa5e2959c394d5a1ee7a5083629e",
+                "url": "https://api.github.com/repos/firebase/php-jwt/zipball/47ad26bab5e7c70ae8a6f08ed25ff83631121380",
+                "reference": "47ad26bab5e7c70ae8a6f08ed25ff83631121380",
                 "shasum": ""
             },
             "require": {
@@ -25,6 +25,7 @@
             },
             "require-dev": {
                 "guzzlehttp/guzzle": "^7.4",
+                "phpfastcache/phpfastcache": "^9.2",
                 "phpspec/prophecy-phpunit": "^2.0",
                 "phpunit/phpunit": "^9.5",
                 "psr/cache": "^2.0||^3.0",
@@ -65,22 +66,22 @@
             ],
             "support": {
                 "issues": "https://github.com/firebase/php-jwt/issues",
-                "source": "https://github.com/firebase/php-jwt/tree/v7.0.3"
+                "source": "https://github.com/firebase/php-jwt/tree/v7.0.5"
             },
-            "time": "2026-02-25T22:16:40+00:00"
+            "time": "2026-04-01T20:38:03+00:00"
         },
         {
             "name": "getsupertab/connect-sdk-php",
-            "version": "v1.1.0",
+            "version": "v1.2.0",
             "source": {
                 "type": "git",
                 "url": "https://github.com/getsupertab/connect-sdk-php.git",
-                "reference": "3757705a60fa2aea5e4d65b9a1f284dcc1c64a97"
+                "reference": "1a090c110318bc3d4dfeb49d639298b7c8826c18"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/getsupertab/connect-sdk-php/zipball/3757705a60fa2aea5e4d65b9a1f284dcc1c64a97",
-                "reference": "3757705a60fa2aea5e4d65b9a1f284dcc1c64a97",
+                "url": "https://api.github.com/repos/getsupertab/connect-sdk-php/zipball/1a090c110318bc3d4dfeb49d639298b7c8826c18",
+                "reference": "1a090c110318bc3d4dfeb49d639298b7c8826c18",
                 "shasum": ""
             },
             "require": {
@@ -122,9 +123,9 @@
             ],
             "support": {
                 "issues": "https://github.com/getsupertab/connect-sdk-php/issues",
-                "source": "https://github.com/getsupertab/connect-sdk-php/tree/v1.1.0"
+                "source": "https://github.com/getsupertab/connect-sdk-php/tree/v1.2.0"
             },
-            "time": "2026-03-31T14:13:25+00:00"
+            "time": "2026-04-08T12:53:30+00:00"
         }
     ],
     "packages-dev": [
@@ -1017,11 +1018,11 @@
         },
         {
             "name": "phpstan/phpstan",
-            "version": "2.1.43",
+            "version": "2.1.46",
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/phpstan/phpstan/zipball/d01bebe3edfd4d49b9666ee5b8271ddca561042f",
-                "reference": "d01bebe3edfd4d49b9666ee5b8271ddca561042f",
+                "url": "https://api.github.com/repos/phpstan/phpstan/zipball/a193923fc2d6325ef4e741cf3af8c3e8f54dbf25",
+                "reference": "a193923fc2d6325ef4e741cf3af8c3e8f54dbf25",
                 "shasum": ""
             },
             "require": {
@@ -1066,7 +1067,7 @@
                     "type": "github"
                 }
             ],
-            "time": "2026-03-24T20:40:50+00:00"
+            "time": "2026-04-01T09:25:14+00:00"
         },
         {
             "name": "phpunit/php-code-coverage",
