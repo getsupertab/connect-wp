@@ -194,15 +194,14 @@ class Settings_Page {
 
 		$merchant_api_key = $form_data['merchant_api_key'];
 
-		// API key field is only present when entering a new key.
-		if ( null !== $merchant_api_key && '' === $merchant_api_key ) {
-			$this->redirect( array( 'error' => 'missing_api_key' ) );
-		}
-
 		$this->settings->save_website_urn( $website_urn );
 
-		if ( null !== $merchant_api_key && '' !== $merchant_api_key ) {
+		// API key field is only present when entering a new key; save only if non-empty.
+		if ( is_string( $merchant_api_key ) && '' !== $merchant_api_key ) {
 			$this->settings->save_merchant_api_key( $merchant_api_key );
+		} elseif ( '' === $merchant_api_key ) {
+			// API key field was shown but submitted empty — disable bot protection.
+			$this->settings->set_bot_protection_enabled( false );
 		}
 
 		// Bot protection settings are only present when API key is already saved.
