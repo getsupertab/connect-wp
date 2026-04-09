@@ -157,7 +157,7 @@ class RSL_License_Handler {
 		status_header( 200 );
 		header( 'Content-Type: application/xml; charset=UTF-8' );
 
-		// phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- Proxied XML from trusted API, must be served verbatim.
+		// phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- Proxied XML from trusted API, must be served verbatim. Validated using simplexml_load_string() in fetch_license_xml().
 		echo $body;
 		exit;
 	}
