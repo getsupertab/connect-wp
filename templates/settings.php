@@ -28,7 +28,7 @@ $supertab_connect_setup_status = isset( $_GET['setup'] ) ? sanitize_text_field( 
 // phpcs:ignore WordPress.Security.NonceVerification.Recommended -- Only reading query params for display logic.
 $supertab_connect_error = isset( $_GET['error'] ) ? sanitize_text_field( wp_unslash( $_GET['error'] ) ) : '';
 // phpcs:ignore WordPress.Security.NonceVerification.Recommended -- Only reading query params for display logic.
-$supertab_connect_purged = isset( $_GET['purged'] ) && '1' === $_GET['purged'];
+$supertab_connect_purged = isset( $_GET['purged'] ) && '1' === sanitize_text_field( wp_unslash( $_GET['purged'] ) );
 ?>
 <div class="wrap">
 	<h1><?php esc_html_e( 'Supertab Connect', 'supertab-connect' ); ?></h1>

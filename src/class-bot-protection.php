@@ -149,6 +149,9 @@ class Bot_Protection {
 		status_header( $result->status );
 
 		foreach ( $result->headers as $name => $value ) {
+			if ( ! preg_match( '/^[a-zA-Z0-9-]+$/', $name ) ) {
+				continue;
+			}
 			header( str_replace( array( "\r", "\n" ), '', "{$name}: {$value}" ) );
 		}
 
