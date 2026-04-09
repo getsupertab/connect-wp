@@ -72,8 +72,7 @@ class WP_Http_Client implements HttpClientInterface {
 	 */
 	private function parse_response( $response ): array {
 		if ( is_wp_error( $response ) ) {
-			// phpcs:ignore WordPress.Security.EscapeOutput.ExceptionNotEscaped -- Error message is from WP_Error, used internally by SDK.
-			throw new HttpException( $response->get_error_message(), 0 );
+			throw new HttpException( esc_html( $response->get_error_message() ), 0 );
 		}
 
 		return array(

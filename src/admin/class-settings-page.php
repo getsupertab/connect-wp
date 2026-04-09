@@ -167,50 +167,49 @@ class Settings_Page {
 		} elseif ( isset( $_POST['submit-disconnect'] ) ) {
 			$this->process_disconnect();
 		} else {
-			$this->process_save_settings();
+			$form_data = array(
+				'website_urn'            => isset( $_POST['website_urn'] ) ? sanitize_text_field( wp_unslash( $_POST['website_urn'] ) ) : '',
+				'merchant_api_key'       => isset( $_POST['merchant_api_key'] ) ? sanitize_text_field( wp_unslash( $_POST['merchant_api_key'] ) ) : null,
+				'bot_protection_enabled' => isset( $_POST['bot_protection_enabled'] ),
+				'active_paths'           => isset( $_POST['active_paths'] ) && is_array( $_POST['active_paths'] )
+					? array_map( 'sanitize_text_field', wp_unslash( $_POST['active_paths'] ) )
+					: array(),
+			);
+			$this->process_save_settings( $form_data );
 		}
 	}
 
 	/**
 	 * Save all settings from the form.
 	 *
+	 * @param array<string, mixed> $form_data Sanitized form data from handle_form_submission().
 	 * @return void
 	 */
-	private function process_save_settings(): void {
-		// phpcs:ignore WordPress.Security.NonceVerification.Missing -- Nonce verified in handle_form_submission().
-		$website_urn = isset( $_POST['website_urn'] ) ? sanitize_text_field( wp_unslash( $_POST['website_urn'] ) ) : '';
+	private function process_save_settings( array $form_data ): void {
+		$website_urn = $form_data['website_urn'];
 
 		if ( '' === $website_urn ) {
 			$this->redirect( array( 'error' => 'missing_urn' ) );
 		}
 
-		// phpcs:ignore WordPress.Security.NonceVerification.Missing -- Nonce verified in handle_form_submission().
-		$merchant_api_key = isset( $_POST['merchant_api_key'] ) ? sanitize_text_field( wp_unslash( $_POST['merchant_api_key'] ) ) : '';
+		$merchant_api_key = $form_data['merchant_api_key'];
 
 		// API key field is only present when entering a new key.
-		// phpcs:ignore WordPress.Security.NonceVerification.Missing -- Nonce verified in handle_form_submission().
-		if ( isset( $_POST['merchant_api_key'] ) && '' === $merchant_api_key ) {
+		if ( null !== $merchant_api_key && '' === $merchant_api_key ) {
 			$this->redirect( array( 'error' => 'missing_api_key' ) );
 		}
 
 		$this->settings->save_website_urn( $website_urn );
 
-		if ( '' !== $merchant_api_key ) {
+		if ( null !== $merchant_api_key && '' !== $merchant_api_key ) {
 			$this->settings->save_merchant_api_key( $merchant_api_key );
 		}
 
 		// Bot protection settings are only present when API key is already saved.
-		// phpcs:ignore WordPress.Security.NonceVerification.Missing -- Nonce verified in handle_form_submission().
-		if ( ! isset( $_POST['merchant_api_key'] ) ) {
-			// phpcs:ignore WordPress.Security.NonceVerification.Missing -- Nonce verified in handle_form_submission().
-			$enabled = isset( $_POST['bot_protection_enabled'] );
-			$this->settings->set_bot_protection_enabled( $enabled );
+		if ( null === $merchant_api_key ) {
+			$this->settings->set_bot_protection_enabled( $form_data['bot_protection_enabled'] );
 
-			// phpcs:ignore WordPress.Security.NonceVerification.Missing -- Nonce verified in handle_form_submission().
-			$raw_paths = isset( $_POST['active_paths'] ) && is_array( $_POST['active_paths'] )
-				// phpcs:ignore WordPress.Security.NonceVerification.Missing, WordPress.Security.ValidatedSanitizedInput.InputNotSanitized -- Nonce verified in handle_form_submission(). Sanitized via sanitize_text_field.
-				? array_map( 'sanitize_text_field', wp_unslash( $_POST['active_paths'] ) )
-				: array();
+			$raw_paths = $form_data['active_paths'];
 
 			$paths = array_values(
 				array_unique(
@@ -288,7 +287,7 @@ class Settings_Page {
 		}
 
 		// phpcs:ignore WordPress.Security.NonceVerification.Recommended -- Only reading query param for display logic.
-		$disconnected = isset( $_GET['disconnected'] ) && '1' === $_GET['disconnected'];
+		$disconnected = isset( $_GET['disconnected'] ) && '1' === sanitize_text_field( wp_unslash( $_GET['disconnected'] ) );
 
 		$template_data = array(
 			'nonce_action'           => self::NONCE_ACTION,

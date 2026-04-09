@@ -60,9 +60,8 @@ class Notices {
 		}
 
 		// Don't show on the setup page itself.
-		// phpcs:ignore WordPress.Security.NonceVerification.Recommended -- Only reading page parameter for display logic.
-		$current_page = isset( $_GET['page'] ) ? sanitize_text_field( wp_unslash( $_GET['page'] ) ) : '';
-		if ( Settings_Page::PAGE_SLUG === $current_page ) {
+		$screen = get_current_screen();
+		if ( $screen && 'settings_page_' . Settings_Page::PAGE_SLUG === $screen->id ) {
 			return;
 		}
 
