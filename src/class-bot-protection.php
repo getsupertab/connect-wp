@@ -152,8 +152,7 @@ class Bot_Protection {
 			header( str_replace( array( "\r", "\n" ), '', "{$name}: {$value}" ) );
 		}
 
-		// phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- Response body from SDK, must be served verbatim.
-		echo $result->body;
+		echo esc_html( $result->body );
 		exit;
 	}
 }

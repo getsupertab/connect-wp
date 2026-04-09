@@ -154,8 +154,7 @@ class Settings_Page {
 			return;
 		}
 
-		// phpcs:ignore WordPress.Security.ValidatedSanitizedInput.InputNotSanitized -- Nonce value used only for verification.
-		if ( ! wp_verify_nonce( wp_unslash( $_POST['supertab_connect_nonce'] ), self::NONCE_ACTION ) ) {
+		if ( ! wp_verify_nonce( sanitize_text_field( wp_unslash( $_POST['supertab_connect_nonce'] ) ), self::NONCE_ACTION ) ) {
 			return;
 		}
 

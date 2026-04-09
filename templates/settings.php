@@ -168,7 +168,9 @@ $supertab_connect_purged = isset( $_GET['purged'] ) && '1' === $_GET['purged'];
 				</fieldset>
 
 				<!-- Active Paths -->
-				<div id="supertab-active-paths-section"<?php echo $supertab_connect_bot_protection_enabled ? '' : ' style="display:none;"'; ?>>
+				<div id="supertab-active-paths-section"
+					<?php echo ! $supertab_connect_bot_protection_enabled ? 'style="display:none;"' : ''; // Only hardcoded strings output. ?>
+				>
 					<h4><?php esc_html_e( 'Active Paths', 'supertab-connect' ); ?></h4>
 
 					<p class="description">
