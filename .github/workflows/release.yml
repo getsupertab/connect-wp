@@ -18,8 +18,8 @@ jobs:
     needs: ci
     runs-on: ubuntu-latest
     outputs:
-      published: ${{ steps.detect.outputs.published }}
-      tag: ${{ steps.detect.outputs.tag }}
+      published: ${{ steps.semantic.outputs.new_release_published }}
+      tag: ${{ steps.semantic.outputs.new_release_git_tag }}
 
     steps:
       - name: Checkout
@@ -42,25 +42,11 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
-      - name: Capture version before release
-        id: pre
-        run: echo "version=$(sed -n "s/.*SUPERTAB_CONNECT_VERSION', '\([^']*\)'.*/\1/p" supertab-connect.php)" >> "$GITHUB_OUTPUT"
-
       - name: Run semantic-release
-        run: npx semantic-release
+        id: semantic
+        uses: cycjimmy/semantic-release-action@v4
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-
-      - name: Detect published release
-        id: detect
-        run: |
-          CURRENT=$(sed -n "s/.*SUPERTAB_CONNECT_VERSION', '\([^']*\)'.*/\1/p" supertab-connect.php)
-          if [ "$CURRENT" != "${{ steps.pre.outputs.version }}" ]; then
-            echo "published=true" >> "$GITHUB_OUTPUT"
-            echo "tag=v$CURRENT" >> "$GITHUB_OUTPUT"
-          else
-            echo "published=false" >> "$GITHUB_OUTPUT"
-          fi
 
   deploy-wp-org:
     name: Deploy to WordPress.org
