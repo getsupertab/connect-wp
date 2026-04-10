@@ -2,7 +2,6 @@
 
 [![CI](https://github.com/getsupertab/connect-wp/actions/workflows/ci.yml/badge.svg)](https://github.com/getsupertab/connect-wp/actions/workflows/ci.yml)
 [![WordPress Plugin Version](https://img.shields.io/wordpress/plugin/v/supertab-connect)](https://wordpress.org/plugins/supertab-connect/)
-[![Active Installs](https://img.shields.io/wordpress/plugin/installs/supertab-connect)](https://wordpress.org/plugins/supertab-connect/)
 [![Requires WordPress](https://img.shields.io/wordpress/plugin/wp-version/supertab-connect)](https://wordpress.org/plugins/supertab-connect/)
 [![Tested WordPress](https://img.shields.io/wordpress/plugin/tested/supertab-connect)](https://wordpress.org/plugins/supertab-connect/)
 [![Requires PHP](https://img.shields.io/wordpress/plugin/required-php/supertab-connect)](https://wordpress.org/plugins/supertab-connect/)
