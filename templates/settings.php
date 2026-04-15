@@ -21,6 +21,7 @@ $supertab_connect_license_url            = $template_data['license_url'];
 $supertab_connect_bot_protection_enabled = $template_data['bot_protection_enabled'];
 $supertab_connect_active_paths           = $template_data['active_paths'];
 $supertab_connect_site_url               = $template_data['site_url'];
+$supertab_connect_resource_links         = $template_data['resource_links'];
 $supertab_connect_show_api_key_form      = ! $supertab_connect_has_merchant_api_key || $supertab_connect_disconnected;
 
 // phpcs:ignore WordPress.Security.NonceVerification.Recommended -- Only reading query params for display logic.
@@ -32,6 +33,11 @@ $supertab_connect_purged = isset( $_GET['purged'] ) && '1' === sanitize_text_fie
 ?>
 <div class="wrap">
 	<h1><?php esc_html_e( 'Supertab Connect', 'supertab-connect' ); ?></h1>
+
+	<p class="description"><?php esc_html_e( 'Publish a machine-readable license file on your website, manage how partners access your content and track licensed usage.', 'supertab-connect' ); ?></p>
+
+	<div class="supertab-settings-layout">
+		<div class="supertab-settings-main">
 
 	<?php if ( 'success' === $supertab_connect_setup_status ) : ?>
 		<div class="notice notice-success">
@@ -62,6 +68,8 @@ $supertab_connect_purged = isset( $_GET['purged'] ) && '1' === sanitize_text_fie
 
 		<!-- Your RSL License -->
 		<h2><?php esc_html_e( 'Your RSL License', 'supertab-connect' ); ?></h2>
+
+		<p class="description"><?php esc_html_e( 'Whenever you update your license in Supertab Connect, the license.xml file on your website is updated automatically. Changes may take some time to appear due to caching. You can purge the cache to see them immediately.', 'supertab-connect' ); ?></p>
 
 		<table class="form-table" role="presentation">
 			<tr>
@@ -99,6 +107,8 @@ $supertab_connect_purged = isset( $_GET['purged'] ) && '1' === sanitize_text_fie
 		<?php if ( $supertab_connect_has_website_urn ) : ?>
 			<!-- License Verification -->
 			<h2><?php esc_html_e( 'License Verification', 'supertab-connect' ); ?></h2>
+
+			<p class="description"><?php esc_html_e( 'Generate an API key in Supertab Connect to verify requests and issue licenses to your customers.', 'supertab-connect' ); ?></p>
 
 			<?php if ( $supertab_connect_show_api_key_form ) : ?>
 
@@ -152,7 +162,10 @@ $supertab_connect_purged = isset( $_GET['purged'] ) && '1' === sanitize_text_fie
 				<!-- Crawler Authentication Protocol -->
 				<h3><?php esc_html_e( 'Crawler Authentication Protocol', 'supertab-connect' ); ?></h3>
 
-				<p><?php esc_html_e( 'When trying to access your content, bots need to present license tokens to the Crawler Authentication Protocol for verification. This allows you to distinguish licensed access from unauthorized scraping, monitor usage against declared terms, and optionally enforce access without blocking compliant bots.', 'supertab-connect' ); ?></p>
+				<p class="description"><?php esc_html_e( 'When bots owned by connected customers want to access your content, they can present a license to verify their access. This allows you to distinguish licensed usage from other traffic and track activity against your agreements.', 'supertab-connect' ); ?></p>
+				<p class="description"><?php esc_html_e( 'CAP applies to requests from connected customers. Other traffic (e.g. search engines) is not blocked.', 'supertab-connect' ); ?></p>
+
+				<br />
 
 				<fieldset>
 					<label for="supertab-bot-protection-enabled">
@@ -178,7 +191,7 @@ $supertab_connect_purged = isset( $_GET['purged'] ) && '1' === sanitize_text_fie
 						echo wp_kses(
 							sprintf(
 								/* translators: 1: wildcard character wrapped in code tags */
-								__( 'Define which specific parts of your website Crawler Authentication Protocol should be active on. Paths support %1$s for wildcards.', 'supertab-connect' ),
+								__( 'Choose which parts of your site require license verification for connected partners. Paths support wildcards. Use %1$s to apply this to your entire site (default).', 'supertab-connect' ),
 								'<code>*</code>'
 							),
 							array( 'code' => array() )
@@ -231,4 +244,27 @@ $supertab_connect_purged = isset( $_GET['purged'] ) && '1' === sanitize_text_fie
 		<?php submit_button( '', 'primary', 'submit-settings' ); ?>
 
 	</form>
+
+		</div><!-- .supertab-settings-main -->
+
+		<aside class="supertab-settings-sidebar">
+			<div class="postbox">
+				<h2 class="hndle"><?php esc_html_e( 'Resources', 'supertab-connect' ); ?></h2>
+				<div class="inside">
+					<ul class="supertab-resource-links">
+						<?php foreach ( $supertab_connect_resource_links as $supertab_connect_link ) : ?>
+							<li>
+								<span class="dashicons <?php echo esc_attr( $supertab_connect_link['icon'] ); ?>" aria-hidden="true"></span>
+								<a href="<?php echo esc_url( $supertab_connect_link['url'] ); ?>" target="_blank" rel="noopener noreferrer">
+									<?php echo esc_html( $supertab_connect_link['label'] ); ?>
+									<span class="screen-reader-text"><?php esc_html_e( '(opens in a new tab)', 'supertab-connect' ); ?></span>
+								</a>
+							</li>
+						<?php endforeach; ?>
+					</ul>
+				</div>
+			</div>
+		</aside>
+
+	</div><!-- .supertab-settings-layout -->
 </div>

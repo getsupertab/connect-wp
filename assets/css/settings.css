@@ -95,3 +95,64 @@
 	margin-top: 1.5em;
 	margin-bottom: 0.5em;
 }
+
+/* Settings page two-column layout */
+.supertab-settings-layout {
+	display: flex;
+	gap: 20px;
+	align-items: flex-start;
+	margin-top: 20px;
+}
+
+.supertab-settings-main {
+	flex: 1 1 auto;
+	min-width: 0;
+}
+
+.supertab-settings-sidebar {
+	flex: 0 0 280px;
+}
+
+.supertab-settings-sidebar .postbox {
+	margin-bottom: 20px;
+}
+
+.supertab-settings-sidebar .hndle {
+	padding: 8px 12px;
+	font-size: 14px;
+}
+
+.supertab-resource-links {
+	margin: 0;
+	padding: 0;
+	list-style: none;
+}
+
+.supertab-resource-links li {
+	display: flex;
+	align-items: center;
+	gap: 8px;
+	padding: 6px 0;
+	border-bottom: 1px solid #f0f0f1;
+}
+
+.supertab-resource-links li:last-child {
+	border-bottom: 0;
+}
+
+.supertab-resource-links .dashicons {
+	color: #2271b1;
+}
+
+/* Stack sidebar below the form on narrow screens */
+@media (max-width: 960px) {
+	.supertab-settings-layout {
+		flex-direction: column;
+	}
+
+	.supertab-settings-sidebar {
+		flex: 1 1 auto;
+		width: 100%;
+		max-width: 480px;
+	}
+}

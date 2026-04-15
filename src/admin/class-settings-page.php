@@ -298,6 +298,18 @@ class Settings_Page {
 			'bot_protection_enabled' => $this->settings->is_bot_protection_enabled(),
 			'active_paths'           => $this->settings->get_active_paths(),
 			'site_url'               => home_url( '/' ),
+			'resource_links'         => array(
+				array(
+					'url'   => 'https://supertab-connect.mintlify.app/introduction/overview',
+					'label' => __( 'Documentation', 'supertab-connect' ),
+					'icon'  => 'dashicons-book-alt',
+				),
+				array(
+					'url'   => 'https://merchant-connect.supertab.co',
+					'label' => __( 'Supertab Connect Dashboard', 'supertab-connect' ),
+					'icon'  => 'dashicons-external',
+				),
+			),
 		);
 
 		include SUPERTAB_CONNECT_PLUGIN_DIR . 'templates/settings.php';
