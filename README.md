@@ -24,6 +24,7 @@ Automatically serves your site’s RSL license at /license.xml. The license is f
 Verify that connected partners are accessing your content present valid license tokens.
 
 This allows you to:
+
 * confirm which customers are accessing your content
 * monitor usage against declared licensing terms
 * control access for specific parts of your site
