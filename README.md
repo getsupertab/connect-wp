@@ -11,43 +11,46 @@ Connect your WordPress site to the Supertab Connect platform for RSL license ser
 
 ## Description
 
-Supertab Connect integrates your WordPress site with the [Supertab Connect](https://www.supertab.co/supertab-connect) platform, providing two key capabilities:
+[Supertab Connect](https://www.supertab.co/supertab-connect) lets you define how AI systems and automated scrapers can access your content. You can define licensing terms, manage partner access, and track usage without building custom infrastructure.
+
+Supertab Connect handles the underlying systems, including license servers, token management, and request verification, so you can focus on controlling who accesses your content and how it’s used. It provides two core capabilities:
 
 ### RSL License Serving
 
-Automatically serves your site's RSL license at `/license.xml`. The license is fetched from the Supertab Connect API and cached locally for performance, enabling crawlers and AI agents to discover your content's licensing terms.
+Automatically serves your site’s RSL license at /license.xml. The license is fetched from the Supertab Connect API and cached locally for performance, enabling crawlers and AI agents to discover your content’s licensing terms.
 
 ### Crawler Authentication Protocol (CAP)
 
-Verifies that bots accessing your content present valid license tokens. This allows you to:
+Verify that connected partners are accessing your content present valid license tokens.
 
-- Distinguish licensed access from unauthorized scraping
-- Monitor usage against declared licensing terms
-- Optionally enforce access controls without blocking compliant bots
+This allows you to:
+* confirm which customers are accessing your content
+* monitor usage against declared licensing terms
+* control access for specific parts of your site
 
 ### How It Works
 
 1. Enter your Website URN from the [Supertab Connect dashboard](https://merchant-connect.supertab.co/)
 2. Your `license.xml` is immediately served at your site root
 3. Optionally add your Merchant API Key to enable license verification
-4. Configure which paths should enforce the Crawler Authentication Protocol
+4. Configure which parts of your site require verification via the Crawler Authentication Protocol
 
 ### Features
 
-- Serves RSL `license.xml` at your site root, proxied from the Supertab API
-- Caches license XML locally for performance
-- Optional bot protection via the Crawler Authentication Protocol
-- Configurable path patterns for selective enforcement (supports wildcards)
+* Automatically serves your license file at /license.xml
+* Caches license XML locally for performance
+* No infrastructure changes required
+* Optional verification for connected partners via the Crawler Authentication Protocol
+* Flexible control over which parts of your site are covered
 
 ## External Services
 
 This plugin connects to the [Supertab Connect API](https://api-connect.supertab.co) to provide its functionality:
 
-- **RSL License Serving** — Your Website URN is sent to retrieve your site's license XML file. This happens on every request to `/license.xml` (cached locally after first fetch).
-- **Crawler Authentication Protocol** — When enabled by the site administrator, page URLs and user agent strings from bot requests are sent to verify license tokens and record usage events.
+* **RSL License Serving** — Your Website URN is sent to retrieve your site's license XML file. This happens on every request to `/license.xml` (cached locally after first fetch).
+* **Crawler Authentication Protocol** — When enabled by the site administrator, page URLs and user agent strings from bot requests are sent to verify license tokens and record usage events.
 
 No personal data from your site visitors is collected or transmitted.
-
 See the [Supertab Terms of Use and Privacy Policy](https://www.supertab.co/legal).
 
 ## Installation
@@ -64,11 +67,11 @@ You will need a Supertab Connect account. Visit [Supertab Connect](https://merch
 
 ### What is an RSL license?
 
-An RSL is a machine-readable license file that declares how crawlers and AI agents may access your content. Serving it at `/license.xml` makes your licensing terms discoverable.
+An RSL is a machine-readable license file that declares how crawlers and AI agents may access your content. Serving it at /license.xml makes your licensing terms discoverable.
 
 ### What is the Crawler Authentication Protocol (CAP)?
 
-CAP is a protocol that requires bots to present license tokens when accessing your content. This lets you verify that crawlers are operating under agreed-upon terms.
+CAP is a protocol that requires bots to present license tokens when accessing your content. This lets you verify that automated systems accessing your content are doing so under agreed terms. It allows you to track and manage access without changing your site infrastructure.
 
 ### Can I control which pages are protected by CAP?
 
