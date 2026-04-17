@@ -1,5 +1,7 @@
 # Supertab Connect for WordPress
 
+![Supertab Connect](.wordpress-org/banner-1544x500.png)
+
 [![CI](https://github.com/getsupertab/connect-wp/actions/workflows/ci.yml/badge.svg)](https://github.com/getsupertab/connect-wp/actions/workflows/ci.yml)
 [![WordPress Plugin Version](https://img.shields.io/wordpress/plugin/v/supertab-connect)](https://wordpress.org/plugins/supertab-connect/)
 [![Requires WordPress](https://img.shields.io/wordpress/plugin/wp-version/supertab-connect)](https://wordpress.org/plugins/supertab-connect/)
