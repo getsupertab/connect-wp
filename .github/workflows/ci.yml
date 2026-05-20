@@ -33,7 +33,7 @@ jobs:
         run: composer phpstan
 
   test:
-    name: Tests
+    name: Unit
     runs-on: ubuntu-latest
 
     steps:
@@ -52,3 +52,56 @@ jobs:
 
       - name: Run tests
         run: composer test
+
+  integration:
+    name: Integration (WP ${{ matrix.wp }} / PHP ${{ matrix.php }})
+    runs-on: ubuntu-latest
+
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - wp: '6.4'
+            php: '8.1'
+          - wp: '7.0'
+            php: '8.1'
+          - wp: '7.0'
+            php: '8.4'
+
+    services:
+      mysql:
+        image: mysql:8.0
+        env:
+          MYSQL_ROOT_PASSWORD: root
+          MYSQL_DATABASE: wordpress_test
+        ports:
+          - 3306:3306
+        options: >-
+          --health-cmd="mysqladmin ping -uroot -proot"
+          --health-interval=10s
+          --health-timeout=5s
+          --health-retries=10
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: ${{ matrix.php }}
+          tools: composer
+          extensions: mysqli
+          coverage: none
+
+      - name: Install SVN (required by install-wp-tests.sh)
+        run: sudo apt-get update && sudo apt-get install -y subversion
+
+      - name: Install Composer dependencies
+        run: composer install --no-interaction --prefer-dist --ignore-platform-reqs
+
+      - name: Install WordPress test suite
+        run: bash bin/install-wp-tests.sh wordpress_test root root 127.0.0.1 ${{ matrix.wp }}
+
+      - name: Run integration tests
+        run: composer test-integration
