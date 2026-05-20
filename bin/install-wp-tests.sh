@@ -40,9 +40,15 @@ download() {
 # Test framework is kept aligned with core so internal references (e.g.
 # wp-includes/class-wp-phpmailer.php from mock-mailer.php) resolve.
 # PHPUnit 9.6 is required globally so the older test framework tags work.
+#
 # Accepts numeric versions (6.4, 6.4.1) and pre-release suffixes (7.0-RC3,
-# 7.0-beta2) so CI can target releases that have not yet GA'd.
-if [[ "$WP_VERSION" =~ ^[0-9]+\.[0-9]+(\.[0-9]+)?(-[A-Za-z0-9]+)?$ ]]; then
+# 7.0-beta2). Pre-releases use branches/<MAJOR.MINOR> rather than
+# tags/<version>, because WordPress only creates an SVN tag once a release
+# goes GA — RCs live on the release branch.
+if [[ "$WP_VERSION" =~ ^([0-9]+\.[0-9]+)(\.[0-9]+)?-[A-Za-z0-9]+$ ]]; then
+	ARCHIVE_URL="https://wordpress.org/wordpress-${WP_VERSION}.tar.gz"
+	WP_TESTS_TAG="branches/${BASH_REMATCH[1]}"
+elif [[ "$WP_VERSION" =~ ^[0-9]+\.[0-9]+(\.[0-9]+)?$ ]]; then
 	ARCHIVE_URL="https://wordpress.org/wordpress-${WP_VERSION}.tar.gz"
 	WP_TESTS_TAG="tags/${WP_VERSION}"
 elif [ "$WP_VERSION" = "nightly" ] || [ "$WP_VERSION" = "trunk" ]; then
