@@ -36,23 +36,21 @@ download() {
 	fi
 }
 
-# Resolve the WordPress core archive URL for the requested version.
+# Resolve the WordPress core archive URL and matching test framework tag.
+# Test framework is kept aligned with core so internal references (e.g.
+# wp-includes/class-wp-phpmailer.php from mock-mailer.php) resolve.
+# PHPUnit 9.6 is required globally so the older test framework tags work.
 if [[ "$WP_VERSION" =~ ^[0-9]+\.[0-9]+(\.[0-9]+)?$ ]]; then
 	ARCHIVE_URL="https://wordpress.org/wordpress-${WP_VERSION}.tar.gz"
+	WP_TESTS_TAG="tags/${WP_VERSION}"
 elif [ "$WP_VERSION" = "nightly" ] || [ "$WP_VERSION" = "trunk" ]; then
 	ARCHIVE_URL="https://wordpress.org/nightly-builds/wordpress-latest.zip"
+	WP_TESTS_TAG="trunk"
 else
 	# "latest"
 	ARCHIVE_URL="https://wordpress.org/latest.tar.gz"
+	WP_TESTS_TAG="trunk"
 fi
-
-# Resolve the WordPress *test framework* tag. This is intentionally
-# decoupled from the core version: older test framework tags (≤ 6.4)
-# still call PHPUnit\Util\Test::parseTestMethodAnnotations() directly,
-# which PHPUnit 10 removed. `trunk` uses yoast/phpunit-polyfills'
-# annotation parser and is WP-version-agnostic at runtime. Override
-# with WP_TESTS_TAG=tags/X.Y if you need to pin.
-WP_TESTS_TAG="${WP_TESTS_TAG:-trunk}"
 
 install_wp() {
 	if [ -d "$WP_CORE_DIR" ]; then
