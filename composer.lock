@@ -4,7 +4,7 @@
         "Read more about it at https://getcomposer.org/doc/01-basic-usage.md#installing-dependencies",
         "This file is @generated automatically"
     ],
-    "content-hash": "9cfd5ec0756b9e6f46bc30d731b9f857",
+    "content-hash": "bda4d3eb7741b70d65e1c6f8d671616c",
     "packages": [
         {
             "name": "firebase/php-jwt",
@@ -185,16 +185,16 @@
         },
         {
             "name": "dealerdirect/phpcodesniffer-composer-installer",
-            "version": "v1.2.0",
+            "version": "v1.2.1",
             "source": {
                 "type": "git",
                 "url": "https://github.com/PHPCSStandards/composer-installer.git",
-                "reference": "845eb62303d2ca9b289ef216356568ccc075ffd1"
+                "reference": "963f0c67bffde0eac41b56be71ac0e8ba132f0bd"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/PHPCSStandards/composer-installer/zipball/845eb62303d2ca9b289ef216356568ccc075ffd1",
-                "reference": "845eb62303d2ca9b289ef216356568ccc075ffd1",
+                "url": "https://api.github.com/repos/PHPCSStandards/composer-installer/zipball/963f0c67bffde0eac41b56be71ac0e8ba132f0bd",
+                "reference": "963f0c67bffde0eac41b56be71ac0e8ba132f0bd",
                 "shasum": ""
             },
             "require": {
@@ -277,7 +277,7 @@
                     "type": "thanks_dev"
                 }
             ],
-            "time": "2025-11-11T04:32:07+00:00"
+            "time": "2026-05-06T08:26:05+00:00"
         },
         {
             "name": "myclabs/deep-copy",
@@ -1018,11 +1018,11 @@
         },
         {
             "name": "phpstan/phpstan",
-            "version": "2.1.51",
+            "version": "2.1.55",
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/phpstan/phpstan/zipball/dc3b523c45e714c70de2ac5113b958223b55dc59",
-                "reference": "dc3b523c45e714c70de2ac5113b958223b55dc59",
+                "url": "https://api.github.com/repos/phpstan/phpstan/zipball/9eaac3826ed5e9b8427350a43cac825eeca3f566",
+                "reference": "9eaac3826ed5e9b8427350a43cac825eeca3f566",
                 "shasum": ""
             },
             "require": {
@@ -1067,7 +1067,7 @@
                     "type": "github"
                 }
             ],
-            "time": "2026-04-21T18:22:01+00:00"
+            "time": "2026-05-18T11:57:34+00:00"
         },
         {
             "name": "phpunit/php-code-coverage",
@@ -2765,6 +2765,54 @@
                 }
             ],
             "time": "2025-11-25T12:08:04+00:00"
+        },
+        {
+            "name": "wp-phpunit/wp-phpunit",
+            "version": "6.9.4",
+            "source": {
+                "type": "git",
+                "url": "https://github.com/wp-phpunit/wp-phpunit.git",
+                "reference": "15fd216bf6516670d8d07b938675925bfa5c15b0"
+            },
+            "dist": {
+                "type": "zip",
+                "url": "https://api.github.com/repos/wp-phpunit/wp-phpunit/zipball/15fd216bf6516670d8d07b938675925bfa5c15b0",
+                "reference": "15fd216bf6516670d8d07b938675925bfa5c15b0",
+                "shasum": ""
+            },
+            "type": "library",
+            "autoload": {
+                "files": [
+                    "__loaded.php"
+                ]
+            },
+            "notification-url": "https://packagist.org/downloads/",
+            "license": [
+                "GPL-2.0-or-later"
+            ],
+            "authors": [
+                {
+                    "name": "Evan Mattson",
+                    "email": "me@aaemnnost.tv"
+                },
+                {
+                    "name": "WordPress Community",
+                    "homepage": "https://wordpress.org/about/"
+                }
+            ],
+            "description": "WordPress core PHPUnit library",
+            "homepage": "https://github.com/wp-phpunit",
+            "keywords": [
+                "phpunit",
+                "test",
+                "wordpress"
+            ],
+            "support": {
+                "docs": "https://github.com/wp-phpunit/docs",
+                "issues": "https://github.com/wp-phpunit/issues",
+                "source": "https://github.com/wp-phpunit/wp-phpunit"
+            },
+            "time": "2026-02-04T01:48:23+00:00"
         },
         {
             "name": "yoast/phpunit-polyfills",
