@@ -36,9 +36,11 @@ class LicenseRoutingTest extends WP_UnitTestCase {
 
 		// Pretty permalinks are required for WP::parse_request() to populate
 		// $wp->request from the URL path. The test framework defaults to
-		// plain permalinks ("").
-		update_option( 'permalink_structure', '/%postname%/' );
-		flush_rewrite_rules();
+		// plain (""), and set_permalink_structure() is the only sequence
+		// that re-initialises $wp_rewrite so the new structure actually
+		// takes effect — update_option + flush_rewrite_rules alone leaves
+		// the global $wp_rewrite stuck in its boot-time empty state.
+		$this->set_permalink_structure( '/%postname%/' );
 	}
 
 	/**
