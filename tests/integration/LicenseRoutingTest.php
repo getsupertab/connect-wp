@@ -5,8 +5,11 @@
  * plugin against real WordPress:
  *
  *   1. Driving a request through parse_request via WP_UnitTestCase::go_to()
- *   2. Triggering register_activation_hook via the activate_{basename} action
- *   3. Capturing wp_safe_redirect() by throwing from the wp_redirect filter
+ *      (requires pretty permalinks; the test framework defaults to plain).
+ *   2. Triggering register_activation_hook via the activate_{basename} action.
+ *   3. Capturing wp_safe_redirect() by throwing from the wp_redirect filter,
+ *      invoking the handler directly so unrelated admin_init callbacks
+ *      (e.g. nocache_headers) don't interfere with header()-sensitive flows.
  *
  * @package Supertab_Connect\Tests\Integration
  */
@@ -15,6 +18,8 @@ declare( strict_types=1 );
 
 namespace Supertab_Connect\Tests\Integration;
 
+use Supertab_Connect\Admin\Settings_Page;
+use Supertab_Connect\Settings;
 use WP_UnitTestCase;
 
 class LicenseRoutingTest extends WP_UnitTestCase {
@@ -29,6 +34,10 @@ class LicenseRoutingTest extends WP_UnitTestCase {
 		delete_transient( 'supertab_connect_activating' );
 		delete_transient( 'supertab_connect_license_xml' );
 
+		// Pretty permalinks are required for WP::parse_request() to populate
+		// $wp->request from the URL path. The test framework defaults to
+		// plain permalinks ("").
+		update_option( 'permalink_structure', '/%postname%/' );
 		flush_rewrite_rules();
 	}
 
@@ -57,16 +66,16 @@ class LicenseRoutingTest extends WP_UnitTestCase {
 	}
 
 	/**
-	 * Proves admin_init redirects to the settings page on first dashboard
-	 * load after activation. Uses the standard "throw from wp_redirect"
-	 * trick to unwind before wp_safe_redirect() calls exit.
+	 * Proves the post-activation redirect targets the settings page.
+	 *
+	 * Invokes handle_activation_redirect() directly rather than firing
+	 * do_action('admin_init'): WP core registers several admin_init callbacks
+	 * (e.g. nocache_headers) that call header() and would emit "headers
+	 * already sent" warnings — output started during the test framework's
+	 * bootstrap — racing our throw-from-filter.
 	 */
-	public function test_admin_init_redirects_to_settings_page_after_activation(): void {
+	public function test_handle_activation_redirect_targets_settings_page(): void {
 		set_transient( 'supertab_connect_activating', true, 30 );
-
-		$admin_id = self::factory()->user->create( array( 'role' => 'administrator' ) );
-		wp_set_current_user( $admin_id );
-		set_current_screen( 'dashboard' );
 
 		add_filter(
 			'wp_redirect',
@@ -76,8 +85,10 @@ class LicenseRoutingTest extends WP_UnitTestCase {
 			5
 		);
 
+		$page = new Settings_Page( new Settings() );
+
 		try {
-			do_action( 'admin_init' );
+			$page->handle_activation_redirect();
 			$this->fail( 'Expected wp_safe_redirect() to fire but no redirect occurred.' );
 		} catch ( \RuntimeException $e ) {
 			$this->assertStringStartsWith( 'REDIRECT:', $e->getMessage() );
@@ -86,16 +97,13 @@ class LicenseRoutingTest extends WP_UnitTestCase {
 	}
 
 	/**
-	 * Proves a configured site is NOT redirected after activation.
+	 * Proves a configured site is NOT redirected after activation, and that
+	 * the activating transient is cleared regardless.
 	 */
-	public function test_admin_init_does_not_redirect_when_credentials_already_set(): void {
+	public function test_handle_activation_redirect_skips_when_credentials_set(): void {
 		set_transient( 'supertab_connect_activating', true, 30 );
 		update_option( 'supertab_connect_website_urn', 'urn:supertab:website:example' );
 		update_option( 'supertab_connect_merchant_api_key', 'test-key' );
-
-		$admin_id = self::factory()->user->create( array( 'role' => 'administrator' ) );
-		wp_set_current_user( $admin_id );
-		set_current_screen( 'dashboard' );
 
 		$redirected = false;
 		add_filter(
@@ -107,7 +115,8 @@ class LicenseRoutingTest extends WP_UnitTestCase {
 			5
 		);
 
-		do_action( 'admin_init' );
+		$page = new Settings_Page( new Settings() );
+		$page->handle_activation_redirect();
 
 		$this->assertFalse( $redirected, 'Configured site should not be redirected.' );
 		$this->assertFalse( get_transient( 'supertab_connect_activating' ), 'Activating transient should be cleared.' );
