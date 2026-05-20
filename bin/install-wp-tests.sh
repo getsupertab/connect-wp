@@ -81,7 +81,7 @@ install_test_suite() {
 			-e "s:dirname( __FILE__ ) . '/src/':'$WP_CORE_DIR/':" \
 			-e "s/youremptytestdbnamehere/$DB_NAME/" \
 			-e "s/yourusernamehere/$DB_USER/" \
-			-e "s/yourpasswordherewp/$DB_PASS/" \
+			-e "s/yourpasswordhere/$DB_PASS/" \
 			-e "s|localhost|${DB_HOST}|" \
 			"$WP_TESTS_DIR/wp-tests-config.php"
 		rm -f "$WP_TESTS_DIR/wp-tests-config.php.bak"
