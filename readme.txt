@@ -2,7 +2,7 @@
 Contributors: getsupertab
 Tags: licensing, bot protection, rsl, crawlers, content protection
 Requires at least: 6.4
-Tested up to: 6.9
+Tested up to: 7.0
 Requires PHP: 8.1
 Stable tag: 1.2.0
 License: GPL 2.0 or later
@@ -81,10 +81,42 @@ Yes. When CAP is enabled, you can specify path patterns with wildcard support to
 
 == Changelog ==
 
+= 1.2.1 =
+* Added compatibility with WordPress 7.0.
+
+= 1.2.0 =
+* Updated Supertab Connect PHP SDK.
+
+= 1.1.2 =
+* Added plugin graphics and screenshot.
+* Fixed readme copy.
+
+= 1.1.1 =
+* Fixed readme copy.
+
+= 1.1.0 =
+* Added links to documentation.
+* Fixed copy in the admin.
+
 = 1.0.0 =
 * Initial release
 
 == Upgrade Notice ==
+
+= 1.2.1 =
+WP 7.0 compatibility.
+
+= 1.2.0 =
+Updated Supertab Connect PHP SDK.
+
+= 1.1.2 =
+Readme and graphics.
+
+= 1.1.1 =
+Improved readme.
+
+= 1.1.0 =
+Admin copy, links to documentation.
 
 = 1.0.0 =
 Initial release.
