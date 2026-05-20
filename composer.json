@@ -13,8 +13,9 @@
 		"php-stubs/wordpress-stubs": "^6.9",
 		"phpcompatibility/phpcompatibility-wp": "*",
 		"phpstan/phpstan": "^2.0",
-		"phpunit/phpunit": "^10.0",
+		"phpunit/phpunit": "^9.6",
 		"szepeviktor/phpstan-wordpress": "^2.0",
+		"wp-phpunit/wp-phpunit": "^6.4",
 		"yoast/phpunit-polyfills": "^2.0"
 	},
 	"autoload": {
@@ -42,6 +43,7 @@
 		"phpcbf": "phpcbf",
 		"phpstan": "phpstan analyse --memory-limit=512M",
 		"test": "phpunit",
+		"test-integration": "phpunit --configuration phpunit-integration.xml.dist",
 		"check": [
 			"@lint",
 			"@phpcs",
