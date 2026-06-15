@@ -81,6 +81,9 @@ Yes. When CAP is enabled, you can specify path patterns with wildcard support to
 
 == Changelog ==
 
+= 1.2.2 =
+* The served /license.xml is now cached for 12 hours instead of indefinitely, so updates to your licensing terms are picked up automatically.
+
 = 1.2.1 =
 * Added compatibility with WordPress 7.0.
 
@@ -102,6 +105,9 @@ Yes. When CAP is enabled, you can specify path patterns with wildcard support to
 * Initial release
 
 == Upgrade Notice ==
+
+= 1.2.2 =
+The local /license.xml cache now refreshes every 12 hours instead of being stored indefinitely.
 
 = 1.2.1 =
 WP 7.0 compatibility.
