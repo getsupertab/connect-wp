@@ -146,7 +146,8 @@ class Plugin {
 			enforcement: $enforcement,
 			httpClient: $http_client,
 			baseUrl: SUPERTAB_CONNECT_API_BASE_URL,
-			cache: new WP_Transient_Cache()
+			cache: new WP_Transient_Cache(),
+			analyticsEnabled: true
 		);
 		$bot_protection   = new Bot_Protection( $supertab_connect, $settings );
 		$bot_protection->register();
