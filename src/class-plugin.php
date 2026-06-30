@@ -146,7 +146,8 @@ class Plugin {
 			enforcement: $enforcement,
 			httpClient: $http_client,
 			baseUrl: SUPERTAB_CONNECT_API_BASE_URL,
-			cache: new WP_Transient_Cache()
+			cache: new WP_Transient_Cache(),
+			analyticsEnabled: true
 		);
 		$bot_protection   = new Bot_Protection( $supertab_connect, $settings );
 		$bot_protection->register();
@@ -157,12 +158,12 @@ class Plugin {
 	 *
 	 * Checks for a SUPERTAB_CONNECT_ENFORCEMENT_MODE constant first,
 	 * then applies the 'supertab_connect_enforcement_mode' filter.
-	 * Defaults to SOFT.
+	 * Defaults to OBSERVE.
 	 *
 	 * @return EnforcementMode
 	 */
 	private static function get_enforcement_mode(): EnforcementMode {
-		$default = EnforcementMode::SOFT;
+		$default = EnforcementMode::OBSERVE;
 
 		if ( defined( 'SUPERTAB_CONNECT_ENFORCEMENT_MODE' ) ) {
 			$mode = EnforcementMode::tryFrom( SUPERTAB_CONNECT_ENFORCEMENT_MODE );
