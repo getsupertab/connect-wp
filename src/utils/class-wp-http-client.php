@@ -10,6 +10,7 @@ declare( strict_types=1 );
 namespace Supertab_Connect\Utils;
 
 use Supertab\Connect\Exception\HttpException;
+use Supertab\Connect\Http\HttpClient;
 use Supertab\Connect\Http\HttpClientInterface;
 
 /**
@@ -28,7 +29,8 @@ class WP_Http_Client implements HttpClientInterface {
 	 */
 	public function get( string $url, array $headers = array() ): array {
 		$args = array(
-			'headers' => $headers,
+			'headers'    => $headers,
+			'user-agent' => HttpClient::resolveUserAgent(),
 		);
 
 		if ( function_exists( 'vip_safe_wp_remote_get' ) ) {
@@ -53,8 +55,9 @@ class WP_Http_Client implements HttpClientInterface {
 	 */
 	public function post( string $url, string $body, array $headers = array() ): array {
 		$args = array(
-			'headers' => $headers,
-			'body'    => $body,
+			'headers'    => $headers,
+			'body'       => $body,
+			'user-agent' => HttpClient::resolveUserAgent(),
 		);
 
 		$response = wp_remote_post( $url, $args );
