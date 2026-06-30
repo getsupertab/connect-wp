@@ -70,22 +70,24 @@ if ( ! defined( 'SUPERTAB_CONNECT_API_BASE_URL' ) ) {
 |
 */
 
-global $wp_test_options, $wp_test_transients, $wp_test_headers_sent, $wp_test_status_code;
+global $wp_test_options, $wp_test_transients, $wp_test_headers_sent, $wp_test_status_code, $wp_test_http_calls;
 
 $wp_test_options     = [];
 $wp_test_transients  = [];
 $wp_test_headers_sent = [];
 $wp_test_status_code = 200;
+$wp_test_http_calls  = [];
 
 /**
  * Reset all in-memory stores. Call in setUp()/tearDown().
  */
 function wp_stubs_reset(): void {
-	global $wp_test_options, $wp_test_transients, $wp_test_headers_sent, $wp_test_status_code;
+	global $wp_test_options, $wp_test_transients, $wp_test_headers_sent, $wp_test_status_code, $wp_test_http_calls;
 	$wp_test_options      = [];
 	$wp_test_transients   = [];
 	$wp_test_headers_sent = [];
 	$wp_test_status_code  = 200;
+	$wp_test_http_calls   = [];
 }
 
 /*
@@ -156,6 +158,51 @@ if ( ! function_exists( 'status_header' ) ) {
 	function status_header( int $code ): void {
 		global $wp_test_status_code;
 		$wp_test_status_code = $code;
+	}
+}
+
+/*
+|--------------------------------------------------------------------------
+| HTTP Request Stubs (WordPress HTTP API)
+|--------------------------------------------------------------------------
+|
+| Capture each outbound request into $wp_test_http_calls so tests can assert
+| on the URL and args (headers, user-agent, body). Always returns a canned
+| 200 response.
+|
+*/
+
+if ( ! function_exists( 'wp_remote_post' ) ) {
+	function wp_remote_post( string $url, array $args = [] ) {
+		global $wp_test_http_calls;
+		$wp_test_http_calls[] = [ 'method' => 'POST', 'url' => $url, 'args' => $args ];
+		return [ 'response' => [ 'code' => 200 ], 'body' => '{}' ];
+	}
+}
+
+if ( ! function_exists( 'wp_remote_get' ) ) {
+	function wp_remote_get( string $url, array $args = [] ) {
+		global $wp_test_http_calls;
+		$wp_test_http_calls[] = [ 'method' => 'GET', 'url' => $url, 'args' => $args ];
+		return [ 'response' => [ 'code' => 200 ], 'body' => 'ok' ];
+	}
+}
+
+if ( ! function_exists( 'is_wp_error' ) ) {
+	function is_wp_error( $thing ): bool {
+		return $thing instanceof \WP_Error;
+	}
+}
+
+if ( ! function_exists( 'wp_remote_retrieve_response_code' ) ) {
+	function wp_remote_retrieve_response_code( $response ) {
+		return $response['response']['code'] ?? 0;
+	}
+}
+
+if ( ! function_exists( 'wp_remote_retrieve_body' ) ) {
+	function wp_remote_retrieve_body( $response ): string {
+		return (string) ( $response['body'] ?? '' );
 	}
 }
 
