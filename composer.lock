@@ -4,7 +4,7 @@
         "Read more about it at https://getcomposer.org/doc/01-basic-usage.md#installing-dependencies",
         "This file is @generated automatically"
     ],
-    "content-hash": "1869fefa45324687f7c3e91dd646192c",
+    "content-hash": "d90e97d565c18b9691457946a1327a8d",
     "packages": [
         {
             "name": "firebase/php-jwt",
@@ -74,16 +74,16 @@
         },
         {
             "name": "getsupertab/connect-sdk-php",
-            "version": "v1.4.0-beta.5",
+            "version": "v1.4.0-beta.6",
             "source": {
                 "type": "git",
                 "url": "https://github.com/getsupertab/connect-sdk-php.git",
-                "reference": "7d9c496ca2cf6805f43eafae93f9228a12e56b86"
+                "reference": "d60880a7fb3e2e708fece8be4bfdea0f79c044cb"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/getsupertab/connect-sdk-php/zipball/7d9c496ca2cf6805f43eafae93f9228a12e56b86",
-                "reference": "7d9c496ca2cf6805f43eafae93f9228a12e56b86",
+                "url": "https://api.github.com/repos/getsupertab/connect-sdk-php/zipball/d60880a7fb3e2e708fece8be4bfdea0f79c044cb",
+                "reference": "d60880a7fb3e2e708fece8be4bfdea0f79c044cb",
                 "shasum": ""
             },
             "require": {
@@ -125,9 +125,9 @@
             ],
             "support": {
                 "issues": "https://github.com/getsupertab/connect-sdk-php/issues",
-                "source": "https://github.com/getsupertab/connect-sdk-php/tree/v1.4.0-beta.5"
+                "source": "https://github.com/getsupertab/connect-sdk-php/tree/v1.4.0-beta.6"
             },
-            "time": "2026-06-30T11:59:48+00:00"
+            "time": "2026-07-01T04:08:50+00:00"
         }
     ],
     "packages-dev": [
@@ -1090,11 +1090,11 @@
         },
         {
             "name": "phpstan/phpstan",
-            "version": "2.2.2",
+            "version": "2.2.3",
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/phpstan/phpstan/zipball/e5cc34d491a90e79c216d824f60fe21fd4d93bd6",
-                "reference": "e5cc34d491a90e79c216d824f60fe21fd4d93bd6",
+                "url": "https://api.github.com/repos/phpstan/phpstan/zipball/4048833dd47b377287818841877fb3087289509c",
+                "reference": "4048833dd47b377287818841877fb3087289509c",
                 "shasum": ""
             },
             "require": {
@@ -1150,7 +1150,7 @@
                     "type": "github"
                 }
             ],
-            "time": "2026-06-05T09:00:01+00:00"
+            "time": "2026-06-30T21:15:26+00:00"
         },
         {
             "name": "phpunit/php-code-coverage",
