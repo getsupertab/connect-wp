@@ -82,7 +82,7 @@ class Plugin {
 		$analytics_enabled = $settings->has_merchant_api_key() && $settings->is_bot_protection_enabled();
 
 		$dispatcher = null;
-		if ( $analytics_enabled ) {
+		if ( $analytics_enabled && self::should_use_wp_queue() ) {
 			$dispatcher = new Analytics_Dispatcher( $settings, $http_client );
 			$dispatcher->register();
 		}
@@ -92,7 +92,7 @@ class Plugin {
 			return;
 		}
 
-		if ( null !== $dispatcher && ! defined( 'REST_REQUEST' ) && ! wp_doing_cron() ) {
+		if ( $analytics_enabled && ! defined( 'REST_REQUEST' ) && ! wp_doing_cron() ) {
 			$this->init_bot_protection( $settings, $http_client, $dispatcher );
 		}
 	}
@@ -145,23 +145,34 @@ class Plugin {
 	/**
 	 * Initialize bot protection for front-end requests.
 	 *
-	 * @param Settings             $settings    Settings manager.
-	 * @param HttpClientInterface  $http_client HTTP client for SDK requests.
-	 * @param Analytics_Dispatcher $dispatcher  Analytics queue dispatcher.
+	 * @param Settings              $settings    Settings manager.
+	 * @param HttpClientInterface   $http_client HTTP client for SDK requests.
+	 * @param ?Analytics_Dispatcher $dispatcher  When set, analytics events are queued via this
+	 *                                           dispatcher; when null, the SDK's default transport is used.
 	 * @return void
 	 */
-	private function init_bot_protection( Settings $settings, HttpClientInterface $http_client, Analytics_Dispatcher $dispatcher ): void {
-		$enforcement      = self::get_enforcement_mode();
+	private function init_bot_protection( Settings $settings, HttpClientInterface $http_client, ?Analytics_Dispatcher $dispatcher ): void {
+		$enforcement = self::get_enforcement_mode();
+
+		if ( null !== $dispatcher ) {
+			// Queue enabled: hand each event to the dispatcher for off-request delivery.
+			$analytics_transport = new CallbackAnalyticsTransport(
+				static fn ( AnalyticsEvent $event ) => $dispatcher->enqueue( $event->toArray() ),
+				defined( 'WP_DEBUG' ) && WP_DEBUG
+			);
+		} else {
+			// Queue disabled: fall back to the SDK's default transport (deferred on FastCGI, synchronous otherwise).
+			$analytics_transport = null;
+		}
+
 		$supertab_connect = new SupertabConnect(
 			apiKey: $settings->get_merchant_api_key(),
 			enforcement: $enforcement,
 			httpClient: $http_client,
 			baseUrl: SUPERTAB_CONNECT_API_BASE_URL,
 			cache: new WP_Transient_Cache(),
-			analyticsTransport: new CallbackAnalyticsTransport(
-				static fn ( AnalyticsEvent $event ) => $dispatcher->enqueue( $event->toArray() ),
-				defined( 'WP_DEBUG' ) && WP_DEBUG
-			),
+			analyticsEnabled: true,
+			analyticsTransport: $analytics_transport,
 		);
 		$bot_protection   = new Bot_Protection( $supertab_connect, $settings );
 		$bot_protection->register();
@@ -188,5 +199,19 @@ class Plugin {
 
 		/** This filter is documented in src/plugin.php */
 		return apply_filters( 'supertab_connect_enforcement_mode', $default );
+	}
+
+	/**
+	 * Whether to route analytics through the WordPress job queue.
+	 *
+	 * Opt-in via the SUPERTAB_CONNECT_USE_WP_QUEUE constant (define it truthy in
+	 * wp-config.php). When unset or falsy, analytics uses the SDK's default
+	 * transport — deferred past response flush on FastCGI SAPIs, synchronous
+	 * otherwise — exactly as before this feature.
+	 *
+	 * @return bool
+	 */
+	private static function should_use_wp_queue(): bool {
+		return defined( 'SUPERTAB_CONNECT_USE_WP_QUEUE' ) && SUPERTAB_CONNECT_USE_WP_QUEUE;
 	}
 }
