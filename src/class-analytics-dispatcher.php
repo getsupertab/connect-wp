@@ -87,10 +87,17 @@ class Analytics_Dispatcher {
 	 * @return void
 	 */
 	public static function clear_scheduled(): void {
-		wp_unschedule_hook( self::HOOK );
+		try {
+			wp_unschedule_hook( self::HOOK );
 
-		if ( function_exists( 'as_unschedule_all_actions' ) ) {
-			call_user_func( 'as_unschedule_all_actions', self::HOOK );
+			if ( function_exists( 'as_unschedule_all_actions' ) ) {
+				call_user_func( 'as_unschedule_all_actions', self::HOOK );
+			}
+		} catch ( \Throwable $e ) {
+			if ( defined( 'WP_DEBUG' ) && WP_DEBUG ) {
+				// phpcs:ignore WordPress.PHP.DevelopmentFunctions.error_log_error_log -- Intentional error logging for analytics clear_scheduled failures.
+				error_log( '[Supertab Connect] Analytics clear_scheduled error: ' . $e->getMessage() );
+			}
 		}
 	}
 
@@ -99,7 +106,7 @@ class Analytics_Dispatcher {
 	 *
 	 * Prefers Action Scheduler (near-real-time async loopback); falls back to
 	 * WP-Cron; and, only if scheduling fails outright, emits inline as a
-	 * best-effort last resort so events are never silently dropped.
+	 * best-effort last resort.
 	 *
 	 * @param array<string, mixed> $event_data Serialized {@see AnalyticsEvent}.
 	 * @return void
