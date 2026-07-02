@@ -78,16 +78,31 @@ $wp_test_headers_sent = [];
 $wp_test_status_code = 200;
 $wp_test_http_calls  = [];
 
+global $wp_test_scheduled_events, $wp_test_cleared_hooks, $wp_test_schedule_result, $wp_test_doing_cron, $wp_test_as_enqueue_calls, $wp_test_as_unschedule_calls;
+
+$wp_test_scheduled_events    = [];
+$wp_test_cleared_hooks       = [];
+$wp_test_schedule_result     = true;
+$wp_test_doing_cron          = false;
+$wp_test_as_enqueue_calls    = [];
+$wp_test_as_unschedule_calls = [];
+
 /**
  * Reset all in-memory stores. Call in setUp()/tearDown().
  */
 function wp_stubs_reset(): void {
-	global $wp_test_options, $wp_test_transients, $wp_test_headers_sent, $wp_test_status_code, $wp_test_http_calls;
+	global $wp_test_options, $wp_test_transients, $wp_test_headers_sent, $wp_test_status_code, $wp_test_http_calls, $wp_test_scheduled_events, $wp_test_cleared_hooks, $wp_test_schedule_result, $wp_test_doing_cron, $wp_test_as_enqueue_calls, $wp_test_as_unschedule_calls;
 	$wp_test_options      = [];
 	$wp_test_transients   = [];
 	$wp_test_headers_sent = [];
 	$wp_test_status_code  = 200;
 	$wp_test_http_calls   = [];
+	$wp_test_scheduled_events   = [];
+	$wp_test_cleared_hooks      = [];
+	$wp_test_schedule_result    = true;
+	$wp_test_doing_cron         = false;
+	$wp_test_as_enqueue_calls   = [];
+	$wp_test_as_unschedule_calls = [];
 }
 
 /*
@@ -233,5 +248,49 @@ if ( ! function_exists( 'add_action' ) ) {
 if ( ! function_exists( 'add_filter' ) ) {
 	function add_filter( string $hook, $callback, int $priority = 10, int $accepted_args = 1 ): bool {
 		return true;
+	}
+}
+
+/*
+|--------------------------------------------------------------------------
+| Scheduling (WP-Cron + Action Scheduler) Stubs
+|--------------------------------------------------------------------------
+*/
+
+if ( ! function_exists( 'wp_schedule_single_event' ) ) {
+	function wp_schedule_single_event( int $timestamp, string $hook, array $args = [], bool $wp_error = false ) {
+		global $wp_test_scheduled_events, $wp_test_schedule_result;
+		$wp_test_scheduled_events[] = [ 'timestamp' => $timestamp, 'hook' => $hook, 'args' => $args ];
+		return $wp_test_schedule_result;
+	}
+}
+
+if ( ! function_exists( 'wp_clear_scheduled_hook' ) ) {
+	function wp_clear_scheduled_hook( string $hook, array $args = [] ) {
+		global $wp_test_cleared_hooks;
+		$wp_test_cleared_hooks[] = [ 'hook' => $hook, 'args' => $args ];
+		return 0;
+	}
+}
+
+if ( ! function_exists( 'wp_doing_cron' ) ) {
+	function wp_doing_cron(): bool {
+		global $wp_test_doing_cron;
+		return (bool) $wp_test_doing_cron;
+	}
+}
+
+if ( ! function_exists( 'as_enqueue_async_action' ) ) {
+	function as_enqueue_async_action( string $hook, array $args = [], string $group = '' ): int {
+		global $wp_test_as_enqueue_calls;
+		$wp_test_as_enqueue_calls[] = [ 'hook' => $hook, 'args' => $args, 'group' => $group ];
+		return count( $wp_test_as_enqueue_calls );
+	}
+}
+
+if ( ! function_exists( 'as_unschedule_all_actions' ) ) {
+	function as_unschedule_all_actions( string $hook, array $args = [], string $group = '' ): void {
+		global $wp_test_as_unschedule_calls;
+		$wp_test_as_unschedule_calls[] = [ 'hook' => $hook, 'args' => $args, 'group' => $group ];
 	}
 }
