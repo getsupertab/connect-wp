@@ -78,10 +78,11 @@ $wp_test_headers_sent = [];
 $wp_test_status_code = 200;
 $wp_test_http_calls  = [];
 
-global $wp_test_scheduled_events, $wp_test_cleared_hooks, $wp_test_schedule_result, $wp_test_doing_cron, $wp_test_as_enqueue_calls, $wp_test_as_unschedule_calls;
+global $wp_test_scheduled_events, $wp_test_cleared_hooks, $wp_test_unscheduled_hooks, $wp_test_schedule_result, $wp_test_doing_cron, $wp_test_as_enqueue_calls, $wp_test_as_unschedule_calls;
 
 $wp_test_scheduled_events    = [];
 $wp_test_cleared_hooks       = [];
+$wp_test_unscheduled_hooks   = [];
 $wp_test_schedule_result     = true;
 $wp_test_doing_cron          = false;
 $wp_test_as_enqueue_calls    = [];
@@ -91,7 +92,7 @@ $wp_test_as_unschedule_calls = [];
  * Reset all in-memory stores. Call in setUp()/tearDown().
  */
 function wp_stubs_reset(): void {
-	global $wp_test_options, $wp_test_transients, $wp_test_headers_sent, $wp_test_status_code, $wp_test_http_calls, $wp_test_scheduled_events, $wp_test_cleared_hooks, $wp_test_schedule_result, $wp_test_doing_cron, $wp_test_as_enqueue_calls, $wp_test_as_unschedule_calls;
+	global $wp_test_options, $wp_test_transients, $wp_test_headers_sent, $wp_test_status_code, $wp_test_http_calls, $wp_test_scheduled_events, $wp_test_cleared_hooks, $wp_test_unscheduled_hooks, $wp_test_schedule_result, $wp_test_doing_cron, $wp_test_as_enqueue_calls, $wp_test_as_unschedule_calls;
 	$wp_test_options      = [];
 	$wp_test_transients   = [];
 	$wp_test_headers_sent = [];
@@ -99,6 +100,7 @@ function wp_stubs_reset(): void {
 	$wp_test_http_calls   = [];
 	$wp_test_scheduled_events   = [];
 	$wp_test_cleared_hooks      = [];
+	$wp_test_unscheduled_hooks  = [];
 	$wp_test_schedule_result    = true;
 	$wp_test_doing_cron         = false;
 	$wp_test_as_enqueue_calls   = [];
@@ -269,6 +271,14 @@ if ( ! function_exists( 'wp_clear_scheduled_hook' ) ) {
 	function wp_clear_scheduled_hook( string $hook, array $args = [] ) {
 		global $wp_test_cleared_hooks;
 		$wp_test_cleared_hooks[] = [ 'hook' => $hook, 'args' => $args ];
+		return 0;
+	}
+}
+
+if ( ! function_exists( 'wp_unschedule_hook' ) ) {
+	function wp_unschedule_hook( string $hook, bool $wp_error = false ) {
+		global $wp_test_unscheduled_hooks;
+		$wp_test_unscheduled_hooks[] = $hook;
 		return 0;
 	}
 }

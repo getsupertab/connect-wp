@@ -75,6 +75,26 @@ class Analytics_Dispatcher {
 	}
 
 	/**
+	 * Clear any pending queued work. Called on plugin deactivation.
+	 *
+	 * Clearing is args-agnostic: it removes every pending event/action for
+	 * {@see self::HOOK} regardless of the payload it was scheduled with. The
+	 * hook is unique to this plugin, so clearing by hook alone is safe. Note
+	 * that exact-args clearing (e.g. {@see wp_clear_scheduled_hook()} with no
+	 * args) would match nothing, since every event is scheduled with a
+	 * non-empty payload.
+	 *
+	 * @return void
+	 */
+	public static function clear_scheduled(): void {
+		wp_unschedule_hook( self::HOOK );
+
+		if ( function_exists( 'as_unschedule_all_actions' ) ) {
+			call_user_func( 'as_unschedule_all_actions', self::HOOK );
+		}
+	}
+
+	/**
 	 * Enqueue a serialized analytics event for off-request delivery.
 	 *
 	 * Prefers Action Scheduler (near-real-time async loopback); falls back to

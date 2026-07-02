@@ -121,4 +121,22 @@ class AnalyticsDispatcherTest extends TestCase {
 		$this->assertTrue( $reached, 'dispatch() returned without throwing on malformed data.' );
 		$this->assertSame( array(), $wp_test_http_calls, 'No relay POST should occur when rehydration fails.' );
 	}
+
+	public function test_clear_scheduled_clears_wp_cron_and_action_scheduler(): void {
+		global $wp_test_unscheduled_hooks, $wp_test_as_unschedule_calls;
+
+		Analytics_Dispatcher::clear_scheduled();
+
+		// Must clear WP-Cron args-agnostically via wp_unschedule_hook(), which
+		// removes every event for the hook regardless of scheduled payload.
+		$this->assertCount( 1, $wp_test_unscheduled_hooks );
+		$this->assertSame( self::HOOK, $wp_test_unscheduled_hooks[0] );
+
+		// Must call Action Scheduler with hook only (empty args, empty group)
+		// so it hits the bulk cancel-by-hook path rather than exact-args match.
+		$this->assertCount( 1, $wp_test_as_unschedule_calls );
+		$this->assertSame( self::HOOK, $wp_test_as_unschedule_calls[0]['hook'] );
+		$this->assertSame( array(), $wp_test_as_unschedule_calls[0]['args'] );
+		$this->assertSame( '', $wp_test_as_unschedule_calls[0]['group'] );
+	}
 }
