@@ -16,6 +16,8 @@ if ( ! defined( 'ABSPATH' ) ) {
 use Supertab\Connect\Http\HttpClientInterface;
 use Supertab\Connect\Enum\EnforcementMode;
 use Supertab\Connect\SupertabConnect;
+use Supertab\Connect\Analytics\AnalyticsEvent;
+use Supertab\Connect\Analytics\CallbackAnalyticsTransport;
 use Supertab_Connect\Admin\Notices;
 use Supertab_Connect\Admin\Settings_Page;
 use Supertab_Connect\Utils\WP_Http_Client;
@@ -77,13 +79,21 @@ class Plugin {
 		$license_handler = new RSL_License_Handler( $settings, SUPERTAB_CONNECT_API_BASE_URL, $http_client );
 		$license_handler->register();
 
+		$analytics_enabled = $settings->has_merchant_api_key() && $settings->is_bot_protection_enabled();
+
+		$dispatcher = null;
+		if ( $analytics_enabled ) {
+			$dispatcher = new Analytics_Dispatcher( $settings, $http_client );
+			$dispatcher->register();
+		}
+
 		if ( is_admin() ) {
 			$this->init_admin( $settings );
 			return;
 		}
 
-		if ( $settings->has_merchant_api_key() && $settings->is_bot_protection_enabled() && ! defined( 'REST_REQUEST' ) ) {
-			$this->init_bot_protection( $settings, $http_client );
+		if ( null !== $dispatcher && ! defined( 'REST_REQUEST' ) && ! wp_doing_cron() ) {
+			$this->init_bot_protection( $settings, $http_client, $dispatcher );
 		}
 	}
 
@@ -135,11 +145,12 @@ class Plugin {
 	/**
 	 * Initialize bot protection for front-end requests.
 	 *
-	 * @param Settings            $settings    Settings manager.
-	 * @param HttpClientInterface $http_client HTTP client for SDK requests.
+	 * @param Settings             $settings    Settings manager.
+	 * @param HttpClientInterface  $http_client HTTP client for SDK requests.
+	 * @param Analytics_Dispatcher $dispatcher  Analytics queue dispatcher.
 	 * @return void
 	 */
-	private function init_bot_protection( Settings $settings, HttpClientInterface $http_client ): void {
+	private function init_bot_protection( Settings $settings, HttpClientInterface $http_client, Analytics_Dispatcher $dispatcher ): void {
 		$enforcement      = self::get_enforcement_mode();
 		$supertab_connect = new SupertabConnect(
 			apiKey: $settings->get_merchant_api_key(),
@@ -147,7 +158,10 @@ class Plugin {
 			httpClient: $http_client,
 			baseUrl: SUPERTAB_CONNECT_API_BASE_URL,
 			cache: new WP_Transient_Cache(),
-			analyticsEnabled: true
+			analyticsTransport: new CallbackAnalyticsTransport(
+				static fn ( AnalyticsEvent $event ) => $dispatcher->enqueue( $event->toArray() ),
+				defined( 'WP_DEBUG' ) && WP_DEBUG
+			),
 		);
 		$bot_protection   = new Bot_Protection( $supertab_connect, $settings );
 		$bot_protection->register();
