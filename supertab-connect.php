@@ -52,6 +52,14 @@ register_activation_hook(
 	}
 );
 
+// Clear queued analytics work on deactivation.
+register_deactivation_hook(
+	__FILE__,
+	static function (): void {
+		Supertab_Connect\Analytics_Dispatcher::clear_scheduled();
+	}
+);
+
 // Bootstrap the plugin.
 add_action(
 	'plugins_loaded',
