@@ -81,10 +81,16 @@ class Plugin {
 
 		$analytics_enabled = $settings->has_merchant_api_key() && $settings->is_bot_protection_enabled();
 
-		$dispatcher = null;
-		if ( $analytics_enabled && self::should_use_wp_queue() ) {
-			$dispatcher = new Analytics_Dispatcher( $settings, $http_client );
-			$dispatcher->register();
+		$buffer = null;
+		if ( $analytics_enabled && self::should_buffer_analytics() ) {
+			$config = Analytics_Config::from_constants();
+
+			// Register the drain runner in every request context (admin-ajax / cron /
+			// front-end) so it delivers wherever the queue runner executes.
+			$drain = new Analytics_Drain( $settings, $http_client, $config );
+			$drain->register();
+
+			$buffer = new Analytics_Buffer( $config );
 		}
 
 		if ( is_admin() ) {
@@ -93,7 +99,7 @@ class Plugin {
 		}
 
 		if ( $analytics_enabled && ! defined( 'REST_REQUEST' ) && ! wp_doing_cron() ) {
-			$this->init_bot_protection( $settings, $http_client, $dispatcher );
+			$this->init_bot_protection( $settings, $http_client, $buffer );
 		}
 	}
 
@@ -145,23 +151,23 @@ class Plugin {
 	/**
 	 * Initialize bot protection for front-end requests.
 	 *
-	 * @param Settings              $settings    Settings manager.
-	 * @param HttpClientInterface   $http_client HTTP client for SDK requests.
-	 * @param ?Analytics_Dispatcher $dispatcher  When set, analytics events are queued via this
-	 *                                           dispatcher; when null, the SDK's default transport is used.
+	 * @param Settings            $settings    Settings manager.
+	 * @param HttpClientInterface $http_client HTTP client for SDK requests.
+	 * @param ?Analytics_Buffer   $buffer      When set, analytics events are captured into
+	 *                                          the object cache; when null, the SDK default transport is used.
 	 * @return void
 	 */
-	private function init_bot_protection( Settings $settings, HttpClientInterface $http_client, ?Analytics_Dispatcher $dispatcher ): void {
+	private function init_bot_protection( Settings $settings, HttpClientInterface $http_client, ?Analytics_Buffer $buffer ): void {
 		$enforcement = self::get_enforcement_mode();
 
-		if ( null !== $dispatcher ) {
-			// Queue enabled: hand each event to the dispatcher for off-request delivery.
+		if ( null !== $buffer ) {
+			// Buffer enabled: capture each event into the object cache off-request.
 			$analytics_transport = new CallbackAnalyticsTransport(
-				static fn ( AnalyticsEvent $event ) => $dispatcher->enqueue( $event->toArray() ),
+				static fn ( AnalyticsEvent $event ) => $buffer->capture( $event->toArray() ),
 				defined( 'WP_DEBUG' ) && WP_DEBUG
 			);
 		} else {
-			// Queue disabled: fall back to the SDK's default transport (deferred on FastCGI, synchronous otherwise).
+			// No persistent object cache: fall back to the SDK's default transport.
 			$analytics_transport = null;
 		}
 
@@ -202,16 +208,19 @@ class Plugin {
 	}
 
 	/**
-	 * Whether to route analytics through the WordPress job queue.
+	 * Whether to buffer analytics in the object cache (Tier 1).
 	 *
-	 * Opt-in via the SUPERTAB_CONNECT_USE_WP_QUEUE constant (define it truthy in
-	 * wp-config.php). When unset or falsy, analytics uses the SDK's default
-	 * transport — deferred past response flush on FastCGI SAPIs, synchronous
-	 * otherwise — exactly as before this feature.
+	 * Auto-enabled when a persistent object cache is present, unless the site opts
+	 * out via SUPERTAB_CONNECT_DISABLE_ANALYTICS_BUFFER. When false, the SDK's
+	 * default transport is used (deferred on FastCGI, synchronous otherwise).
 	 *
 	 * @return bool
 	 */
-	private static function should_use_wp_queue(): bool {
-		return defined( 'SUPERTAB_CONNECT_USE_WP_QUEUE' ) && SUPERTAB_CONNECT_USE_WP_QUEUE;
+	private static function should_buffer_analytics(): bool {
+		if ( defined( 'SUPERTAB_CONNECT_DISABLE_ANALYTICS_BUFFER' ) && SUPERTAB_CONNECT_DISABLE_ANALYTICS_BUFFER ) {
+			return false;
+		}
+
+		return function_exists( 'wp_using_ext_object_cache' ) && wp_using_ext_object_cache();
 	}
 }
