@@ -81,11 +81,11 @@ class Analytics_Drain {
 		$keys     = array();
 
 		for ( $bucket = $oldest; $bucket <= $newest; $bucket++ ) {
-			if ( $this->now() >= $deadline ) {
-				break;
-			}
-
 			for ( $shard = 0; $shard < $this->config->shards; $shard++ ) {
+				if ( $this->now() >= $deadline ) {
+					break 2;
+				}
+
 				$counter_key = Analytics_Buffer::counter_key( $bucket, $shard );
 				$counter     = wp_cache_get( $counter_key, Analytics_Buffer::GROUP );
 
@@ -119,6 +119,10 @@ class Analytics_Drain {
 						wp_cache_delete_multiple( $keys, Analytics_Buffer::GROUP );
 						$payloads = array();
 						$keys     = array();
+
+						if ( $this->now() >= $deadline ) {
+							break 3;
+						}
 					}
 				}
 			}
