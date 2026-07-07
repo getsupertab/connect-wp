@@ -88,11 +88,16 @@ $wp_test_doing_cron          = false;
 $wp_test_as_enqueue_calls    = [];
 $wp_test_as_unschedule_calls = [];
 
+global $wp_test_object_cache, $wp_test_ext_object_cache;
+
+$wp_test_object_cache     = [];
+$wp_test_ext_object_cache = true;
+
 /**
  * Reset all in-memory stores. Call in setUp()/tearDown().
  */
 function wp_stubs_reset(): void {
-	global $wp_test_options, $wp_test_transients, $wp_test_headers_sent, $wp_test_status_code, $wp_test_http_calls, $wp_test_scheduled_events, $wp_test_cleared_hooks, $wp_test_unscheduled_hooks, $wp_test_schedule_result, $wp_test_doing_cron, $wp_test_as_enqueue_calls, $wp_test_as_unschedule_calls;
+	global $wp_test_options, $wp_test_transients, $wp_test_headers_sent, $wp_test_status_code, $wp_test_http_calls, $wp_test_scheduled_events, $wp_test_cleared_hooks, $wp_test_unscheduled_hooks, $wp_test_schedule_result, $wp_test_doing_cron, $wp_test_as_enqueue_calls, $wp_test_as_unschedule_calls, $wp_test_object_cache, $wp_test_ext_object_cache;
 	$wp_test_options      = [];
 	$wp_test_transients   = [];
 	$wp_test_headers_sent = [];
@@ -105,6 +110,8 @@ function wp_stubs_reset(): void {
 	$wp_test_doing_cron         = false;
 	$wp_test_as_enqueue_calls   = [];
 	$wp_test_as_unschedule_calls = [];
+	$wp_test_object_cache     = [];
+	$wp_test_ext_object_cache = true;
 }
 
 /*
@@ -302,5 +309,97 @@ if ( ! function_exists( 'as_unschedule_all_actions' ) ) {
 	function as_unschedule_all_actions( string $hook, array $args = [], string $group = '' ): void {
 		global $wp_test_as_unschedule_calls;
 		$wp_test_as_unschedule_calls[] = [ 'hook' => $hook, 'args' => $args, 'group' => $group ];
+	}
+}
+
+/*
+|--------------------------------------------------------------------------
+| Object Cache Stubs (Memcached-like semantics)
+|--------------------------------------------------------------------------
+*/
+
+if ( ! function_exists( 'wp_using_ext_object_cache' ) ) {
+	function wp_using_ext_object_cache(): bool {
+		global $wp_test_ext_object_cache;
+		return (bool) $wp_test_ext_object_cache;
+	}
+}
+
+if ( ! function_exists( 'wp_cache_add' ) ) {
+	function wp_cache_add( $key, $data, string $group = '', int $expire = 0 ): bool {
+		global $wp_test_object_cache;
+		if ( isset( $wp_test_object_cache[ $group ][ $key ] ) ) {
+			return false;
+		}
+		$wp_test_object_cache[ $group ][ $key ] = $data;
+		return true;
+	}
+}
+
+if ( ! function_exists( 'wp_cache_set' ) ) {
+	function wp_cache_set( $key, $data, string $group = '', int $expire = 0 ): bool {
+		global $wp_test_object_cache;
+		$wp_test_object_cache[ $group ][ $key ] = $data;
+		return true;
+	}
+}
+
+if ( ! function_exists( 'wp_cache_get' ) ) {
+	function wp_cache_get( $key, string $group = '', bool $force = false, &$found = null ) {
+		global $wp_test_object_cache;
+		if ( isset( $wp_test_object_cache[ $group ][ $key ] ) ) {
+			$found = true;
+			return $wp_test_object_cache[ $group ][ $key ];
+		}
+		$found = false;
+		return false;
+	}
+}
+
+if ( ! function_exists( 'wp_cache_incr' ) ) {
+	function wp_cache_incr( $key, int $offset = 1, string $group = '' ) {
+		global $wp_test_object_cache;
+		if ( ! isset( $wp_test_object_cache[ $group ][ $key ] ) || ! is_numeric( $wp_test_object_cache[ $group ][ $key ] ) ) {
+			return false;
+		}
+		$wp_test_object_cache[ $group ][ $key ] += $offset;
+		return $wp_test_object_cache[ $group ][ $key ];
+	}
+}
+
+if ( ! function_exists( 'wp_cache_delete' ) ) {
+	function wp_cache_delete( $key, string $group = '' ): bool {
+		global $wp_test_object_cache;
+		unset( $wp_test_object_cache[ $group ][ $key ] );
+		return true;
+	}
+}
+
+if ( ! function_exists( 'wp_cache_get_multiple' ) ) {
+	function wp_cache_get_multiple( array $keys, string $group = '' ): array {
+		global $wp_test_object_cache;
+		$result = [];
+		foreach ( $keys as $key ) {
+			$result[ $key ] = $wp_test_object_cache[ $group ][ $key ] ?? false;
+		}
+		return $result;
+	}
+}
+
+if ( ! function_exists( 'wp_cache_delete_multiple' ) ) {
+	function wp_cache_delete_multiple( array $keys, string $group = '' ): array {
+		global $wp_test_object_cache;
+		$result = [];
+		foreach ( $keys as $key ) {
+			unset( $wp_test_object_cache[ $group ][ $key ] );
+			$result[ $key ] = true;
+		}
+		return $result;
+	}
+}
+
+if ( ! function_exists( 'wp_json_encode' ) ) {
+	function wp_json_encode( $data, int $options = 0, int $depth = 512 ) {
+		return json_encode( $data, $options, $depth );
 	}
 }
