@@ -91,13 +91,10 @@ class Analytics_Drain {
 		$newest = $current - 1 - $this->config->settle;
 		$oldest = $current - $this->config->lookback;
 
-		$payloads = array();
-		$keys     = array();
-
 		for ( $bucket = $oldest; $bucket <= $newest; $bucket++ ) {
 			for ( $shard = 0; $shard < $this->config->shards; $shard++ ) {
 				if ( $this->now() >= $deadline ) {
-					break 2;
+					return;
 				}
 
 				$counter_key = Analytics_Buffer::counter_key( $bucket, $shard );
@@ -107,7 +104,6 @@ class Analytics_Drain {
 					continue;
 				}
 
-				$keys[]     = $counter_key;
 				$read_count = min( (int) $counter, $this->config->cap_per_shard );
 
 				$event_keys = array();
@@ -117,49 +113,56 @@ class Analytics_Drain {
 
 				$values = wp_cache_get_multiple( $event_keys, Analytics_Buffer::GROUP );
 
+				$deliverable = array();
 				foreach ( $event_keys as $event_key ) {
-					$keys[] = $event_key;
-
 					$raw = $values[ $event_key ] ?? false;
-					if ( false !== $raw ) {
-						$decoded = json_decode( (string) $raw, true );
-						if ( is_array( $decoded ) ) {
-							$payloads[] = $decoded;
-						}
+					if ( false === $raw ) {
+						continue;
 					}
 
-					if ( count( $payloads ) >= $this->config->batch ) {
-						$this->deliver( $payloads );
-						wp_cache_delete_multiple( $keys, Analytics_Buffer::GROUP );
-						$payloads = array();
-						$keys     = array();
-
-						if ( $this->now() >= $deadline ) {
-							break 3;
-						}
+					$decoded = json_decode( (string) $raw, true );
+					if ( is_array( $decoded ) ) {
+						$deliverable[] = array(
+							'key'     => $event_key,
+							'payload' => $decoded,
+						);
+					} else {
+						// Malformed payload: drop it so it is not re-read.
+						wp_cache_delete( $event_key, Analytics_Buffer::GROUP );
 					}
 				}
-			}
-		}
 
-		if ( ! empty( $keys ) ) {
-			if ( ! empty( $payloads ) ) {
-				$this->deliver( $payloads );
+				if ( $this->deliver( $deliverable, $deadline ) ) {
+					// Deadline reached mid-shard: undelivered event keys and the
+					// counter key remain, so this shard re-drains on the next run.
+					return;
+				}
+
+				// Shard fully delivered — remove its counter key.
+				wp_cache_delete( $counter_key, Analytics_Buffer::GROUP );
 			}
-			wp_cache_delete_multiple( $keys, Analytics_Buffer::GROUP );
 		}
 	}
 
 	/**
-	 * Deliver a batch of serialized events to the relay.
+	 * Deliver events to the relay one at a time, deleting each key immediately
+	 * after its (single) attempt, and stop early when the run budget is spent.
 	 *
-	 * Per-event today; a bulk relay endpoint will collapse this into one POST
-	 * when the SDK exposes it. Fail-open per event.
+	 * Per-event delivery today; when the relay's bulk endpoint is available this
+	 * becomes one POST per batch (config->batch is reserved for that). Deliver-once
+	 * / fail-open: each event is attempted exactly once and its key deleted
+	 * regardless of the POST outcome; a mid-run deadline leaves the not-yet-attempted
+	 * events untouched for the next run.
 	 *
-	 * @param array<int, array<string, mixed>> $payloads Serialized events.
-	 * @return void
+	 * @param array<int, array{key:string, payload:array<string,mixed>}> $items    Event key/payload pairs.
+	 * @param int                                                        $deadline UNIX time the run must stop by.
+	 * @return bool True if the deadline was reached with items still undelivered.
 	 */
-	private function deliver( array $payloads ): void {
+	private function deliver( array $items, int $deadline ): bool {
+		if ( empty( $items ) ) {
+			return false;
+		}
+
 		$transport = new HttpAnalyticsTransport(
 			$this->settings->get_merchant_api_key(),
 			SUPERTAB_CONNECT_API_BASE_URL,
@@ -167,16 +170,25 @@ class Analytics_Drain {
 			defined( 'WP_DEBUG' ) && WP_DEBUG
 		);
 
-		foreach ( $payloads as $payload ) {
+		$last = count( $items ) - 1;
+		foreach ( $items as $i => $item ) {
 			try {
-				$transport->emit( AnalyticsEvent::fromArray( $payload ) );
+				$transport->emit( AnalyticsEvent::fromArray( $item['payload'] ) );
 			} catch ( \Throwable $e ) {
 				if ( defined( 'WP_DEBUG' ) && WP_DEBUG ) {
 					// phpcs:ignore WordPress.PHP.DevelopmentFunctions.error_log_error_log -- Intentional debug logging for analytics delivery failures.
 					error_log( '[Supertab Connect] Analytics delivery error: ' . $e->getMessage() );
 				}
 			}
+
+			wp_cache_delete( $item['key'], Analytics_Buffer::GROUP );
+
+			if ( $this->now() >= $deadline && $i < $last ) {
+				return true;
+			}
 		}
+
+		return false;
 	}
 
 	/**

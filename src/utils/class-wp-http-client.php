@@ -58,6 +58,8 @@ class WP_Http_Client implements HttpClientInterface {
 			'headers'    => $headers,
 			'body'       => $body,
 			'user-agent' => HttpClient::resolveUserAgent(),
+			// VIP bounded-outbound-HTTP / spec ≤3s: analytics POSTs must not block a drain run.
+			'timeout'    => 3,
 		);
 
 		$response = wp_remote_post( $url, $args );

@@ -86,7 +86,7 @@ class Plugin {
 			$config = Analytics_Config::from_constants();
 
 			// Register the drain runner in every request context (admin-ajax / cron /
-			// front-end) so it delivers wherever the queue runner executes.
+			// front-end) so it delivers wherever the drain runner executes.
 			$drain = new Analytics_Drain( $settings, $http_client, $config );
 			$drain->register();
 

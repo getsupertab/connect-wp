@@ -139,9 +139,15 @@ class AnalyticsDrainTest extends TestCase {
 
 		// now() call sequence for this fixed config (window 10, shards 2, lookback 3, settle 0,
 		// batch 1, max_run 5): #1 current=intdiv(125,10)=12; #2 deadline=125+5=130;
-		// #3..#6 empty buckets 9 & 10 (2 shard checks each) all 125<130; #7 bucket 11 shard 0
-		// check 125<130 -> read+flush 'a'; #8 after-flush check returns 130 (>=deadline) -> break.
-		// Shard 1 of bucket 11 is never reached.
+		// #3..#6 the per-shard deadline check at the top of the loop for the four empty
+		// bucket/shard slots (9,0) (9,1) (10,0) (10,1), all 125<130; #7 the deadline check
+		// for bucket 11 shard 0 (125<130) -> counter/event read -> deliver() is called with
+		// bucket 11 shard 0's one item; inside deliver() the event is emitted and its key
+		// deleted, then the per-item deadline check runs -> #8 returns 130 (>=deadline), but
+		// it was the last (only) item in that shard so deliver() returns false and the
+		// now-empty shard's counter key is deleted too; #9 the deadline check for bucket 11
+		// shard 1 returns 130 (>=deadline) -> drain() returns immediately. Shard 1 of
+		// bucket 11 is never reached: neither its event key nor its counter key are touched.
 		$ticks = array( 125, 125, 125, 125, 125, 125, 125, 130 );
 
 		$this->drain_with_clock( $ticks )->drain();
@@ -151,8 +157,48 @@ class AnalyticsDrainTest extends TestCase {
 		$body = json_decode( $wp_test_http_calls[0]['args']['body'], true );
 		$this->assertSame( 'a', $body['request_id'] );
 
-		// Shard 1's event was never read or deleted — it survives in the cache.
+		// Shard 0 was fully delivered: both its event key and counter key are gone.
+		$this->assertArrayNotHasKey( Analytics_Buffer::event_key( 11, 0, 1 ), $wp_test_object_cache[ Analytics_Buffer::GROUP ] ?? array() );
+		$this->assertArrayNotHasKey( Analytics_Buffer::counter_key( 11, 0 ), $wp_test_object_cache[ Analytics_Buffer::GROUP ] ?? array() );
+
+		// Shard 1 was never attempted: its event key AND counter key both survive, so the
+		// shard re-drains on the next run. This is the key defer guarantee of the new design.
 		$this->assertArrayHasKey( Analytics_Buffer::event_key( 11, 1, 1 ), $wp_test_object_cache[ Analytics_Buffer::GROUP ] );
+		$this->assertArrayHasKey( Analytics_Buffer::counter_key( 11, 1 ), $wp_test_object_cache[ Analytics_Buffer::GROUP ] );
+	}
+
+	public function test_drain_defers_last_event_in_shard_when_deadline_hits_mid_delivery(): void {
+		global $wp_test_http_calls, $wp_test_object_cache;
+
+		// Bucket 11 (closed), a single shard with two events: 'a' is attempted and
+		// delivered, then the deadline is reached before 'b' can be attempted.
+		wp_cache_set( Analytics_Buffer::counter_key( 11, 0 ), 2, Analytics_Buffer::GROUP );
+		wp_cache_set( Analytics_Buffer::event_key( 11, 0, 1 ), wp_json_encode( array( 'request_id' => 'a' ) ), Analytics_Buffer::GROUP );
+		wp_cache_set( Analytics_Buffer::event_key( 11, 0, 2 ), wp_json_encode( array( 'request_id' => 'b' ) ), Analytics_Buffer::GROUP );
+
+		// now() call sequence (window 10, shards 2, lookback 3, settle 0, batch 1, max_run 5):
+		// #1 current=intdiv(125,10)=12; #2 deadline=125+5=130; #3..#6 empty slots
+		// (9,0) (9,1) (10,0) (10,1) all 125<130; #7 bucket 11 shard 0 deadline check
+		// 125<130 -> counter=2, both events read -> deliver() called with ['a','b'];
+		// inside deliver(): i=0 ('a') emits + deletes key, then #8 the per-item deadline
+		// check returns 130 (>=deadline) and i(0) < last(1) is true -> deliver() returns
+		// true immediately, leaving 'b' untouched. drain() then returns without deleting
+		// the shard's counter key.
+		$ticks = array( 125, 125, 125, 125, 125, 125, 125, 130 );
+
+		$this->drain_with_clock( $ticks )->drain();
+
+		// Only 'a' was attempted.
+		$this->assertCount( 1, $wp_test_http_calls );
+		$body = json_decode( $wp_test_http_calls[0]['args']['body'], true );
+		$this->assertSame( 'a', $body['request_id'] );
+
+		// 'a' was attempted, so its key is gone regardless of delivery outcome.
+		$this->assertArrayNotHasKey( Analytics_Buffer::event_key( 11, 0, 1 ), $wp_test_object_cache[ Analytics_Buffer::GROUP ] ?? array() );
+
+		// 'b' was never attempted: its key AND the shard's counter key both survive.
+		$this->assertArrayHasKey( Analytics_Buffer::event_key( 11, 0, 2 ), $wp_test_object_cache[ Analytics_Buffer::GROUP ] );
+		$this->assertArrayHasKey( Analytics_Buffer::counter_key( 11, 0 ), $wp_test_object_cache[ Analytics_Buffer::GROUP ] );
 	}
 
 	public function test_register_schedules_recurring_action_when_absent(): void {

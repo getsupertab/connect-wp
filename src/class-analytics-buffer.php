@@ -56,7 +56,7 @@ class Analytics_Buffer {
 		$counter_key = self::counter_key( $bucket, $shard );
 
 		// Seed the counter atomically (no-op if present), then increment atomically.
-		// phpcs:ignore WordPressVIPMinimum.Performance.LowExpiryCacheTime.CacheTimeUndetermined -- TTL is Analytics_Config::$ttl, derived from lookback/window and always a positive number of seconds.
+		// phpcs:ignore WordPressVIPMinimum.Performance.LowExpiryCacheTime.CacheTimeUndetermined -- Short TTL is intentional: it is the age-purge backstop (ttl = lookback*window + margin) that bounds undrained buckets; see Analytics_Config.
 		wp_cache_add( $counter_key, 0, self::GROUP, $this->config->ttl );
 		$seq = wp_cache_incr( $counter_key, 1, self::GROUP );
 
@@ -70,7 +70,7 @@ class Analytics_Buffer {
 			return;
 		}
 
-		// phpcs:ignore WordPressVIPMinimum.Performance.LowExpiryCacheTime.CacheTimeUndetermined -- TTL is Analytics_Config::$ttl, derived from lookback/window and always a positive number of seconds.
+		// phpcs:ignore WordPressVIPMinimum.Performance.LowExpiryCacheTime.CacheTimeUndetermined -- Short TTL is intentional: it is the age-purge backstop (ttl = lookback*window + margin) that bounds undrained buckets; see Analytics_Config.
 		wp_cache_set( self::event_key( $bucket, $shard, (int) $seq ), $json, self::GROUP, $this->config->ttl );
 	}
 
