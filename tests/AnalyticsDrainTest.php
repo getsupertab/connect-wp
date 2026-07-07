@@ -154,4 +154,68 @@ class AnalyticsDrainTest extends TestCase {
 		// Shard 1's event was never read or deleted — it survives in the cache.
 		$this->assertArrayHasKey( Analytics_Buffer::event_key( 11, 1, 1 ), $wp_test_object_cache[ Analytics_Buffer::GROUP ] );
 	}
+
+	public function test_register_schedules_recurring_action_when_absent(): void {
+		global $wp_test_as_recurring_calls, $wp_test_as_next_scheduled;
+
+		$wp_test_as_next_scheduled = false;
+		$this->drain( 1000 )->register();
+
+		$this->assertCount( 1, $wp_test_as_recurring_calls );
+		$this->assertSame( Analytics_Drain::HOOK, $wp_test_as_recurring_calls[0]['hook'] );
+		$this->assertSame( 60, $wp_test_as_recurring_calls[0]['interval'] );
+		$this->assertSame( Analytics_Buffer::GROUP, $wp_test_as_recurring_calls[0]['group'] );
+	}
+
+	public function test_register_is_idempotent_when_already_scheduled(): void {
+		global $wp_test_as_recurring_calls, $wp_test_as_next_scheduled;
+
+		$wp_test_as_next_scheduled = 123456; // already scheduled.
+		$this->drain( 1000 )->register();
+
+		$this->assertSame( array(), $wp_test_as_recurring_calls );
+	}
+
+	public function test_register_falls_back_to_wp_cron_without_action_scheduler(): void {
+		global $wp_test_scheduled_events, $wp_test_wp_next_scheduled;
+
+		$wp_test_wp_next_scheduled = false;
+		$drain = new class( new Settings(), new WP_Http_Client(), $this->config(), 1000 ) extends Analytics_Drain {
+			public function __construct( Settings $s, WP_Http_Client $h, Analytics_Config $c, private int $test_now ) {
+				parent::__construct( $s, $h, $c );
+			}
+			protected function now(): int {
+				return $this->test_now;
+			}
+			protected function action_scheduler_available(): bool {
+				return false;
+			}
+		};
+		$drain->register();
+
+		$this->assertCount( 1, $wp_test_scheduled_events );
+		$this->assertSame( Analytics_Drain::HOOK, $wp_test_scheduled_events[0]['hook'] );
+		$this->assertSame( Analytics_Drain::CRON_SCHEDULE, $wp_test_scheduled_events[0]['recurrence'] );
+	}
+
+	public function test_add_cron_interval_registers_drain_interval(): void {
+		$schedules = $this->drain( 1000 )->add_cron_interval( array() );
+
+		$this->assertArrayHasKey( Analytics_Drain::CRON_SCHEDULE, $schedules );
+		$this->assertSame( 60, $schedules[ Analytics_Drain::CRON_SCHEDULE ]['interval'] );
+	}
+
+	public function test_clear_scheduled_clears_drain_and_legacy_hooks(): void {
+		global $wp_test_unscheduled_hooks, $wp_test_as_unschedule_calls;
+
+		Analytics_Drain::clear_scheduled();
+
+		$this->assertSame(
+			array( Analytics_Drain::HOOK, Analytics_Drain::LEGACY_HOOK ),
+			$wp_test_unscheduled_hooks
+		);
+		$this->assertCount( 2, $wp_test_as_unschedule_calls );
+		$this->assertSame( Analytics_Drain::HOOK, $wp_test_as_unschedule_calls[0]['hook'] );
+		$this->assertSame( Analytics_Drain::LEGACY_HOOK, $wp_test_as_unschedule_calls[1]['hook'] );
+	}
 }

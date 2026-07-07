@@ -57,3 +57,45 @@ if ( ! function_exists( 'as_unschedule_all_actions' ) ) {
 	function as_unschedule_all_actions( string $hook = '', array $args = array(), string $group = '' ): void {
 	}
 }
+
+if ( ! function_exists( 'as_next_scheduled_action' ) ) {
+	/**
+	 * Signature-only stub of Action Scheduler's next-scheduled lookup function.
+	 *
+	 * Real implementation is provided at runtime by the Action Scheduler
+	 * library (bundled with WooCommerce or as a standalone plugin) when
+	 * active. Declared here purely so PHPStan can type-check call sites
+	 * guarded by `action_scheduler_available()` (which checks
+	 * `function_exists( 'as_schedule_recurring_action' )` at runtime).
+	 *
+	 * @param string            $hook  Action hook to look up.
+	 * @param array<mixed>|null $args  Arguments matching the scheduled action.
+	 * @param string            $group Action group.
+	 * @return int|false Timestamp of the next occurrence, or false if none is scheduled.
+	 */
+	function as_next_scheduled_action( string $hook, $args = null, string $group = '' ) {
+		return false;
+	}
+}
+
+if ( ! function_exists( 'as_schedule_recurring_action' ) ) {
+	/**
+	 * Signature-only stub of Action Scheduler's recurring-schedule function.
+	 *
+	 * Real implementation is provided at runtime by the Action Scheduler
+	 * library (bundled with WooCommerce or as a standalone plugin) when
+	 * active. Declared here purely so PHPStan can type-check call sites
+	 * guarded by `action_scheduler_available()` (which checks
+	 * `function_exists( 'as_schedule_recurring_action' )` at runtime).
+	 *
+	 * @param int                $timestamp First run time, as a Unix timestamp.
+	 * @param int                $interval  Interval in seconds between runs.
+	 * @param string             $hook      Action hook to trigger.
+	 * @param array<int, mixed>  $args      Arguments to pass to the hook.
+	 * @param string             $group     Action group.
+	 * @return int Action ID.
+	 */
+	function as_schedule_recurring_action( int $timestamp, int $interval, string $hook, array $args = array(), string $group = '' ): int {
+		return 0;
+	}
+}

@@ -32,6 +32,20 @@ class Analytics_Drain {
 	public const HOOK = 'supertab_connect_drain_analytics';
 
 	/**
+	 * Legacy per-event hook from the previous Action-Scheduler queue, cleared on deactivation.
+	 *
+	 * @var string
+	 */
+	public const LEGACY_HOOK = 'supertab_connect_emit_analytics';
+
+	/**
+	 * Custom WP-Cron schedule name for the drain interval (fallback path).
+	 *
+	 * @var string
+	 */
+	public const CRON_SCHEDULE = 'supertab_connect_analytics_interval';
+
+	/**
 	 * Settings manager.
 	 *
 	 * @var Settings
@@ -161,6 +175,71 @@ class Analytics_Drain {
 					// phpcs:ignore WordPress.PHP.DevelopmentFunctions.error_log_error_log -- Intentional debug logging for analytics delivery failures.
 					error_log( '[Supertab Connect] Analytics delivery error: ' . $e->getMessage() );
 				}
+			}
+		}
+	}
+
+	/**
+	 * Register the drain runner in every request context, scheduling it idempotently.
+	 *
+	 * Prefers Action Scheduler (recurring action); falls back to a custom WP-Cron
+	 * schedule. Single-concurrency by design — do not whitelist increased concurrency.
+	 *
+	 * @return void
+	 */
+	public function register(): void {
+		add_action( self::HOOK, array( $this, 'drain' ) );
+		// phpcs:ignore WordPress.WP.CronInterval.ChangeDetected -- interval value comes from Analytics_Config::$drain_interval, set in add_cron_interval().
+		add_filter( 'cron_schedules', array( $this, 'add_cron_interval' ) );
+
+		if ( $this->action_scheduler_available() ) {
+			if ( false === as_next_scheduled_action( self::HOOK, null, Analytics_Buffer::GROUP ) ) {
+				as_schedule_recurring_action( $this->now(), $this->config->drain_interval, self::HOOK, array(), Analytics_Buffer::GROUP );
+			}
+			return;
+		}
+
+		if ( false === wp_next_scheduled( self::HOOK ) ) {
+			wp_schedule_event( $this->now(), self::CRON_SCHEDULE, self::HOOK );
+		}
+	}
+
+	/**
+	 * Register the custom WP-Cron interval used by the fallback path.
+	 *
+	 * @param array<string, array{interval:int, display:string}> $schedules Existing schedules.
+	 * @return array<string, array{interval:int, display:string}>
+	 */
+	public function add_cron_interval( array $schedules ): array {
+		$schedules[ self::CRON_SCHEDULE ] = array(
+			'interval' => $this->config->drain_interval,
+			'display'  => __( 'Supertab Connect analytics drain interval', 'supertab-connect' ),
+		);
+
+		return $schedules;
+	}
+
+	/**
+	 * Clear the recurring drain job and any legacy per-event jobs. Called on deactivation.
+	 *
+	 * Args-agnostic: removes every pending event/action for both hooks regardless of
+	 * payload. Both hooks are unique to this plugin, so clearing by hook alone is safe.
+	 *
+	 * @return void
+	 */
+	public static function clear_scheduled(): void {
+		try {
+			wp_unschedule_hook( self::HOOK );
+			wp_unschedule_hook( self::LEGACY_HOOK );
+
+			if ( function_exists( 'as_unschedule_all_actions' ) ) {
+				call_user_func( 'as_unschedule_all_actions', self::HOOK );
+				call_user_func( 'as_unschedule_all_actions', self::LEGACY_HOOK );
+			}
+		} catch ( \Throwable $e ) {
+			if ( defined( 'WP_DEBUG' ) && WP_DEBUG ) {
+				// phpcs:ignore WordPress.PHP.DevelopmentFunctions.error_log_error_log -- Intentional debug logging for analytics clear_scheduled failures.
+				error_log( '[Supertab Connect] Analytics clear_scheduled error: ' . $e->getMessage() );
 			}
 		}
 	}
