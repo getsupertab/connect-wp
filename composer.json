@@ -41,7 +41,7 @@
 		"lint": "parallel-lint --exclude vendor --exclude node_modules .",
 		"phpcs": "phpcs",
 		"phpcbf": "phpcbf",
-		"phpstan": "phpstan analyse --memory-limit=512M",
+		"phpstan": "phpstan analyse --memory-limit=1G",
 		"test": "phpunit",
 		"test-integration": "phpunit --configuration phpunit-integration.xml.dist",
 		"check": [
