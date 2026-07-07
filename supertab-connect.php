@@ -56,7 +56,7 @@ register_activation_hook(
 register_deactivation_hook(
 	__FILE__,
 	static function (): void {
-		Supertab_Connect\Analytics_Dispatcher::clear_scheduled();
+		Supertab_Connect\Analytics_Drain::clear_scheduled();
 	}
 );
 
