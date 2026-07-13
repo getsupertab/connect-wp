@@ -263,6 +263,21 @@ class AnalyticsDispatcherTest extends TestCase {
 		$this->assertCount( 500, $table->rows, 'Remainder waits for the next run.' );
 	}
 
+	public function test_flush_makes_second_empty_claim_on_exact_batch_boundary(): void {
+		global $wp_test_http_calls;
+
+		$table = $this->make_fake_table();
+		for ( $i = 0; $i < 500; $i++ ) {
+			$table->rows[] = '{"request_id":"req-' . $i . '"}';
+		}
+
+		$this->make_dispatcher( $table )->flush();
+
+		$this->assertCount( 1, $wp_test_http_calls, 'One full batch POSTed.' );
+		$this->assertSame( array( 500, 500 ), $table->claim_calls, 'A full batch triggers one more (empty) claim.' );
+		$this->assertSame( array(), $table->rows );
+	}
+
 	public function test_flush_swallows_http_errors(): void {
 		$table       = $this->make_fake_table();
 		$table->rows = array( '{"request_id":"req-x"}' );
@@ -388,6 +403,22 @@ class AnalyticsDispatcherTest extends TestCase {
 		$this->make_dispatcher( $table )->register();
 
 		$this->assertSame( 1, $table->install_calls );
+	}
+
+	public function test_register_swallows_install_failure(): void {
+		global $wp_test_doing_cron, $wp_test_as_recurring_calls;
+
+		$wp_test_doing_cron = true;
+
+		$table = new class() extends Analytics_Queue_Table {
+			public function install(): void {
+				throw new \RuntimeException( 'db down' );
+			}
+		};
+
+		$this->make_dispatcher( $table )->register();
+
+		$this->assertCount( 1, $wp_test_as_recurring_calls, 'Scheduling still proceeds after install failure.' );
 	}
 
 	public function test_register_does_no_schedule_work_on_front_end(): void {

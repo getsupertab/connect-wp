@@ -123,7 +123,12 @@ class Analytics_Dispatcher {
 		add_action( self::LEGACY_HOOK, array( $this, 'dispatch' ) );
 
 		if ( is_admin() || wp_doing_cron() ) {
-			$this->table->install();
+			try {
+				$this->table->install();
+			} catch ( \Throwable $e ) {
+				self::log_debug( 'Analytics schema install error: ' . $e->getMessage() );
+			}
+
 			$this->ensure_scheduled();
 		}
 	}

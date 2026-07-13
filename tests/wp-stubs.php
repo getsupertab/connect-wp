@@ -74,7 +74,7 @@ if ( ! defined( 'SUPERTAB_CONNECT_API_BASE_URL' ) ) {
 |
 */
 
-global $wp_test_options, $wp_test_transients, $wp_test_headers_sent, $wp_test_status_code, $wp_test_http_calls, $wp_test_http_response;
+global $wp_test_options, $wp_test_transients, $wp_test_headers_sent, $wp_test_status_code, $wp_test_http_calls, $wp_test_http_response, $wp_test_option_autoload;
 
 $wp_test_options     = [];
 $wp_test_transients  = [];
@@ -82,6 +82,7 @@ $wp_test_headers_sent = [];
 $wp_test_status_code = 200;
 $wp_test_http_calls  = [];
 $wp_test_http_response = null;
+$wp_test_option_autoload = [];
 
 global $wp_test_scheduled_events, $wp_test_cleared_hooks, $wp_test_unscheduled_hooks, $wp_test_schedule_result, $wp_test_doing_cron, $wp_test_as_enqueue_calls, $wp_test_as_unschedule_calls, $wp_test_recurring_events, $wp_test_next_scheduled, $wp_test_as_recurring_calls, $wp_test_as_has_scheduled, $wp_test_is_admin;
 
@@ -153,13 +154,14 @@ $wpdb = new WP_Test_Wpdb();
  * Reset all in-memory stores. Call in setUp()/tearDown().
  */
 function wp_stubs_reset(): void {
-	global $wp_test_options, $wp_test_transients, $wp_test_headers_sent, $wp_test_status_code, $wp_test_http_calls, $wp_test_http_response, $wp_test_scheduled_events, $wp_test_cleared_hooks, $wp_test_unscheduled_hooks, $wp_test_schedule_result, $wp_test_doing_cron, $wp_test_as_enqueue_calls, $wp_test_as_unschedule_calls, $wp_test_recurring_events, $wp_test_next_scheduled, $wp_test_as_recurring_calls, $wp_test_as_has_scheduled, $wp_test_is_admin, $wp_test_dbdelta_queries, $wpdb;
+	global $wp_test_options, $wp_test_transients, $wp_test_headers_sent, $wp_test_status_code, $wp_test_http_calls, $wp_test_http_response, $wp_test_option_autoload, $wp_test_scheduled_events, $wp_test_cleared_hooks, $wp_test_unscheduled_hooks, $wp_test_schedule_result, $wp_test_doing_cron, $wp_test_as_enqueue_calls, $wp_test_as_unschedule_calls, $wp_test_recurring_events, $wp_test_next_scheduled, $wp_test_as_recurring_calls, $wp_test_as_has_scheduled, $wp_test_is_admin, $wp_test_dbdelta_queries, $wpdb;
 	$wp_test_options        = [];
 	$wp_test_transients     = [];
 	$wp_test_headers_sent   = [];
 	$wp_test_status_code    = 200;
 	$wp_test_http_calls     = [];
 	$wp_test_http_response  = null;
+	$wp_test_option_autoload = [];
 	$wp_test_scheduled_events     = [];
 	$wp_test_cleared_hooks        = [];
 	$wp_test_unscheduled_hooks    = [];
@@ -191,8 +193,9 @@ if ( ! function_exists( 'get_option' ) ) {
 
 if ( ! function_exists( 'update_option' ) ) {
 	function update_option( string $option, $value, $autoload = null ): bool {
-		global $wp_test_options;
-		$wp_test_options[ $option ] = $value;
+		global $wp_test_options, $wp_test_option_autoload;
+		$wp_test_options[ $option ]         = $value;
+		$wp_test_option_autoload[ $option ] = $autoload;
 		return true;
 	}
 }
@@ -253,8 +256,8 @@ if ( ! function_exists( 'status_header' ) ) {
 |--------------------------------------------------------------------------
 |
 | Capture each outbound request into $wp_test_http_calls so tests can assert
-| on the URL and args (headers, user-agent, body). Always returns a canned
-| 200 response.
+| on the URL and args (headers, user-agent, body). Default response is a canned
+| 200, overridable per-test via $wp_test_http_response.
 |
 */
 
@@ -268,9 +271,9 @@ if ( ! function_exists( 'wp_remote_post' ) ) {
 
 if ( ! function_exists( 'wp_remote_get' ) ) {
 	function wp_remote_get( string $url, array $args = [] ) {
-		global $wp_test_http_calls;
+		global $wp_test_http_calls, $wp_test_http_response;
 		$wp_test_http_calls[] = [ 'method' => 'GET', 'url' => $url, 'args' => $args ];
-		return [ 'response' => [ 'code' => 200 ], 'body' => 'ok' ];
+		return $wp_test_http_response ?? [ 'response' => [ 'code' => 200 ], 'body' => 'ok' ];
 	}
 }
 

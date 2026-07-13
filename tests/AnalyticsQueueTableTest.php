@@ -29,7 +29,7 @@ class AnalyticsQueueTableTest extends TestCase {
 	}
 
 	public function test_install_runs_dbdelta_and_stores_version(): void {
-		global $wp_test_dbdelta_queries;
+		global $wp_test_dbdelta_queries, $wp_test_option_autoload;
 
 		( new Analytics_Queue_Table() )->install();
 
@@ -42,6 +42,7 @@ class AnalyticsQueueTableTest extends TestCase {
 		// dbDelta requires exactly two spaces after PRIMARY KEY.
 		$this->assertStringContainsString( 'PRIMARY KEY  (id)', $sql );
 		$this->assertSame( Analytics_Queue_Table::DB_VERSION, get_option( 'supertab_connect_db_version' ) );
+		$this->assertFalse( $wp_test_option_autoload['supertab_connect_db_version'], 'Schema version option must not autoload.' );
 	}
 
 	public function test_install_skips_when_version_current(): void {
