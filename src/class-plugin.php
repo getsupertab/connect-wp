@@ -187,7 +187,7 @@ class Plugin {
 	 *
 	 * @return EnforcementMode
 	 */
-	private static function get_enforcement_mode(): EnforcementMode {
+	public static function get_enforcement_mode(): EnforcementMode {
 		$default = EnforcementMode::OBSERVE;
 
 		if ( defined( 'SUPERTAB_CONNECT_ENFORCEMENT_MODE' ) ) {

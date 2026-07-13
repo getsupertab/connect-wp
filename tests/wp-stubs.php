@@ -70,13 +70,14 @@ if ( ! defined( 'SUPERTAB_CONNECT_API_BASE_URL' ) ) {
 |
 */
 
-global $wp_test_options, $wp_test_transients, $wp_test_headers_sent, $wp_test_status_code, $wp_test_http_calls;
+global $wp_test_options, $wp_test_transients, $wp_test_headers_sent, $wp_test_status_code, $wp_test_http_calls, $wp_test_actions;
 
 $wp_test_options     = [];
 $wp_test_transients  = [];
 $wp_test_headers_sent = [];
 $wp_test_status_code = 200;
 $wp_test_http_calls  = [];
+$wp_test_actions     = [];
 
 global $wp_test_scheduled_events, $wp_test_cleared_hooks, $wp_test_unscheduled_hooks, $wp_test_schedule_result, $wp_test_doing_cron, $wp_test_as_enqueue_calls, $wp_test_as_unschedule_calls;
 
@@ -92,7 +93,7 @@ $wp_test_as_unschedule_calls = [];
  * Reset all in-memory stores. Call in setUp()/tearDown().
  */
 function wp_stubs_reset(): void {
-	global $wp_test_options, $wp_test_transients, $wp_test_headers_sent, $wp_test_status_code, $wp_test_http_calls, $wp_test_scheduled_events, $wp_test_cleared_hooks, $wp_test_unscheduled_hooks, $wp_test_schedule_result, $wp_test_doing_cron, $wp_test_as_enqueue_calls, $wp_test_as_unschedule_calls;
+	global $wp_test_options, $wp_test_transients, $wp_test_headers_sent, $wp_test_status_code, $wp_test_http_calls, $wp_test_scheduled_events, $wp_test_cleared_hooks, $wp_test_unscheduled_hooks, $wp_test_schedule_result, $wp_test_doing_cron, $wp_test_as_enqueue_calls, $wp_test_as_unschedule_calls, $wp_test_actions;
 	$wp_test_options      = [];
 	$wp_test_transients   = [];
 	$wp_test_headers_sent = [];
@@ -105,6 +106,7 @@ function wp_stubs_reset(): void {
 	$wp_test_doing_cron         = false;
 	$wp_test_as_enqueue_calls   = [];
 	$wp_test_as_unschedule_calls = [];
+	$wp_test_actions = [];
 }
 
 /*
@@ -243,6 +245,12 @@ if ( ! function_exists( 'esc_html' ) ) {
 
 if ( ! function_exists( 'add_action' ) ) {
 	function add_action( string $hook, $callback, int $priority = 10, int $accepted_args = 1 ): bool {
+		global $wp_test_actions;
+		$wp_test_actions[] = [
+			'hook'     => $hook,
+			'callback' => $callback,
+			'priority' => $priority,
+		];
 		return true;
 	}
 }
@@ -250,6 +258,55 @@ if ( ! function_exists( 'add_action' ) ) {
 if ( ! function_exists( 'add_filter' ) ) {
 	function add_filter( string $hook, $callback, int $priority = 10, int $accepted_args = 1 ): bool {
 		return true;
+	}
+}
+
+if ( ! function_exists( 'apply_filters' ) ) {
+	function apply_filters( string $hook, $value, ...$args ) {
+		return $value;
+	}
+}
+
+/*
+|--------------------------------------------------------------------------
+| Misc WordPress Functions
+|--------------------------------------------------------------------------
+*/
+
+if ( ! function_exists( 'wp_json_encode' ) ) {
+	function wp_json_encode( $data, int $options = 0, int $depth = 512 ) {
+		return json_encode( $data, $options, $depth );
+	}
+}
+
+if ( ! function_exists( 'sanitize_text_field' ) ) {
+	function sanitize_text_field( string $str ): string {
+		return trim( preg_replace( '/[\r\n\t ]+/', ' ', $str ) );
+	}
+}
+
+if ( ! function_exists( 'wp_unslash' ) ) {
+	function wp_unslash( $value ) {
+		return is_string( $value ) ? stripslashes( $value ) : $value;
+	}
+}
+
+if ( ! function_exists( 'is_ssl' ) ) {
+	function is_ssl(): bool {
+		return true;
+	}
+}
+
+/*
+|--------------------------------------------------------------------------
+| WP Environment Class
+|--------------------------------------------------------------------------
+*/
+
+if ( ! class_exists( 'WP' ) ) {
+	class WP {
+		/** @var string */
+		public $request = '';
 	}
 }
 
