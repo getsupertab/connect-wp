@@ -30,6 +30,10 @@ if ( ! defined( 'HOUR_IN_SECONDS' ) ) {
 	define( 'HOUR_IN_SECONDS', 60 * MINUTE_IN_SECONDS );
 }
 
+if ( ! defined( 'ARRAY_A' ) ) {
+	define( 'ARRAY_A', 'ARRAY_A' );
+}
+
 /*
 |--------------------------------------------------------------------------
 | Plugin Constants
@@ -88,11 +92,62 @@ $wp_test_doing_cron          = false;
 $wp_test_as_enqueue_calls    = [];
 $wp_test_as_unschedule_calls = [];
 
+global $wp_test_dbdelta_queries;
+
+$wp_test_dbdelta_queries = [];
+
+/**
+ * Minimal wpdb spy. Records calls; returns configurable canned results.
+ */
+class WP_Test_Wpdb {
+	public string $prefix       = 'wp_';
+	public array $insert_calls  = [];
+	public array $queries       = [];
+	/** @var int|false */
+	public $insert_result       = 1;
+	/** Shifted once per get_results() call. */
+	public array $results_queue = [];
+	public string $var_result   = '0';
+
+	public function insert( string $table, array $data, $format = null ) {
+		$this->insert_calls[] = [ 'table' => $table, 'data' => $data, 'format' => $format ];
+		return $this->insert_result;
+	}
+
+	public function get_var( string $query ) {
+		$this->queries[] = $query;
+		return $this->var_result;
+	}
+
+	public function get_results( string $query, string $output = 'OBJECT' ) {
+		$this->queries[] = $query;
+		return array_shift( $this->results_queue ) ?? [];
+	}
+
+	public function query( string $query ) {
+		$this->queries[] = $query;
+		return 0;
+	}
+
+	public function prepare( string $query, ...$args ): string {
+		// Replace %s with quoted placeholders, then vsprintf handles both %s and %d
+		$query = str_replace( '%s', "'%s'", $query );
+		return vsprintf( $query, $args );
+	}
+
+	public function get_charset_collate(): string {
+		return 'DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_520_ci';
+	}
+}
+
+global $wpdb;
+$wpdb = new WP_Test_Wpdb();
+
 /**
  * Reset all in-memory stores. Call in setUp()/tearDown().
  */
 function wp_stubs_reset(): void {
-	global $wp_test_options, $wp_test_transients, $wp_test_headers_sent, $wp_test_status_code, $wp_test_http_calls, $wp_test_scheduled_events, $wp_test_cleared_hooks, $wp_test_unscheduled_hooks, $wp_test_schedule_result, $wp_test_doing_cron, $wp_test_as_enqueue_calls, $wp_test_as_unschedule_calls;
+	global $wp_test_options, $wp_test_transients, $wp_test_headers_sent, $wp_test_status_code, $wp_test_http_calls, $wp_test_scheduled_events, $wp_test_cleared_hooks, $wp_test_unscheduled_hooks, $wp_test_schedule_result, $wp_test_doing_cron, $wp_test_as_enqueue_calls, $wp_test_as_unschedule_calls, $wp_test_dbdelta_queries, $wpdb;
 	$wp_test_options      = [];
 	$wp_test_transients   = [];
 	$wp_test_headers_sent = [];
@@ -105,6 +160,8 @@ function wp_stubs_reset(): void {
 	$wp_test_doing_cron         = false;
 	$wp_test_as_enqueue_calls   = [];
 	$wp_test_as_unschedule_calls = [];
+	$wp_test_dbdelta_queries = [];
+	$wpdb                    = new WP_Test_Wpdb();
 }
 
 /*
@@ -302,5 +359,19 @@ if ( ! function_exists( 'as_unschedule_all_actions' ) ) {
 	function as_unschedule_all_actions( string $hook, array $args = [], string $group = '' ): void {
 		global $wp_test_as_unschedule_calls;
 		$wp_test_as_unschedule_calls[] = [ 'hook' => $hook, 'args' => $args, 'group' => $group ];
+	}
+}
+
+/*
+|--------------------------------------------------------------------------
+| Database Upgrade Stubs
+|--------------------------------------------------------------------------
+*/
+
+if ( ! function_exists( 'dbDelta' ) ) {
+	function dbDelta( $queries = '', bool $execute = true ): array {
+		global $wp_test_dbdelta_queries;
+		$wp_test_dbdelta_queries[] = $queries;
+		return [];
 	}
 }
