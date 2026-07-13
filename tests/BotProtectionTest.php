@@ -28,6 +28,13 @@ class BotProtectionTest extends TestCase {
 	private \ReflectionMethod $is_path_active;
 
 	/**
+	 * Reflection method for filter_safe_headers.
+	 *
+	 * @var \ReflectionMethod
+	 */
+	private \ReflectionMethod $filter_safe_headers;
+
+	/**
 	 * Bot_Protection instance (constructed without a real SDK).
 	 *
 	 * @var Bot_Protection
@@ -52,6 +59,10 @@ class BotProtectionTest extends TestCase {
 		// Make is_path_active accessible.
 		$this->is_path_active = $ref->getMethod( 'is_path_active' );
 		$this->is_path_active->setAccessible( true );
+
+		// Make filter_safe_headers accessible.
+		$this->filter_safe_headers = $ref->getMethod( 'filter_safe_headers' );
+		$this->filter_safe_headers->setAccessible( true );
 	}
 
 	protected function tearDown(): void {
@@ -143,5 +154,49 @@ class BotProtectionTest extends TestCase {
 	public function test_wildcard_pattern_with_trailing_slash_matches(): void {
 		$this->settings->set_active_paths( array( 'blog/*/' ) );
 		$this->assertTrue( $this->is_active( 'blog/my-post' ) );
+	}
+
+	/**
+	 * Invoke filter_safe_headers with the given raw headers.
+	 *
+	 * @param array<string, string> $headers Raw headers to sanitize.
+	 * @return array<string, string>
+	 */
+	private function filter_headers( array $headers ): array {
+		return $this->filter_safe_headers->invoke( $this->bot, $headers );
+	}
+
+	public function test_filter_safe_headers_keeps_well_formed_headers(): void {
+		$headers = array(
+			'X-Supertab-Signal' => 'bot',
+			'Content-Type'      => 'application/json',
+		);
+
+		$this->assertSame( $headers, $this->filter_headers( $headers ) );
+	}
+
+	public function test_filter_safe_headers_drops_invalid_header_names(): void {
+		$headers = array(
+			'X-Valid-Header'         => 'ok',
+			'Invalid Header'         => 'dropped-space',
+			'Invalid:Header'         => 'dropped-colon',
+			"Invalid\r\nHeader"      => 'dropped-crlf-in-name',
+		);
+
+		$this->assertSame(
+			array( 'X-Valid-Header' => 'ok' ),
+			$this->filter_headers( $headers )
+		);
+	}
+
+	public function test_filter_safe_headers_strips_crlf_from_values(): void {
+		$headers = array(
+			'X-Supertab-Signal' => "bot\r\nX-Injected: evil",
+		);
+
+		$this->assertSame(
+			array( 'X-Supertab-Signal' => 'botX-Injected: evil' ),
+			$this->filter_headers( $headers )
+		);
 	}
 }

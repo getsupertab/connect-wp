@@ -17,6 +17,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 }
 
 use Supertab\Connect\Result\BlockResult;
+use Supertab\Connect\Result\RespondResult;
 use Supertab\Connect\SupertabConnect;
 
 /**
@@ -101,6 +102,11 @@ class Bot_Protection {
 			return;
 		}
 
+		if ( $result instanceof RespondResult ) {
+			$this->send_respond_response( $result );
+			return;
+		}
+
 		$this->signal_headers = $result->headers;
 	}
 
@@ -147,15 +153,59 @@ class Bot_Protection {
 	 */
 	private function send_block_response( BlockResult $result ): void {
 		status_header( $result->status );
-
-		foreach ( $result->headers as $name => $value ) {
-			if ( ! preg_match( '/^[a-zA-Z0-9-]+$/', $name ) ) {
-				continue;
-			}
-			header( str_replace( array( "\r", "\n" ), '', "{$name}: {$value}" ) );
-		}
+		$this->send_headers( $result->headers );
 
 		echo esc_html( $result->body );
 		exit;
+	}
+
+	/**
+	 * Send the SDK's own response (e.g. the status endpoint) and terminate.
+	 *
+	 * @param RespondResult $result The respond result from the SDK.
+	 * @return void
+	 */
+	private function send_respond_response( RespondResult $result ): void {
+		status_header( $result->status );
+		$this->send_headers( $result->headers );
+
+		// phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- JSON produced by the SDK itself for its status endpoint, must be served verbatim.
+		echo $result->body;
+		exit;
+	}
+
+	/**
+	 * Sanitize and emit response headers.
+	 *
+	 * Rejects header names containing anything other than letters, digits,
+	 * and hyphens, and strips CR/LF from values to prevent header injection.
+	 *
+	 * @param array<string, string> $headers Raw headers from an SDK result.
+	 * @return void
+	 */
+	private function send_headers( array $headers ): void {
+		foreach ( $this->filter_safe_headers( $headers ) as $name => $value ) {
+			header( "{$name}: {$value}" );
+		}
+	}
+
+	/**
+	 * Filter out unsafe header names and strip CR/LF from values.
+	 *
+	 * @param array<string, string> $headers Raw headers from an SDK result.
+	 * @return array<string, string> Sanitized headers safe to pass to header().
+	 */
+	private function filter_safe_headers( array $headers ): array {
+		$safe_headers = array();
+
+		foreach ( $headers as $name => $value ) {
+			if ( ! preg_match( '/^[a-zA-Z0-9-]+$/', (string) $name ) ) {
+				continue;
+			}
+
+			$safe_headers[ $name ] = str_replace( array( "\r", "\n" ), '', (string) $value );
+		}
+
+		return $safe_headers;
 	}
 }
