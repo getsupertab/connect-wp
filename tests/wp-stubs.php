@@ -74,13 +74,14 @@ if ( ! defined( 'SUPERTAB_CONNECT_API_BASE_URL' ) ) {
 |
 */
 
-global $wp_test_options, $wp_test_transients, $wp_test_headers_sent, $wp_test_status_code, $wp_test_http_calls;
+global $wp_test_options, $wp_test_transients, $wp_test_headers_sent, $wp_test_status_code, $wp_test_http_calls, $wp_test_http_response;
 
 $wp_test_options     = [];
 $wp_test_transients  = [];
 $wp_test_headers_sent = [];
 $wp_test_status_code = 200;
 $wp_test_http_calls  = [];
+$wp_test_http_response = null;
 
 global $wp_test_scheduled_events, $wp_test_cleared_hooks, $wp_test_unscheduled_hooks, $wp_test_schedule_result, $wp_test_doing_cron, $wp_test_as_enqueue_calls, $wp_test_as_unschedule_calls;
 
@@ -147,12 +148,13 @@ $wpdb = new WP_Test_Wpdb();
  * Reset all in-memory stores. Call in setUp()/tearDown().
  */
 function wp_stubs_reset(): void {
-	global $wp_test_options, $wp_test_transients, $wp_test_headers_sent, $wp_test_status_code, $wp_test_http_calls, $wp_test_scheduled_events, $wp_test_cleared_hooks, $wp_test_unscheduled_hooks, $wp_test_schedule_result, $wp_test_doing_cron, $wp_test_as_enqueue_calls, $wp_test_as_unschedule_calls, $wp_test_dbdelta_queries, $wpdb;
+	global $wp_test_options, $wp_test_transients, $wp_test_headers_sent, $wp_test_status_code, $wp_test_http_calls, $wp_test_http_response, $wp_test_scheduled_events, $wp_test_cleared_hooks, $wp_test_unscheduled_hooks, $wp_test_schedule_result, $wp_test_doing_cron, $wp_test_as_enqueue_calls, $wp_test_as_unschedule_calls, $wp_test_dbdelta_queries, $wpdb;
 	$wp_test_options      = [];
 	$wp_test_transients   = [];
 	$wp_test_headers_sent = [];
 	$wp_test_status_code  = 200;
 	$wp_test_http_calls   = [];
+	$wp_test_http_response = null;
 	$wp_test_scheduled_events   = [];
 	$wp_test_cleared_hooks      = [];
 	$wp_test_unscheduled_hooks  = [];
@@ -248,9 +250,9 @@ if ( ! function_exists( 'status_header' ) ) {
 
 if ( ! function_exists( 'wp_remote_post' ) ) {
 	function wp_remote_post( string $url, array $args = [] ) {
-		global $wp_test_http_calls;
+		global $wp_test_http_calls, $wp_test_http_response;
 		$wp_test_http_calls[] = [ 'method' => 'POST', 'url' => $url, 'args' => $args ];
-		return [ 'response' => [ 'code' => 200 ], 'body' => '{}' ];
+		return $wp_test_http_response ?? [ 'response' => [ 'code' => 200 ], 'body' => '{}' ];
 	}
 }
 

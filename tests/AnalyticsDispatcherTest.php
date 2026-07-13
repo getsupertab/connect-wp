@@ -270,4 +270,38 @@ class AnalyticsDispatcherTest extends TestCase {
 
 		$this->assertSame( array(), $table->rows, 'Deliver-once: rows are gone even when the POST fails.' );
 	}
+
+	public function test_flush_drops_batch_without_retry_on_non_2xx(): void {
+		global $wp_test_http_calls, $wp_test_http_response;
+
+		$wp_test_http_response = array(
+			'response' => array( 'code' => 500 ),
+			'body'     => '{}',
+		);
+
+		$table       = $this->make_fake_table();
+		$table->rows = array( '{"request_id":"req-fail"}' );
+
+		$this->make_dispatcher( $table )->flush();
+
+		$this->assertCount( 1, $wp_test_http_calls, 'Exactly one POST — no retry on non-2xx.' );
+		$this->assertSame( array(), $table->rows, 'Deliver-once: rows stay consumed on non-2xx.' );
+	}
+
+	public function test_flush_tolerates_partial_rejection_response(): void {
+		global $wp_test_http_calls, $wp_test_http_response;
+
+		$wp_test_http_response = array(
+			'response' => array( 'code' => 200 ),
+			'body'     => '{"accepted_count":1,"rejected_count":1,"message":"partial"}',
+		);
+
+		$table       = $this->make_fake_table();
+		$table->rows = array( '{"request_id":"req-a"}', '{"request_id":"req-b"}' );
+
+		$this->make_dispatcher( $table )->flush();
+
+		$this->assertCount( 1, $wp_test_http_calls, 'Rejected events are never re-sent.' );
+		$this->assertSame( array(), $table->rows );
+	}
 }
