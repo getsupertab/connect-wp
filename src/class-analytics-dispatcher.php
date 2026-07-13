@@ -15,6 +15,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 }
 
 use Supertab\Connect\Analytics\AnalyticsEvent;
+use Supertab\Connect\Analytics\AnalyticsTransportInterface;
 use Supertab\Connect\Analytics\HttpAnalyticsTransport;
 use Supertab\Connect\Http\HttpClientInterface;
 
@@ -42,6 +43,20 @@ class Analytics_Dispatcher {
 	 * @var string
 	 */
 	public const LEGACY_HOOK = 'supertab_connect_emit_analytics';
+
+	/**
+	 * Maximum events per batch POST (API limit: 500/request).
+	 *
+	 * @var int
+	 */
+	private const BATCH_SIZE = 500;
+
+	/**
+	 * Maximum batches per flush run, bounding job runtime.
+	 *
+	 * @var int
+	 */
+	private const MAX_BATCHES_PER_RUN = 10;
 
 	/**
 	 * Row cap: when the buffer holds this many rows (broken cron), new events
@@ -146,6 +161,91 @@ class Analytics_Dispatcher {
 		}
 
 		$this->dispatch( $event_data );
+	}
+
+	/**
+	 * Drain the buffer: claim up to BATCH_SIZE rows at a time and POST each
+	 * batch as a JSON array, for at most MAX_BATCHES_PER_RUN batches.
+	 *
+	 * Deliver-once: rows are deleted at claim time, so a failed POST drops
+	 * those events (debug-logged). Malformed rows are skipped. Fail-open
+	 * throughout — this is the FLUSH_HOOK job handler and must never throw
+	 * into the queue runner.
+	 *
+	 * @return void
+	 */
+	public function flush(): void {
+		try {
+			for ( $i = 0; $i < self::MAX_BATCHES_PER_RUN; $i++ ) {
+				$payloads = $this->table->claim_batch( self::BATCH_SIZE );
+
+				if ( array() === $payloads ) {
+					return;
+				}
+
+				$events = array();
+				foreach ( $payloads as $payload ) {
+					$event = json_decode( $payload, true );
+
+					if ( is_array( $event ) ) {
+						$events[] = $event;
+					} else {
+						self::log_debug( 'Skipping malformed buffered analytics event.' );
+					}
+				}
+
+				if ( array() !== $events ) {
+					$this->post_batch( $events );
+				}
+
+				if ( count( $payloads ) < self::BATCH_SIZE ) {
+					return;
+				}
+			}
+		} catch ( \Throwable $e ) {
+			self::log_debug( 'Analytics flush error: ' . $e->getMessage() );
+		}
+	}
+
+	/**
+	 * POST one batch of events to the relay as a JSON array.
+	 *
+	 * Best-effort: non-2xx responses, rejected events, and transport errors
+	 * are debug-logged only — never retried or re-buffered.
+	 *
+	 * @param array<int, array<string, mixed>> $events Decoded event payloads.
+	 * @return void
+	 */
+	private function post_batch( array $events ): void {
+		try {
+			$body = wp_json_encode( array_values( $events ) );
+
+			if ( false === $body ) {
+				self::log_debug( 'Failed to encode analytics batch.' );
+				return;
+			}
+
+			$response = $this->http_client->post(
+				rtrim( SUPERTAB_CONNECT_API_BASE_URL, '/' ) . AnalyticsTransportInterface::ANALYTICS_EVENTS_PATH,
+				$body,
+				array(
+					'Authorization' => 'Bearer ' . $this->settings->get_merchant_api_key(),
+					'Content-Type'  => 'application/json',
+				)
+			);
+
+			if ( $response['statusCode'] < 200 || $response['statusCode'] >= 300 ) {
+				self::log_debug( 'Analytics batch POST returned ' . $response['statusCode'] . '; ' . count( $events ) . ' events dropped.' );
+				return;
+			}
+
+			$decoded = json_decode( $response['body'], true );
+			if ( is_array( $decoded ) && ( $decoded['rejected_count'] ?? 0 ) > 0 ) {
+				self::log_debug( 'Analytics batch partially rejected: ' . $decoded['rejected_count'] . ' events dropped server-side.' );
+			}
+		} catch ( \Throwable $e ) {
+			self::log_debug( 'Analytics batch POST error: ' . $e->getMessage() . '; ' . count( $events ) . ' events dropped.' );
+		}
 	}
 
 	/**

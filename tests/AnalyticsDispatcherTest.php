@@ -170,4 +170,104 @@ class AnalyticsDispatcherTest extends TestCase {
 		$this->assertSame( array(), $wp_test_as_unschedule_calls[0]['args'] );
 		$this->assertSame( '', $wp_test_as_unschedule_calls[0]['group'] );
 	}
+
+	public function test_flush_without_rows_makes_no_request(): void {
+		global $wp_test_http_calls;
+
+		$table = $this->make_fake_table();
+
+		$this->make_dispatcher( $table )->flush();
+
+		$this->assertSame( array(), $wp_test_http_calls );
+		$this->assertSame( array( 500 ), $table->claim_calls, 'Exactly one cheap claim on an empty buffer.' );
+	}
+
+	public function test_flush_posts_batch_array_with_auth(): void {
+		global $wp_test_http_calls;
+
+		update_option( 'supertab_connect_merchant_api_key', 'key-batch' );
+
+		$table       = $this->make_fake_table();
+		$table->rows = array( '{"request_id":"req-1"}', '{"request_id":"req-2"}' );
+
+		$this->make_dispatcher( $table )->flush();
+
+		$this->assertCount( 1, $wp_test_http_calls );
+		$call = $wp_test_http_calls[0];
+		$this->assertSame( 'POST', $call['method'] );
+		$this->assertSame( SUPERTAB_CONNECT_API_BASE_URL . '/ingest/events', $call['url'] );
+		$this->assertSame( 'Bearer key-batch', $call['args']['headers']['Authorization'] );
+		$this->assertSame( 'application/json', $call['args']['headers']['Content-Type'] );
+
+		$body = json_decode( $call['args']['body'], true );
+		$this->assertSame(
+			array(
+				array( 'request_id' => 'req-1' ),
+				array( 'request_id' => 'req-2' ),
+			),
+			$body,
+			'Body must be a JSON array of event objects.'
+		);
+
+		$this->assertSame( array(), $table->rows, 'Claimed rows are deleted.' );
+	}
+
+	public function test_flush_skips_malformed_rows(): void {
+		global $wp_test_http_calls;
+
+		$table       = $this->make_fake_table();
+		$table->rows = array( 'not-json', '{"request_id":"req-ok"}' );
+
+		$this->make_dispatcher( $table )->flush();
+
+		$this->assertCount( 1, $wp_test_http_calls );
+		$body = json_decode( $wp_test_http_calls[0]['args']['body'], true );
+		$this->assertSame( array( array( 'request_id' => 'req-ok' ) ), $body );
+	}
+
+	public function test_flush_posts_nothing_when_all_rows_malformed(): void {
+		global $wp_test_http_calls;
+
+		$table       = $this->make_fake_table();
+		$table->rows = array( 'nope', '[]broken' );
+
+		$this->make_dispatcher( $table )->flush();
+
+		$this->assertSame( array(), $wp_test_http_calls );
+		$this->assertSame( array(), $table->rows, 'Malformed rows are still consumed.' );
+	}
+
+	public function test_flush_stops_after_max_batches(): void {
+		global $wp_test_http_calls;
+
+		$table = $this->make_fake_table();
+		for ( $i = 0; $i < 5500; $i++ ) {
+			$table->rows[] = '{"request_id":"req-' . $i . '"}';
+		}
+
+		$this->make_dispatcher( $table )->flush();
+
+		$this->assertCount( 10, $wp_test_http_calls, '10 batches of 500, then stop.' );
+		$this->assertSame( array_fill( 0, 10, 500 ), $table->claim_calls );
+		$this->assertCount( 500, $table->rows, 'Remainder waits for the next run.' );
+	}
+
+	public function test_flush_swallows_http_errors(): void {
+		$table       = $this->make_fake_table();
+		$table->rows = array( '{"request_id":"req-x"}' );
+
+		$throwing_client = new class() implements \Supertab\Connect\Http\HttpClientInterface {
+			public function get( string $url, array $headers = array() ): array {
+				throw new \RuntimeException( 'boom' );
+			}
+			public function post( string $url, string $body, array $headers = array() ): array {
+				throw new \RuntimeException( 'boom' );
+			}
+		};
+
+		$dispatcher = new Analytics_Dispatcher( new Settings(), $throwing_client, $table );
+		$dispatcher->flush();
+
+		$this->assertSame( array(), $table->rows, 'Deliver-once: rows are gone even when the POST fails.' );
+	}
 }
