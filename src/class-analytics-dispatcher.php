@@ -45,6 +45,13 @@ class Analytics_Dispatcher {
 	public const LEGACY_HOOK = 'supertab_connect_emit_analytics';
 
 	/**
+	 * Action Scheduler group.
+	 *
+	 * @var string
+	 */
+	private const GROUP = 'supertab-connect';
+
+	/**
 	 * Maximum events per batch POST (API limit: 500/request).
 	 *
 	 * @var int
@@ -101,15 +108,24 @@ class Analytics_Dispatcher {
 	}
 
 	/**
-	 * Register job handlers.
+	 * Register job handlers and (in admin/cron contexts) self-heal the schema
+	 * and the hourly schedule.
 	 *
-	 * Must run in every request context (admin, front-end, cron) so the queue
-	 * runner can dispatch wherever it executes.
+	 * Handlers must be registered in every request context (admin, front-end,
+	 * cron) so the queue runner can dispatch wherever it executes. Schema
+	 * install and schedule checks are restricted to admin/cron requests to
+	 * keep front-end requests free of extra queries.
 	 *
 	 * @return void
 	 */
 	public function register(): void {
+		add_action( self::FLUSH_HOOK, array( $this, 'flush' ) );
 		add_action( self::LEGACY_HOOK, array( $this, 'dispatch' ) );
+
+		if ( is_admin() || wp_doing_cron() ) {
+			$this->table->install();
+			$this->ensure_scheduled();
+		}
 	}
 
 	/**
@@ -132,6 +148,44 @@ class Analytics_Dispatcher {
 		} catch ( \Throwable $e ) {
 			self::log_debug( 'Analytics clear_scheduled error: ' . $e->getMessage() );
 		}
+	}
+
+	/**
+	 * Ensure the hourly flush is scheduled exactly once, preferring Action
+	 * Scheduler and adapting when it appears or disappears.
+	 *
+	 * @return void
+	 */
+	protected function ensure_scheduled(): void {
+		try {
+			if ( $this->action_scheduler_available() ) {
+				// Migrate a stale WP-Cron recurrence so both backends never fire.
+				if ( false !== wp_next_scheduled( self::FLUSH_HOOK ) ) {
+					wp_clear_scheduled_hook( self::FLUSH_HOOK );
+				}
+
+				if ( ! call_user_func( 'as_has_scheduled_action', self::FLUSH_HOOK ) ) {
+					call_user_func( 'as_schedule_recurring_action', time() + HOUR_IN_SECONDS, HOUR_IN_SECONDS, self::FLUSH_HOOK, array(), self::GROUP );
+				}
+
+				return;
+			}
+
+			if ( false === wp_next_scheduled( self::FLUSH_HOOK ) ) {
+				wp_schedule_event( time() + HOUR_IN_SECONDS, 'hourly', self::FLUSH_HOOK );
+			}
+		} catch ( \Throwable $e ) {
+			self::log_debug( 'Analytics ensure_scheduled error: ' . $e->getMessage() );
+		}
+	}
+
+	/**
+	 * Whether Action Scheduler's recurring API is available on this site.
+	 *
+	 * @return bool
+	 */
+	protected function action_scheduler_available(): bool {
+		return function_exists( 'as_schedule_recurring_action' ) && function_exists( 'as_has_scheduled_action' );
 	}
 
 	/**

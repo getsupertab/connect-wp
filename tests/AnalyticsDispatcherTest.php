@@ -74,6 +74,17 @@ class AnalyticsDispatcherTest extends TestCase {
 		return new Analytics_Dispatcher( new Settings(), new WP_Http_Client(), $table ?? $this->make_fake_table() );
 	}
 
+	/**
+	 * Build a dispatcher that reports Action Scheduler as unavailable.
+	 */
+	private function make_dispatcher_without_action_scheduler( Analytics_Queue_Table $table ): Analytics_Dispatcher {
+		return new class( new Settings(), new WP_Http_Client(), $table ) extends Analytics_Dispatcher {
+			protected function action_scheduler_available(): bool {
+				return false;
+			}
+		};
+	}
+
 	public function test_enqueue_buffers_event_as_json_row(): void {
 		global $wp_test_http_calls;
 
@@ -303,5 +314,91 @@ class AnalyticsDispatcherTest extends TestCase {
 
 		$this->assertCount( 1, $wp_test_http_calls, 'Rejected events are never re-sent.' );
 		$this->assertSame( array(), $table->rows );
+	}
+
+	public function test_register_schedules_recurring_via_action_scheduler_in_cron_context(): void {
+		global $wp_test_doing_cron, $wp_test_as_recurring_calls, $wp_test_recurring_events;
+
+		$wp_test_doing_cron = true;
+
+		$this->make_dispatcher()->register();
+
+		$this->assertCount( 1, $wp_test_as_recurring_calls );
+		$call = $wp_test_as_recurring_calls[0];
+		$this->assertSame( self::FLUSH_HOOK, $call['hook'] );
+		$this->assertSame( HOUR_IN_SECONDS, $call['interval'] );
+		$this->assertSame( 'supertab-connect', $call['group'] );
+		$this->assertSame( array(), $wp_test_recurring_events, 'No duplicate WP-Cron schedule.' );
+	}
+
+	public function test_register_skips_scheduling_when_as_action_exists(): void {
+		global $wp_test_doing_cron, $wp_test_as_has_scheduled, $wp_test_as_recurring_calls;
+
+		$wp_test_doing_cron       = true;
+		$wp_test_as_has_scheduled = true;
+
+		$this->make_dispatcher()->register();
+
+		$this->assertSame( array(), $wp_test_as_recurring_calls );
+	}
+
+	public function test_register_falls_back_to_wp_cron_recurring(): void {
+		global $wp_test_doing_cron, $wp_test_recurring_events;
+
+		$wp_test_doing_cron = true;
+
+		$this->make_dispatcher_without_action_scheduler( $this->make_fake_table() )->register();
+
+		$this->assertCount( 1, $wp_test_recurring_events );
+		$this->assertSame( self::FLUSH_HOOK, $wp_test_recurring_events[0]['hook'] );
+		$this->assertSame( 'hourly', $wp_test_recurring_events[0]['recurrence'] );
+	}
+
+	public function test_register_skips_wp_cron_when_already_scheduled(): void {
+		global $wp_test_doing_cron, $wp_test_next_scheduled, $wp_test_recurring_events;
+
+		$wp_test_doing_cron     = true;
+		$wp_test_next_scheduled = time() + 100;
+
+		$this->make_dispatcher_without_action_scheduler( $this->make_fake_table() )->register();
+
+		$this->assertSame( array(), $wp_test_recurring_events );
+	}
+
+	public function test_register_migrates_wp_cron_schedule_to_action_scheduler(): void {
+		global $wp_test_doing_cron, $wp_test_next_scheduled, $wp_test_cleared_hooks, $wp_test_as_recurring_calls;
+
+		$wp_test_doing_cron     = true;
+		$wp_test_next_scheduled = time() + 100;
+
+		$this->make_dispatcher()->register();
+
+		// The stale WP-Cron recurrence is cleared so both backends never fire.
+		$this->assertCount( 1, $wp_test_cleared_hooks );
+		$this->assertSame( self::FLUSH_HOOK, $wp_test_cleared_hooks[0]['hook'] );
+		$this->assertCount( 1, $wp_test_as_recurring_calls );
+	}
+
+	public function test_register_installs_table_in_admin_context(): void {
+		global $wp_test_is_admin;
+
+		$wp_test_is_admin = true;
+		$table            = $this->make_fake_table();
+
+		$this->make_dispatcher( $table )->register();
+
+		$this->assertSame( 1, $table->install_calls );
+	}
+
+	public function test_register_does_no_schedule_work_on_front_end(): void {
+		global $wp_test_as_recurring_calls, $wp_test_recurring_events;
+
+		$table = $this->make_fake_table();
+
+		$this->make_dispatcher( $table )->register();
+
+		$this->assertSame( 0, $table->install_calls );
+		$this->assertSame( array(), $wp_test_as_recurring_calls );
+		$this->assertSame( array(), $wp_test_recurring_events );
 	}
 }
