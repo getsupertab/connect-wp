@@ -1,6 +1,6 @@
 <?php
 /**
- * Tests for Analytics_Dispatcher queue selection and dispatch.
+ * Tests for Analytics_Dispatcher buffering and inline fallback.
  *
  * @package Supertab_Connect\Tests
  */
@@ -12,12 +12,14 @@ namespace Supertab_Connect\Tests;
 use PHPUnit\Framework\TestCase;
 use Supertab\Connect\Analytics\AnalyticsEvent;
 use Supertab_Connect\Analytics_Dispatcher;
+use Supertab_Connect\Analytics_Queue_Table;
 use Supertab_Connect\Settings;
 use Supertab_Connect\Utils\WP_Http_Client;
 
 class AnalyticsDispatcherTest extends TestCase {
 
-	private const HOOK = 'supertab_connect_emit_analytics';
+	private const FLUSH_HOOK  = 'supertab_connect_flush_analytics';
+	private const LEGACY_HOOK = 'supertab_connect_emit_analytics';
 
 	protected function setUp(): void {
 		parent::setUp();
@@ -30,56 +32,88 @@ class AnalyticsDispatcherTest extends TestCase {
 	}
 
 	/**
-	 * Build a dispatcher backed by the WP HTTP client stub.
+	 * In-memory stand-in for the queue table.
+	 *
+	 * @return Analytics_Queue_Table
 	 */
-	private function make_dispatcher(): Analytics_Dispatcher {
-		return new Analytics_Dispatcher( new Settings(), new WP_Http_Client() );
-	}
+	private function make_fake_table(): Analytics_Queue_Table {
+		return new class() extends Analytics_Queue_Table {
+			/** @var list<string> */
+			public array $rows      = array();
+			public bool $insert_ok  = true;
+			/** Overrides count() when >= 0. */
+			public int $fixed_count = -1;
+			/** @var list<int> */
+			public array $claim_calls   = array();
+			public int $install_calls   = 0;
 
-	/**
-	 * Build a dispatcher that reports Action Scheduler as unavailable.
-	 */
-	private function make_dispatcher_without_action_scheduler(): Analytics_Dispatcher {
-		return new class( new Settings(), new WP_Http_Client() ) extends Analytics_Dispatcher {
-			protected function action_scheduler_available(): bool {
-				return false;
+			public function install(): void {
+				++$this->install_calls;
+			}
+
+			public function insert( string $payload ): bool {
+				if ( ! $this->insert_ok ) {
+					return false;
+				}
+				$this->rows[] = $payload;
+				return true;
+			}
+
+			public function count(): int {
+				return $this->fixed_count >= 0 ? $this->fixed_count : count( $this->rows );
+			}
+
+			public function claim_batch( int $limit ): array {
+				$this->claim_calls[] = $limit;
+				return array_splice( $this->rows, 0, $limit );
 			}
 		};
 	}
 
-	public function test_enqueue_uses_action_scheduler_when_available(): void {
-		global $wp_test_as_enqueue_calls, $wp_test_scheduled_events;
-
-		$this->make_dispatcher()->enqueue( array( 'request_id' => 'req-async' ) );
-
-		$this->assertCount( 1, $wp_test_as_enqueue_calls );
-		$this->assertSame( self::HOOK, $wp_test_as_enqueue_calls[0]['hook'] );
-		$this->assertSame( array( array( 'request_id' => 'req-async' ) ), $wp_test_as_enqueue_calls[0]['args'] );
-		$this->assertSame( 'supertab-connect', $wp_test_as_enqueue_calls[0]['group'] );
-		$this->assertSame( array(), $wp_test_scheduled_events );
+	private function make_dispatcher( ?Analytics_Queue_Table $table = null ): Analytics_Dispatcher {
+		return new Analytics_Dispatcher( new Settings(), new WP_Http_Client(), $table ?? $this->make_fake_table() );
 	}
 
-	public function test_enqueue_falls_back_to_wp_cron_when_action_scheduler_absent(): void {
-		global $wp_test_scheduled_events, $wp_test_http_calls;
+	public function test_enqueue_buffers_event_as_json_row(): void {
+		global $wp_test_http_calls;
 
-		$this->make_dispatcher_without_action_scheduler()->enqueue( array( 'request_id' => 'req-cron' ) );
+		$table = $this->make_fake_table();
 
-		$this->assertCount( 1, $wp_test_scheduled_events );
-		$this->assertSame( self::HOOK, $wp_test_scheduled_events[0]['hook'] );
-		$this->assertSame( array( array( 'request_id' => 'req-cron' ) ), $wp_test_scheduled_events[0]['args'] );
-		$this->assertSame( array(), $wp_test_http_calls );
+		$this->make_dispatcher( $table )->enqueue( array( 'request_id' => 'req-1' ) );
+
+		$this->assertSame( array( '{"request_id":"req-1"}' ), $table->rows );
+		$this->assertSame( array(), $wp_test_http_calls, 'Buffering must not trigger an HTTP call.' );
 	}
 
-	public function test_enqueue_emits_inline_when_scheduling_fails(): void {
-		global $wp_test_schedule_result, $wp_test_http_calls;
+	public function test_enqueue_drops_event_when_buffer_full(): void {
+		global $wp_test_http_calls;
+
+		$table              = $this->make_fake_table();
+		$table->fixed_count = 10000;
+
+		$this->make_dispatcher( $table )->enqueue( array( 'request_id' => 'req-overflow' ) );
+
+		$this->assertSame( array(), $table->rows, 'Event must be dropped at the row cap.' );
+		$this->assertSame( array(), $wp_test_http_calls, 'A capped buffer must not fall back to inline delivery.' );
+	}
+
+	public function test_enqueue_falls_back_inline_when_insert_fails(): void {
+		global $wp_test_http_calls;
 
 		update_option( 'supertab_connect_merchant_api_key', 'key-inline' );
-		$wp_test_schedule_result = false;
 
-		$this->make_dispatcher_without_action_scheduler()->enqueue( array( 'request_id' => 'req-inline' ) );
+		$table            = $this->make_fake_table();
+		$table->insert_ok = false;
+
+		$this->make_dispatcher( $table )->enqueue( array( 'request_id' => 'req-9' ) );
 
 		$this->assertCount( 1, $wp_test_http_calls );
-		$this->assertSame( 'POST', $wp_test_http_calls[0]['method'] );
+		$call = $wp_test_http_calls[0];
+		$this->assertSame( 'POST', $call['method'] );
+		$this->assertSame( SUPERTAB_CONNECT_API_BASE_URL . '/ingest/events', $call['url'] );
+
+		$body = json_decode( $call['args']['body'], true );
+		$this->assertSame( 'req-9', $body['request_id'] );
 	}
 
 	public function test_dispatch_posts_classified_event_to_relay(): void {
@@ -122,20 +156,17 @@ class AnalyticsDispatcherTest extends TestCase {
 		$this->assertSame( array(), $wp_test_http_calls, 'No relay POST should occur when rehydration fails.' );
 	}
 
-	public function test_clear_scheduled_clears_wp_cron_and_action_scheduler(): void {
+	public function test_clear_scheduled_clears_both_hooks_in_both_backends(): void {
 		global $wp_test_unscheduled_hooks, $wp_test_as_unschedule_calls;
 
 		Analytics_Dispatcher::clear_scheduled();
 
-		// Must clear WP-Cron args-agnostically via wp_unschedule_hook(), which
-		// removes every event for the hook regardless of scheduled payload.
-		$this->assertCount( 1, $wp_test_unscheduled_hooks );
-		$this->assertSame( self::HOOK, $wp_test_unscheduled_hooks[0] );
+		$this->assertSame( array( self::FLUSH_HOOK, self::LEGACY_HOOK ), $wp_test_unscheduled_hooks );
 
-		// Must call Action Scheduler with hook only (empty args, empty group)
-		// so it hits the bulk cancel-by-hook path rather than exact-args match.
-		$this->assertCount( 1, $wp_test_as_unschedule_calls );
-		$this->assertSame( self::HOOK, $wp_test_as_unschedule_calls[0]['hook'] );
+		$this->assertCount( 2, $wp_test_as_unschedule_calls );
+		$this->assertSame( self::FLUSH_HOOK, $wp_test_as_unschedule_calls[0]['hook'] );
+		$this->assertSame( self::LEGACY_HOOK, $wp_test_as_unschedule_calls[1]['hook'] );
+		// Hook-only clearing (empty args/group) hits the bulk cancel-by-hook path.
 		$this->assertSame( array(), $wp_test_as_unschedule_calls[0]['args'] );
 		$this->assertSame( '', $wp_test_as_unschedule_calls[0]['group'] );
 	}
