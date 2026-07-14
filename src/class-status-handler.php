@@ -219,7 +219,7 @@ class Status_Handler {
 	 *
 	 * @return string
 	 */
-	public function get_authorization_header(): string {
+	protected function get_authorization_header(): string {
 		// phpcs:ignore WordPress.Security.ValidatedSanitizedInput.InputNotSanitized -- Sanitized below via sanitize_text_field()/wp_unslash().
 		$header = RequestContext::resolveAuthorizationHeader( $_SERVER, $this->get_raw_request_headers() ) ?? '';
 

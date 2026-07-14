@@ -20,15 +20,36 @@ class StatusHandlerTest extends TestCase {
 
 	private HttpClientInterface $http_client;
 
+	/**
+	 * Snapshot of the $_SERVER authorization keys, restored in tearDown so
+	 * tests that mutate them cannot leak state (PHPUnit does not back up
+	 * superglobals in this configuration).
+	 *
+	 * @var array<string, string|null>
+	 */
+	private array $server_auth_snapshot = array();
+
 	protected function setUp(): void {
 		parent::setUp();
 		wp_stubs_reset();
+
+		foreach ( array( 'HTTP_AUTHORIZATION', 'REDIRECT_HTTP_AUTHORIZATION' ) as $key ) {
+			$this->server_auth_snapshot[ $key ] = $_SERVER[ $key ] ?? null;
+		}
 
 		$this->settings    = new Settings();
 		$this->http_client = $this->createMock( HttpClientInterface::class );
 	}
 
 	protected function tearDown(): void {
+		foreach ( $this->server_auth_snapshot as $key => $value ) {
+			if ( null === $value ) {
+				unset( $_SERVER[ $key ] );
+			} else {
+				$_SERVER[ $key ] = $value;
+			}
+		}
+
 		wp_stubs_reset();
 		parent::tearDown();
 	}
@@ -196,7 +217,7 @@ class StatusHandlerTest extends TestCase {
 
 		$handler = $this->create_handler_with_raw_headers( array( 'authorization' => 'Bearer apache-token' ) );
 
-		$this->assertSame( 'Bearer apache-token', $handler->get_authorization_header() );
+		$this->assertSame( 'Bearer apache-token', $handler->exposed_authorization_header() );
 	}
 
 	public function test_authorization_header_prefers_server_over_raw_request_headers(): void {
@@ -204,9 +225,7 @@ class StatusHandlerTest extends TestCase {
 
 		$handler = $this->create_handler_with_raw_headers( array( 'Authorization' => 'Bearer from-raw-headers' ) );
 
-		$this->assertSame( 'Bearer from-server', $handler->get_authorization_header() );
-
-		unset( $_SERVER['HTTP_AUTHORIZATION'] );
+		$this->assertSame( 'Bearer from-server', $handler->exposed_authorization_header() );
 	}
 
 	public function test_authorization_header_empty_when_absent_everywhere(): void {
@@ -214,10 +233,16 @@ class StatusHandlerTest extends TestCase {
 
 		$handler = $this->create_handler_with_raw_headers( array( 'Accept' => 'application/json' ) );
 
-		$this->assertSame( '', $handler->get_authorization_header() );
+		$this->assertSame( '', $handler->exposed_authorization_header() );
 	}
 
-	private function create_handler_with_raw_headers( array $raw_headers ): Status_Handler {
+	/**
+	 * Build a Status_Handler whose raw request headers are injected, with the
+	 * protected header resolution exposed for assertions.
+	 *
+	 * @param array<string, string> $raw_headers Raw request headers to inject.
+	 */
+	private function create_handler_with_raw_headers( array $raw_headers ) {
 		return new class( $this->settings, 'https://api-connect.sbx.supertab.co', $this->http_client, null, $raw_headers ) extends Status_Handler {
 			/**
 			 * Raw request headers injected by the test.
@@ -227,9 +252,14 @@ class StatusHandlerTest extends TestCase {
 			private array $raw_headers;
 
 			// phpcs:ignore Squiz.Commenting.FunctionComment.Missing
-			public function __construct( $settings, $api_base_url, $http_client, $verify_challenge, array $raw_headers ) {
+			public function __construct( Settings $settings, string $api_base_url, HttpClientInterface $http_client, ?\Closure $verify_challenge, array $raw_headers ) {
 				parent::__construct( $settings, $api_base_url, $http_client, $verify_challenge );
 				$this->raw_headers = $raw_headers;
+			}
+
+			// phpcs:ignore Squiz.Commenting.FunctionComment.Missing
+			public function exposed_authorization_header(): string {
+				return $this->get_authorization_header();
 			}
 
 			// phpcs:ignore Squiz.Commenting.FunctionComment.Missing
