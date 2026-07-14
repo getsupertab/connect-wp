@@ -115,14 +115,15 @@ class WP_Test_Wpdb {
 	public $insert_result       = 1;
 	/** Shifted once per get_results() call. */
 	public array $results_queue = [];
-	public string $var_result   = '0';
+	/** @var string|null */
+	public $var_result          = '0';
 
 	public function insert( string $table, array $data, $format = null ) {
 		$this->insert_calls[] = [ 'table' => $table, 'data' => $data, 'format' => $format ];
 		return $this->insert_result;
 	}
 
-	public function get_var( string $query ) {
+	public function get_var( string $query ): ?string {
 		$this->queries[] = $query;
 		return $this->var_result;
 	}

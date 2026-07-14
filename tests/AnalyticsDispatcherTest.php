@@ -41,8 +41,7 @@ class AnalyticsDispatcherTest extends TestCase {
 			/** @var list<string> */
 			public array $rows      = array();
 			public bool $insert_ok  = true;
-			/** Overrides count() when >= 0. */
-			public int $fixed_count = -1;
+			public bool $full       = false;
 			/** @var list<int> */
 			public array $claim_calls   = array();
 			public int $install_calls   = 0;
@@ -59,8 +58,8 @@ class AnalyticsDispatcherTest extends TestCase {
 				return true;
 			}
 
-			public function count(): int {
-				return $this->fixed_count >= 0 ? $this->fixed_count : count( $this->rows );
+			public function is_full( int $max_rows ): bool {
+				return $this->full;
 			}
 
 			public function claim_batch( int $limit ): array {
@@ -99,8 +98,8 @@ class AnalyticsDispatcherTest extends TestCase {
 	public function test_enqueue_drops_event_when_buffer_full(): void {
 		global $wp_test_http_calls;
 
-		$table              = $this->make_fake_table();
-		$table->fixed_count = 10000;
+		$table       = $this->make_fake_table();
+		$table->full = true;
 
 		$this->make_dispatcher( $table )->enqueue( array( 'request_id' => 'req-overflow' ) );
 

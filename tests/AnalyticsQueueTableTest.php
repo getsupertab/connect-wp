@@ -77,12 +77,30 @@ class AnalyticsQueueTableTest extends TestCase {
 		$this->assertFalse( ( new Analytics_Queue_Table() )->insert( '{}' ) );
 	}
 
-	public function test_count_returns_row_count(): void {
+	public function test_is_full_at_id_span_cap(): void {
 		global $wpdb;
 
-		$wpdb->var_result = '42';
+		$wpdb->var_result = '10000';
 
-		$this->assertSame( 42, ( new Analytics_Queue_Table() )->count() );
+		$this->assertTrue( ( new Analytics_Queue_Table() )->is_full( 10000 ) );
+		// O(1) MIN/MAX span check, not a COUNT(*) scan.
+		$this->assertStringContainsString( 'MAX(id) - MIN(id) + 1', $wpdb->queries[0] );
+	}
+
+	public function test_is_not_full_below_id_span_cap(): void {
+		global $wpdb;
+
+		$wpdb->var_result = '9999';
+
+		$this->assertFalse( ( new Analytics_Queue_Table() )->is_full( 10000 ) );
+	}
+
+	public function test_is_not_full_when_empty(): void {
+		global $wpdb;
+
+		$wpdb->var_result = null;
+
+		$this->assertFalse( ( new Analytics_Queue_Table() )->is_full( 10000 ) );
 	}
 
 	public function test_claim_batch_returns_empty_without_delete(): void {

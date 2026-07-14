@@ -103,15 +103,24 @@ class Analytics_Queue_Table {
 	}
 
 	/**
-	 * Current number of buffered rows.
+	 * Whether the buffer has reached $max_rows.
 	 *
-	 * @return int
+	 * Uses the id span (MAX - MIN + 1) rather than COUNT(*): rows are inserted
+	 * with ascending ids and only ever deleted oldest-first, so the span bounds
+	 * the row count, and MIN/MAX are O(1) index lookups where COUNT(*) scans
+	 * the index on every buffered event. Auto-increment gaps can only inflate
+	 * the span, making the cap trip early — the fail-open direction.
+	 *
+	 * @param int $max_rows Row cap.
+	 * @return bool True when at or above the cap.
 	 */
-	public function count(): int {
+	public function is_full( int $max_rows ): bool {
 		global $wpdb;
 
-		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.PreparedSQL.InterpolatedNotPrepared -- Live queue-size check on the plugin's own table; name from $wpdb->prefix.
-		return (int) $wpdb->get_var( "SELECT COUNT(*) FROM {$this->name()}" );
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.PreparedSQL.InterpolatedNotPrepared -- Live capacity check on the plugin's own table; name from $wpdb->prefix.
+		$span = $wpdb->get_var( "SELECT MAX(id) - MIN(id) + 1 FROM {$this->name()}" );
+
+		return null !== $span && (int) $span >= $max_rows;
 	}
 
 	/**

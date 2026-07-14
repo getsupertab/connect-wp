@@ -205,7 +205,7 @@ class Analytics_Dispatcher {
 	 */
 	public function enqueue( array $event_data ): void {
 		try {
-			if ( $this->table->count() >= self::MAX_BUFFER_ROWS ) {
+			if ( $this->table->is_full( self::MAX_BUFFER_ROWS ) ) {
 				self::log_debug( 'Analytics buffer full; dropping event.' );
 				return;
 			}
