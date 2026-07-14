@@ -20,6 +20,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 
 use Supertab\Connect\Http\HttpClient;
 use Supertab\Connect\Http\HttpClientInterface;
+use Supertab\Connect\Http\RequestContext;
 use Supertab\Connect\Jwks\JwksProvider;
 use Supertab\Connect\Status\StatusChallengeVerifier;
 use Supertab_Connect\Utils\WP_Transient_Cache;
@@ -212,15 +213,27 @@ class Status_Handler {
 	}
 
 	/**
-	 * Read the Authorization header, with the common Apache CGI fallback.
+	 * Read the Authorization header. Apache withholds it from the CGI-style
+	 * $_SERVER variables, so fall back to the SAPI's raw request headers via
+	 * the SDK's resolver ($_SERVER wins when both are present).
 	 *
 	 * @return string
 	 */
-	private function get_authorization_header(): string {
+	public function get_authorization_header(): string {
 		// phpcs:ignore WordPress.Security.ValidatedSanitizedInput.InputNotSanitized -- Sanitized below via sanitize_text_field()/wp_unslash().
-		$header = $_SERVER['HTTP_AUTHORIZATION'] ?? $_SERVER['REDIRECT_HTTP_AUTHORIZATION'] ?? '';
+		$header = RequestContext::resolveAuthorizationHeader( $_SERVER, $this->get_raw_request_headers() ) ?? '';
 
-		return sanitize_text_field( wp_unslash( (string) $header ) );
+		return sanitize_text_field( wp_unslash( $header ) );
+	}
+
+	/**
+	 * Raw request headers as reported by the SAPI. Overridable seam for tests;
+	 * getallheaders() is unavailable under the CLI SAPI.
+	 *
+	 * @return array<string, string>
+	 */
+	protected function get_raw_request_headers(): array {
+		return function_exists( 'getallheaders' ) ? (array) getallheaders() : array();
 	}
 
 	/**

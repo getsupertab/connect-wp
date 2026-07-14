@@ -188,6 +188,57 @@ class StatusHandlerTest extends TestCase {
 		$this->assertFalse( $called, 'Verifier must not run for other paths.' );
 	}
 
+	public function test_authorization_header_falls_back_to_raw_request_headers(): void {
+		// Apache withholds Authorization from the CGI-style $_SERVER variables;
+		// getallheaders() still exposes it. Regression test for the live bug
+		// where every backend challenge probe received the 404 decoy.
+		unset( $_SERVER['HTTP_AUTHORIZATION'], $_SERVER['REDIRECT_HTTP_AUTHORIZATION'] );
+
+		$handler = $this->create_handler_with_raw_headers( array( 'authorization' => 'Bearer apache-token' ) );
+
+		$this->assertSame( 'Bearer apache-token', $handler->get_authorization_header() );
+	}
+
+	public function test_authorization_header_prefers_server_over_raw_request_headers(): void {
+		$_SERVER['HTTP_AUTHORIZATION'] = 'Bearer from-server';
+
+		$handler = $this->create_handler_with_raw_headers( array( 'Authorization' => 'Bearer from-raw-headers' ) );
+
+		$this->assertSame( 'Bearer from-server', $handler->get_authorization_header() );
+
+		unset( $_SERVER['HTTP_AUTHORIZATION'] );
+	}
+
+	public function test_authorization_header_empty_when_absent_everywhere(): void {
+		unset( $_SERVER['HTTP_AUTHORIZATION'], $_SERVER['REDIRECT_HTTP_AUTHORIZATION'] );
+
+		$handler = $this->create_handler_with_raw_headers( array( 'Accept' => 'application/json' ) );
+
+		$this->assertSame( '', $handler->get_authorization_header() );
+	}
+
+	private function create_handler_with_raw_headers( array $raw_headers ): Status_Handler {
+		return new class( $this->settings, 'https://api-connect.sbx.supertab.co', $this->http_client, null, $raw_headers ) extends Status_Handler {
+			/**
+			 * Raw request headers injected by the test.
+			 *
+			 * @var array<string, string>
+			 */
+			private array $raw_headers;
+
+			// phpcs:ignore Squiz.Commenting.FunctionComment.Missing
+			public function __construct( $settings, $api_base_url, $http_client, $verify_challenge, array $raw_headers ) {
+				parent::__construct( $settings, $api_base_url, $http_client, $verify_challenge );
+				$this->raw_headers = $raw_headers;
+			}
+
+			// phpcs:ignore Squiz.Commenting.FunctionComment.Missing
+			protected function get_raw_request_headers(): array {
+				return $this->raw_headers;
+			}
+		};
+	}
+
 	public function test_register_hooks_parse_request_before_bot_protection(): void {
 		global $wp_test_actions;
 
