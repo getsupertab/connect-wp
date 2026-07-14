@@ -79,6 +79,9 @@ class Plugin {
 		$license_handler = new RSL_License_Handler( $settings, SUPERTAB_CONNECT_API_BASE_URL, $http_client );
 		$license_handler->register();
 
+		$status_handler = new Status_Handler( $settings, SUPERTAB_CONNECT_API_BASE_URL, $http_client );
+		$status_handler->register();
+
 		$analytics_enabled = $settings->has_merchant_api_key() && $settings->is_bot_protection_enabled();
 
 		$dispatcher = null;
@@ -187,7 +190,7 @@ class Plugin {
 	 *
 	 * @return EnforcementMode
 	 */
-	private static function get_enforcement_mode(): EnforcementMode {
+	public static function get_enforcement_mode(): EnforcementMode {
 		$default = EnforcementMode::OBSERVE;
 
 		if ( defined( 'SUPERTAB_CONNECT_ENFORCEMENT_MODE' ) ) {
