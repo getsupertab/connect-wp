@@ -91,9 +91,11 @@ class AnalyticsQueueTableTest extends TestCase {
 		$wpdb->results_queue = array( array() );
 
 		$this->assertSame( array(), ( new Analytics_Queue_Table() )->claim_batch( 500 ) );
-		// Only the SELECT ran — no DELETE.
-		$this->assertCount( 1, $wpdb->queries );
-		$this->assertStringContainsString( 'SELECT', $wpdb->queries[0] );
+		// Transaction opened and committed around the SELECT — no DELETE.
+		$this->assertSame( 'START TRANSACTION', $wpdb->queries[0] );
+		$this->assertStringContainsString( 'SELECT', $wpdb->queries[1] );
+		$this->assertSame( 'COMMIT', $wpdb->queries[2] );
+		$this->assertCount( 3, $wpdb->queries );
 	}
 
 	public function test_claim_batch_selects_deletes_and_returns_payloads(): void {
@@ -109,9 +111,12 @@ class AnalyticsQueueTableTest extends TestCase {
 		$payloads = ( new Analytics_Queue_Table() )->claim_batch( 500 );
 
 		$this->assertSame( array( '{"a":1}', '{"b":2}' ), $payloads );
-		$this->assertCount( 2, $wpdb->queries );
-		$this->assertStringContainsString( 'ORDER BY id ASC', $wpdb->queries[0] );
-		$this->assertStringContainsString( 'LIMIT 500', $wpdb->queries[0] );
-		$this->assertSame( 'DELETE FROM wp_supertab_connect_analytics_queue WHERE id IN (1,2)', $wpdb->queries[1] );
+		$this->assertCount( 4, $wpdb->queries );
+		$this->assertSame( 'START TRANSACTION', $wpdb->queries[0] );
+		$this->assertStringContainsString( 'ORDER BY id ASC', $wpdb->queries[1] );
+		$this->assertStringContainsString( 'LIMIT 500', $wpdb->queries[1] );
+		$this->assertStringContainsString( 'FOR UPDATE', $wpdb->queries[1] );
+		$this->assertSame( 'DELETE FROM wp_supertab_connect_analytics_queue WHERE id IN (1,2)', $wpdb->queries[2] );
+		$this->assertSame( 'COMMIT', $wpdb->queries[3] );
 	}
 }

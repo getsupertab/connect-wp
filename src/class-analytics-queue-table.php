@@ -119,29 +119,49 @@ class Analytics_Queue_Table {
 	 * payloads. Deliver-once semantics — once claimed, rows are gone whether or
 	 * not the subsequent send succeeds.
 	 *
+	 * The claim runs in a transaction with FOR UPDATE row locks so overlapping
+	 * flush runners (e.g. WP-Cron and Action Scheduler firing together during
+	 * a backend migration) block on the locked rows instead of both claiming —
+	 * and double-delivering — the same batch.
+	 *
 	 * @param int $limit Maximum rows to claim.
 	 * @return list<string> JSON payload strings, oldest first.
+	 * @throws \Throwable Rethrows any claim-query failure after rolling back.
 	 */
 	public function claim_batch( int $limit ): array {
 		global $wpdb;
 
 		$table = $this->name();
 
-		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.PreparedSQL.InterpolatedNotPrepared -- Queue drain on the plugin's own table; name from $wpdb->prefix.
-		$rows = $wpdb->get_results(
-			$wpdb->prepare( "SELECT id, payload FROM {$table} ORDER BY id ASC LIMIT %d", $limit ), // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared -- Table name from $wpdb->prefix.
-			ARRAY_A
-		);
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching -- Claim must be atomic across SELECT and DELETE.
+		$wpdb->query( 'START TRANSACTION' );
 
-		if ( empty( $rows ) ) {
-			return array();
+		try {
+			// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.PreparedSQL.InterpolatedNotPrepared -- Queue drain on the plugin's own table; name from $wpdb->prefix.
+			$rows = $wpdb->get_results(
+				$wpdb->prepare( "SELECT id, payload FROM {$table} ORDER BY id ASC LIMIT %d FOR UPDATE", $limit ), // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared -- Table name from $wpdb->prefix.
+				ARRAY_A
+			);
+
+			if ( empty( $rows ) ) {
+				// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching -- Close the claim transaction.
+				$wpdb->query( 'COMMIT' );
+				return array();
+			}
+
+			$ids = implode( ',', array_map( 'intval', array_column( $rows, 'id' ) ) );
+
+			// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.PreparedSQL.InterpolatedNotPrepared -- IDs are intval()-sanitized; plugin's own table.
+			$wpdb->query( "DELETE FROM {$table} WHERE id IN ({$ids})" );
+
+			// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching -- Close the claim transaction.
+			$wpdb->query( 'COMMIT' );
+
+			return array_column( $rows, 'payload' );
+		} catch ( \Throwable $e ) {
+			// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching -- Release locks; caller handles the error.
+			$wpdb->query( 'ROLLBACK' );
+			throw $e;
 		}
-
-		$ids = implode( ',', array_map( 'intval', array_column( $rows, 'id' ) ) );
-
-		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.PreparedSQL.InterpolatedNotPrepared -- IDs are intval()-sanitized; plugin's own table.
-		$wpdb->query( "DELETE FROM {$table} WHERE id IN ({$ids})" );
-
-		return array_column( $rows, 'payload' );
 	}
 }
