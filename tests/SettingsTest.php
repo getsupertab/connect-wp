@@ -125,6 +125,34 @@ class SettingsTest extends TestCase {
 		$this->assertFalse( $settings->is_bot_protection_enabled() );
 	}
 
+	public function test_is_analytics_enabled_returns_false_by_default(): void {
+		$settings = new Settings();
+		$this->assertFalse( $settings->is_analytics_enabled() );
+	}
+
+	public function test_set_analytics_enabled_stores_value(): void {
+		$settings = new Settings();
+		$settings->set_analytics_enabled( true );
+
+		$this->assertTrue( $settings->is_analytics_enabled() );
+	}
+
+	public function test_set_analytics_enabled_can_disable(): void {
+		$settings = new Settings();
+		$settings->set_analytics_enabled( true );
+		$settings->set_analytics_enabled( false );
+
+		$this->assertFalse( $settings->is_analytics_enabled() );
+	}
+
+	public function test_delete_removes_analytics_setting(): void {
+		$settings = new Settings();
+		$settings->set_analytics_enabled( true );
+		$settings->delete();
+
+		$this->assertFalse( $settings->is_analytics_enabled() );
+	}
+
 	public function test_delete_removes_bot_protection_setting(): void {
 		$settings = new Settings();
 		$settings->set_bot_protection_enabled( true );
