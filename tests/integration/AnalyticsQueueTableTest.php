@@ -230,12 +230,16 @@ class AnalyticsQueueTableTest extends WP_UnitTestCase {
 			$held   = $result->fetch_all( MYSQLI_ASSOC );
 			$this->assertCount( 2, $held, 'Lock holder must have claimed the two oldest rows.' );
 
-			// Fail fast instead of InnoDB's 50s default lock wait.
+			// Fail fast instead of InnoDB's 50s default lock wait, and keep
+			// wpdb from printing the expected lock-timeout error into the
+			// test output (PHPUnit flags printed output as risky).
 			$wpdb->query( 'SET SESSION innodb_lock_wait_timeout = 1' );
+			$suppress = $wpdb->suppress_errors( true );
 
 			try {
 				$claimed_while_locked = $this->table->claim_batch( 4 );
 			} finally {
+				$wpdb->suppress_errors( $suppress );
 				$wpdb->query( 'SET SESSION innodb_lock_wait_timeout = DEFAULT' );
 			}
 
