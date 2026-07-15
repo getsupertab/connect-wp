@@ -170,7 +170,7 @@ class AnalyticsQueueTableTest extends WP_UnitTestCase {
 		$this->assertFalse( $this->table->is_full( 1 ), 'An empty buffer is never full.' );
 
 		for ( $i = 1; $i <= 5; $i++ ) {
-			$this->table->insert( '{"request_id":"req-' . $i . '"}' );
+			$this->assertTrue( $this->table->insert( '{"request_id":"req-' . $i . '"}' ) );
 		}
 
 		$this->assertTrue( $this->table->is_full( 5 ) );
@@ -213,7 +213,7 @@ class AnalyticsQueueTableTest extends WP_UnitTestCase {
 		$payloads = array();
 		for ( $i = 1; $i <= 4; $i++ ) {
 			$payloads[] = '{"request_id":"req-' . $i . '"}';
-			$this->table->insert( end( $payloads ) );
+			$this->assertTrue( $this->table->insert( end( $payloads ) ) );
 		}
 
 		// The holder connection reads committed data only: end the test
@@ -227,7 +227,8 @@ class AnalyticsQueueTableTest extends WP_UnitTestCase {
 			$holder->begin_transaction();
 
 			$result = $holder->query( "SELECT id, payload FROM {$table} ORDER BY id ASC LIMIT 2 FOR UPDATE" );
-			$held   = $result->fetch_all( MYSQLI_ASSOC );
+			$this->assertNotFalse( $result, 'Lock holder SELECT ... FOR UPDATE failed: ' . $holder->error );
+			$held = $result->fetch_all( MYSQLI_ASSOC );
 			$this->assertCount( 2, $held, 'Lock holder must have claimed the two oldest rows.' );
 
 			// Fail fast instead of InnoDB's 50s default lock wait, and keep
@@ -251,7 +252,10 @@ class AnalyticsQueueTableTest extends WP_UnitTestCase {
 
 			// The holder completes its claim: delete-then-commit.
 			$held_ids = implode( ',', array_map( 'intval', array_column( $held, 'id' ) ) );
-			$holder->query( "DELETE FROM {$table} WHERE id IN ({$held_ids})" );
+			$this->assertTrue(
+				$holder->query( "DELETE FROM {$table} WHERE id IN ({$held_ids})" ),
+				'Lock holder DELETE failed: ' . $holder->error
+			);
 			$holder->commit();
 		} finally {
 			$holder->close();
