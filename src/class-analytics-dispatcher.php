@@ -1,6 +1,7 @@
 <?php
 /**
- * Queues analytics events and dispatches them off the visitor request.
+ * Buffers analytics events into a custom table and delivers them to the
+ * Supertab Connect relay in hourly batches.
  *
  * @package Supertab_Connect
  */
@@ -14,28 +15,63 @@ if ( ! defined( 'ABSPATH' ) ) {
 }
 
 use Supertab\Connect\Analytics\AnalyticsEvent;
+use Supertab\Connect\Analytics\AnalyticsTransportInterface;
 use Supertab\Connect\Analytics\HttpAnalyticsTransport;
 use Supertab\Connect\Http\HttpClientInterface;
 
 /**
- * Routes analytics events through a WordPress job queue so the POST to the
- * Supertab Connect relay happens off the visitor request.
+ * Routes analytics events through a table buffer drained by an hourly
+ * recurring job, so batched POSTs to the relay happen off visitor requests.
+ *
+ * Deliver-once, fail-open: rows are claimed (deleted) before sending; any
+ * failure drops events with a debug log and never throws into a visitor
+ * request or the queue runner.
  */
 class Analytics_Dispatcher {
 
 	/**
-	 * Hook that carries a single serialized analytics event.
+	 * Recurring hook that drains the buffer.
 	 *
 	 * @var string
 	 */
-	private const HOOK = 'supertab_connect_emit_analytics';
+	public const FLUSH_HOOK = 'supertab_connect_flush_analytics';
 
 	/**
-	 * Action Scheduler group for enqueued events.
+	 * Pre-1.4 per-event hook; still registered so jobs queued by an earlier
+	 * plugin version drain gracefully, and cleared on deactivation.
+	 *
+	 * @var string
+	 */
+	public const LEGACY_HOOK = 'supertab_connect_emit_analytics';
+
+	/**
+	 * Action Scheduler group.
 	 *
 	 * @var string
 	 */
 	private const GROUP = 'supertab-connect';
+
+	/**
+	 * Maximum events per batch POST (API limit: 500/request).
+	 *
+	 * @var int
+	 */
+	private const BATCH_SIZE = 500;
+
+	/**
+	 * Maximum batches per flush run, bounding job runtime.
+	 *
+	 * @var int
+	 */
+	private const MAX_BATCHES_PER_RUN = 10;
+
+	/**
+	 * Row cap: when the buffer holds this many rows (broken cron), new events
+	 * are dropped rather than growing the table unboundedly.
+	 *
+	 * @var int
+	 */
+	private const MAX_BUFFER_ROWS = 10000;
 
 	/**
 	 * Settings manager.
@@ -52,85 +88,231 @@ class Analytics_Dispatcher {
 	private HttpClientInterface $http_client;
 
 	/**
+	 * Queue table.
+	 *
+	 * @var Analytics_Queue_Table
+	 */
+	private Analytics_Queue_Table $table;
+
+	/**
 	 * Constructor.
 	 *
-	 * @param Settings            $settings    Settings manager.
-	 * @param HttpClientInterface $http_client HTTP client for relay POSTs.
+	 * @param Settings              $settings    Settings manager.
+	 * @param HttpClientInterface   $http_client HTTP client for relay POSTs.
+	 * @param Analytics_Queue_Table $table       Buffer table.
 	 */
-	public function __construct( Settings $settings, HttpClientInterface $http_client ) {
+	public function __construct( Settings $settings, HttpClientInterface $http_client, Analytics_Queue_Table $table ) {
 		$this->settings    = $settings;
 		$this->http_client = $http_client;
+		$this->table       = $table;
 	}
 
 	/**
-	 * Register the queued-job handler.
+	 * Register job handlers and (in admin/cron contexts) self-heal the schema
+	 * and the hourly schedule.
 	 *
-	 * Must run in every request context (admin, front-end, cron) so the queue
-	 * runner can dispatch wherever it executes.
+	 * Handlers must be registered in every request context (admin, front-end,
+	 * cron) so the queue runner can dispatch wherever it executes. Schema
+	 * install and schedule checks are restricted to admin/cron requests to
+	 * keep front-end requests free of extra queries.
 	 *
 	 * @return void
 	 */
 	public function register(): void {
-		add_action( self::HOOK, array( $this, 'dispatch' ) );
+		add_action( self::FLUSH_HOOK, array( $this, 'flush' ) );
+		add_action( self::LEGACY_HOOK, array( $this, 'dispatch' ) );
+
+		if ( is_admin() || wp_doing_cron() ) {
+			try {
+				$this->table->install();
+			} catch ( \Throwable $e ) {
+				self::log_debug( 'Analytics schema install error: ' . $e->getMessage() );
+			}
+
+			$this->ensure_scheduled();
+		}
 	}
 
 	/**
 	 * Clear any pending queued work. Called on plugin deactivation.
 	 *
-	 * Clearing is args-agnostic: it removes every pending event/action for
-	 * {@see self::HOOK} regardless of the payload it was scheduled with. The
-	 * hook is unique to this plugin, so clearing by hook alone is safe. Note
-	 * that exact-args clearing (e.g. {@see wp_clear_scheduled_hook()} with no
-	 * args) would match nothing, since every event is scheduled with a
-	 * non-empty payload.
+	 * Clears both the recurring flush hook and the legacy per-event hook, in
+	 * both backends, args-agnostically.
 	 *
 	 * @return void
 	 */
 	public static function clear_scheduled(): void {
 		try {
-			wp_unschedule_hook( self::HOOK );
+			foreach ( array( self::FLUSH_HOOK, self::LEGACY_HOOK ) as $hook ) {
+				wp_unschedule_hook( $hook );
 
-			if ( function_exists( 'as_unschedule_all_actions' ) ) {
-				call_user_func( 'as_unschedule_all_actions', self::HOOK );
+				if ( function_exists( 'as_unschedule_all_actions' ) ) {
+					call_user_func( 'as_unschedule_all_actions', $hook );
+				}
 			}
 		} catch ( \Throwable $e ) {
-			if ( defined( 'WP_DEBUG' ) && WP_DEBUG ) {
-				// phpcs:ignore WordPress.PHP.DevelopmentFunctions.error_log_error_log -- Intentional error logging for analytics clear_scheduled failures.
-				error_log( '[Supertab Connect] Analytics clear_scheduled error: ' . $e->getMessage() );
-			}
+			self::log_debug( 'Analytics clear_scheduled error: ' . $e->getMessage() );
 		}
 	}
 
 	/**
-	 * Enqueue a serialized analytics event for off-request delivery.
+	 * Ensure the hourly flush is scheduled exactly once, preferring Action
+	 * Scheduler and adapting when it appears or disappears.
 	 *
-	 * Prefers Action Scheduler (near-real-time async loopback); falls back to
-	 * WP-Cron; and, only if scheduling fails outright, emits inline as a
-	 * best-effort last resort.
+	 * @return void
+	 */
+	protected function ensure_scheduled(): void {
+		try {
+			if ( $this->action_scheduler_available() ) {
+				// Migrate a stale WP-Cron recurrence so both backends never fire.
+				if ( false !== wp_next_scheduled( self::FLUSH_HOOK ) ) {
+					wp_clear_scheduled_hook( self::FLUSH_HOOK );
+				}
+
+				if ( ! call_user_func( 'as_has_scheduled_action', self::FLUSH_HOOK ) ) {
+					call_user_func( 'as_schedule_recurring_action', time() + HOUR_IN_SECONDS, HOUR_IN_SECONDS, self::FLUSH_HOOK, array(), self::GROUP );
+				}
+
+				return;
+			}
+
+			if ( false === wp_next_scheduled( self::FLUSH_HOOK ) ) {
+				wp_schedule_event( time() + HOUR_IN_SECONDS, 'hourly', self::FLUSH_HOOK );
+			}
+		} catch ( \Throwable $e ) {
+			self::log_debug( 'Analytics ensure_scheduled error: ' . $e->getMessage() );
+		}
+	}
+
+	/**
+	 * Whether Action Scheduler's recurring API is available on this site.
+	 *
+	 * @return bool
+	 */
+	protected function action_scheduler_available(): bool {
+		return function_exists( 'as_schedule_recurring_action' ) && function_exists( 'as_has_scheduled_action' );
+	}
+
+	/**
+	 * Buffer a serialized analytics event for the next hourly batch flush.
+	 *
+	 * Fail-open: on a full buffer the event is dropped; on any insert/encode
+	 * failure (e.g. missing table) delivery falls back to the inline
+	 * single-event path so the event still has a chance to arrive.
 	 *
 	 * @param array<string, mixed> $event_data Serialized {@see AnalyticsEvent}.
 	 * @return void
 	 */
 	public function enqueue( array $event_data ): void {
-		if ( $this->action_scheduler_available() ) {
-			$this->enqueue_async( $event_data );
-			return;
-		}
+		try {
+			if ( $this->table->is_full( self::MAX_BUFFER_ROWS ) ) {
+				self::log_debug( 'Analytics buffer full; dropping event.' );
+				return;
+			}
 
-		if ( $this->enqueue_cron( $event_data ) ) {
-			return;
+			$payload = wp_json_encode( $event_data );
+
+			if ( false !== $payload && $this->table->insert( $payload ) ) {
+				return;
+			}
+		} catch ( \Throwable $e ) {
+			self::log_debug( 'Analytics enqueue error: ' . $e->getMessage() );
 		}
 
 		$this->dispatch( $event_data );
 	}
 
 	/**
-	 * Deliver one event to the relay.
+	 * Drain the buffer: claim up to BATCH_SIZE rows at a time and POST each
+	 * batch as a JSON array, for at most MAX_BATCHES_PER_RUN batches.
 	 *
-	 * Serves as both the queued job handler and the inline last-resort path.
-	 * Fail-open: rehydration ({@see AnalyticsEvent::fromArray()}) and delivery
-	 * are wrapped so a malformed payload can never throw into the queue runner
-	 * or the visitor request; {@see HttpAnalyticsTransport} additionally
+	 * Deliver-once: rows are deleted at claim time, so a failed POST drops
+	 * those events (debug-logged). Malformed rows are skipped. Fail-open
+	 * throughout — this is the FLUSH_HOOK job handler and must never throw
+	 * into the queue runner.
+	 *
+	 * @return void
+	 */
+	public function flush(): void {
+		try {
+			for ( $i = 0; $i < self::MAX_BATCHES_PER_RUN; $i++ ) {
+				$payloads = $this->table->claim_batch( self::BATCH_SIZE );
+
+				if ( array() === $payloads ) {
+					return;
+				}
+
+				$events = array();
+				foreach ( $payloads as $payload ) {
+					$event = json_decode( $payload, true );
+
+					if ( is_array( $event ) ) {
+						$events[] = $event;
+					} else {
+						self::log_debug( 'Skipping malformed buffered analytics event.' );
+					}
+				}
+
+				if ( array() !== $events ) {
+					$this->post_batch( $events );
+				}
+
+				if ( count( $payloads ) < self::BATCH_SIZE ) {
+					return;
+				}
+			}
+		} catch ( \Throwable $e ) {
+			self::log_debug( 'Analytics flush error: ' . $e->getMessage() );
+		}
+	}
+
+	/**
+	 * POST one batch of events to the relay as a JSON array.
+	 *
+	 * Best-effort: non-2xx responses, rejected events, and transport errors
+	 * are debug-logged only — never retried or re-buffered.
+	 *
+	 * @param array<int, array<string, mixed>> $events Decoded event payloads.
+	 * @return void
+	 */
+	private function post_batch( array $events ): void {
+		try {
+			$body = wp_json_encode( array_values( $events ) );
+
+			if ( false === $body ) {
+				self::log_debug( 'Failed to encode analytics batch.' );
+				return;
+			}
+
+			$response = $this->http_client->post(
+				rtrim( SUPERTAB_CONNECT_API_BASE_URL, '/' ) . AnalyticsTransportInterface::ANALYTICS_EVENTS_PATH,
+				$body,
+				array(
+					'Authorization' => 'Bearer ' . $this->settings->get_merchant_api_key(),
+					'Content-Type'  => 'application/json',
+				)
+			);
+
+			if ( $response['statusCode'] < 200 || $response['statusCode'] >= 300 ) {
+				self::log_debug( 'Analytics batch POST returned ' . $response['statusCode'] . '; ' . count( $events ) . ' events dropped.' );
+				return;
+			}
+
+			$decoded = json_decode( $response['body'], true );
+			if ( is_array( $decoded ) && ( $decoded['rejected_count'] ?? 0 ) > 0 ) {
+				self::log_debug( 'Analytics batch partially rejected: ' . $decoded['rejected_count'] . ' events dropped server-side.' );
+			}
+		} catch ( \Throwable $e ) {
+			self::log_debug( 'Analytics batch POST error: ' . $e->getMessage() . '; ' . count( $events ) . ' events dropped.' );
+		}
+	}
+
+	/**
+	 * Deliver one event to the relay, inline.
+	 *
+	 * Serves as the legacy queued-job handler and the buffering last-resort
+	 * path. Fail-open: rehydration and delivery are wrapped so a malformed
+	 * payload can never throw; {@see HttpAnalyticsTransport} additionally
 	 * swallows transport errors.
 	 *
 	 * @param array<string, mixed> $event_data Serialized {@see AnalyticsEvent}.
@@ -147,39 +329,20 @@ class Analytics_Dispatcher {
 
 			$transport->emit( AnalyticsEvent::fromArray( $event_data ) );
 		} catch ( \Throwable $e ) {
-			if ( defined( 'WP_DEBUG' ) && WP_DEBUG ) {
-				// phpcs:ignore WordPress.PHP.DevelopmentFunctions.error_log_error_log -- Intentional error logging for analytics dispatch failures.
-				error_log( '[Supertab Connect] Analytics dispatch error: ' . $e->getMessage() );
-			}
+			self::log_debug( 'Analytics dispatch error: ' . $e->getMessage() );
 		}
 	}
 
 	/**
-	 * Whether Action Scheduler is available on this site.
+	 * Log a message when WP_DEBUG is on.
 	 *
-	 * @return bool
-	 */
-	protected function action_scheduler_available(): bool {
-		return function_exists( 'as_enqueue_async_action' );
-	}
-
-	/**
-	 * Enqueue via Action Scheduler's async action (runs ASAP in a loopback).
-	 *
-	 * @param array<string, mixed> $event_data Serialized event.
+	 * @param string $message Message to log.
 	 * @return void
 	 */
-	protected function enqueue_async( array $event_data ): void {
-		call_user_func( 'as_enqueue_async_action', self::HOOK, array( $event_data ), self::GROUP );
-	}
-
-	/**
-	 * Enqueue via WP-Cron as a single event at the earliest tick.
-	 *
-	 * @param array<string, mixed> $event_data Serialized event.
-	 * @return bool True if the event was scheduled.
-	 */
-	protected function enqueue_cron( array $event_data ): bool {
-		return false !== wp_schedule_single_event( time(), self::HOOK, array( $event_data ) );
+	private static function log_debug( string $message ): void {
+		if ( defined( 'WP_DEBUG' ) && WP_DEBUG ) {
+			// phpcs:ignore WordPress.PHP.DevelopmentFunctions.error_log_error_log -- Intentional debug logging; analytics is fail-open.
+			error_log( '[Supertab Connect] ' . $message );
+		}
 	}
 }

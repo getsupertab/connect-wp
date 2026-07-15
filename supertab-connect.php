@@ -44,11 +44,12 @@ if ( file_exists( __DIR__ . '/vendor/autoload.php' ) ) {
 	require_once __DIR__ . '/vendor/autoload.php';
 }
 
-// Set activation flag for redirect.
+// Set activation flag for redirect and provision the analytics queue table.
 register_activation_hook(
 	__FILE__,
 	static function (): void {
 		set_transient( 'supertab_connect_activating', true, 30 );
+		( new Supertab_Connect\Analytics_Queue_Table() )->install();
 	}
 );
 

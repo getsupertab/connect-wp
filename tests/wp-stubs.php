@@ -30,6 +30,10 @@ if ( ! defined( 'HOUR_IN_SECONDS' ) ) {
 	define( 'HOUR_IN_SECONDS', 60 * MINUTE_IN_SECONDS );
 }
 
+if ( ! defined( 'ARRAY_A' ) ) {
+	define( 'ARRAY_A', 'ARRAY_A' );
+}
+
 /*
 |--------------------------------------------------------------------------
 | Plugin Constants
@@ -70,16 +74,18 @@ if ( ! defined( 'SUPERTAB_CONNECT_API_BASE_URL' ) ) {
 |
 */
 
-global $wp_test_options, $wp_test_transients, $wp_test_headers_sent, $wp_test_status_code, $wp_test_http_calls, $wp_test_actions;
+global $wp_test_options, $wp_test_transients, $wp_test_headers_sent, $wp_test_status_code, $wp_test_http_calls, $wp_test_http_response, $wp_test_option_autoload, $wp_test_actions;
 
 $wp_test_options     = [];
 $wp_test_transients  = [];
 $wp_test_headers_sent = [];
 $wp_test_status_code = 200;
 $wp_test_http_calls  = [];
+$wp_test_http_response = null;
+$wp_test_option_autoload = [];
 $wp_test_actions     = [];
 
-global $wp_test_scheduled_events, $wp_test_cleared_hooks, $wp_test_unscheduled_hooks, $wp_test_schedule_result, $wp_test_doing_cron, $wp_test_as_enqueue_calls, $wp_test_as_unschedule_calls;
+global $wp_test_scheduled_events, $wp_test_cleared_hooks, $wp_test_unscheduled_hooks, $wp_test_schedule_result, $wp_test_doing_cron, $wp_test_as_enqueue_calls, $wp_test_as_unschedule_calls, $wp_test_recurring_events, $wp_test_next_scheduled, $wp_test_as_recurring_calls, $wp_test_as_has_scheduled, $wp_test_is_admin;
 
 $wp_test_scheduled_events    = [];
 $wp_test_cleared_hooks       = [];
@@ -88,25 +94,91 @@ $wp_test_schedule_result     = true;
 $wp_test_doing_cron          = false;
 $wp_test_as_enqueue_calls    = [];
 $wp_test_as_unschedule_calls = [];
+$wp_test_recurring_events    = [];
+$wp_test_next_scheduled      = false;
+$wp_test_as_recurring_calls  = [];
+$wp_test_as_has_scheduled    = false;
+$wp_test_is_admin            = false;
+
+global $wp_test_dbdelta_queries;
+
+$wp_test_dbdelta_queries = [];
+
+/**
+ * Minimal wpdb spy. Records calls; returns configurable canned results.
+ */
+class WP_Test_Wpdb {
+	public string $prefix       = 'wp_';
+	public array $insert_calls  = [];
+	public array $queries       = [];
+	/** @var int|false */
+	public $insert_result       = 1;
+	/** Shifted once per get_results() call. */
+	public array $results_queue = [];
+	/** @var string|null */
+	public $var_result          = '0';
+
+	public function insert( string $table, array $data, $format = null ) {
+		$this->insert_calls[] = [ 'table' => $table, 'data' => $data, 'format' => $format ];
+		return $this->insert_result;
+	}
+
+	public function get_var( string $query ): ?string {
+		$this->queries[] = $query;
+		return $this->var_result;
+	}
+
+	public function get_results( string $query, string $output = 'OBJECT' ) {
+		$this->queries[] = $query;
+		return array_shift( $this->results_queue ) ?? [];
+	}
+
+	public function query( string $query ) {
+		$this->queries[] = $query;
+		return 0;
+	}
+
+	public function prepare( string $query, ...$args ): string {
+		// Replace %s with quoted placeholders, then vsprintf handles both %s and %d
+		$query = str_replace( '%s', "'%s'", $query );
+		return vsprintf( $query, $args );
+	}
+
+	public function get_charset_collate(): string {
+		return 'DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_520_ci';
+	}
+}
+
+global $wpdb;
+$wpdb = new WP_Test_Wpdb();
 
 /**
  * Reset all in-memory stores. Call in setUp()/tearDown().
  */
 function wp_stubs_reset(): void {
-	global $wp_test_options, $wp_test_transients, $wp_test_headers_sent, $wp_test_status_code, $wp_test_http_calls, $wp_test_scheduled_events, $wp_test_cleared_hooks, $wp_test_unscheduled_hooks, $wp_test_schedule_result, $wp_test_doing_cron, $wp_test_as_enqueue_calls, $wp_test_as_unschedule_calls, $wp_test_actions;
-	$wp_test_options      = [];
-	$wp_test_transients   = [];
-	$wp_test_headers_sent = [];
-	$wp_test_status_code  = 200;
-	$wp_test_http_calls   = [];
-	$wp_test_scheduled_events   = [];
-	$wp_test_cleared_hooks      = [];
-	$wp_test_unscheduled_hooks  = [];
-	$wp_test_schedule_result    = true;
-	$wp_test_doing_cron         = false;
-	$wp_test_as_enqueue_calls   = [];
-	$wp_test_as_unschedule_calls = [];
-	$wp_test_actions = [];
+	global $wp_test_options, $wp_test_transients, $wp_test_headers_sent, $wp_test_status_code, $wp_test_http_calls, $wp_test_http_response, $wp_test_option_autoload, $wp_test_actions, $wp_test_scheduled_events, $wp_test_cleared_hooks, $wp_test_unscheduled_hooks, $wp_test_schedule_result, $wp_test_doing_cron, $wp_test_as_enqueue_calls, $wp_test_as_unschedule_calls, $wp_test_recurring_events, $wp_test_next_scheduled, $wp_test_as_recurring_calls, $wp_test_as_has_scheduled, $wp_test_is_admin, $wp_test_dbdelta_queries, $wpdb;
+	$wp_test_options        = [];
+	$wp_test_transients     = [];
+	$wp_test_headers_sent   = [];
+	$wp_test_status_code    = 200;
+	$wp_test_http_calls     = [];
+	$wp_test_http_response  = null;
+	$wp_test_option_autoload = [];
+	$wp_test_actions        = [];
+	$wp_test_scheduled_events     = [];
+	$wp_test_cleared_hooks        = [];
+	$wp_test_unscheduled_hooks    = [];
+	$wp_test_schedule_result      = true;
+	$wp_test_doing_cron           = false;
+	$wp_test_as_enqueue_calls     = [];
+	$wp_test_as_unschedule_calls  = [];
+	$wp_test_recurring_events     = [];
+	$wp_test_next_scheduled       = false;
+	$wp_test_as_recurring_calls   = [];
+	$wp_test_as_has_scheduled     = false;
+	$wp_test_is_admin             = false;
+	$wp_test_dbdelta_queries      = [];
+	$wpdb                         = new WP_Test_Wpdb();
 }
 
 /*
@@ -124,8 +196,9 @@ if ( ! function_exists( 'get_option' ) ) {
 
 if ( ! function_exists( 'update_option' ) ) {
 	function update_option( string $option, $value, $autoload = null ): bool {
-		global $wp_test_options;
-		$wp_test_options[ $option ] = $value;
+		global $wp_test_options, $wp_test_option_autoload;
+		$wp_test_options[ $option ]         = $value;
+		$wp_test_option_autoload[ $option ] = $autoload;
 		return true;
 	}
 }
@@ -186,24 +259,24 @@ if ( ! function_exists( 'status_header' ) ) {
 |--------------------------------------------------------------------------
 |
 | Capture each outbound request into $wp_test_http_calls so tests can assert
-| on the URL and args (headers, user-agent, body). Always returns a canned
-| 200 response.
+| on the URL and args (headers, user-agent, body). Default response is a canned
+| 200, overridable per-test via $wp_test_http_response.
 |
 */
 
 if ( ! function_exists( 'wp_remote_post' ) ) {
 	function wp_remote_post( string $url, array $args = [] ) {
-		global $wp_test_http_calls;
+		global $wp_test_http_calls, $wp_test_http_response;
 		$wp_test_http_calls[] = [ 'method' => 'POST', 'url' => $url, 'args' => $args ];
-		return [ 'response' => [ 'code' => 200 ], 'body' => '{}' ];
+		return $wp_test_http_response ?? [ 'response' => [ 'code' => 200 ], 'body' => '{}' ];
 	}
 }
 
 if ( ! function_exists( 'wp_remote_get' ) ) {
 	function wp_remote_get( string $url, array $args = [] ) {
-		global $wp_test_http_calls;
+		global $wp_test_http_calls, $wp_test_http_response;
 		$wp_test_http_calls[] = [ 'method' => 'GET', 'url' => $url, 'args' => $args ];
-		return [ 'response' => [ 'code' => 200 ], 'body' => 'ok' ];
+		return $wp_test_http_response ?? [ 'response' => [ 'code' => 200 ], 'body' => 'ok' ];
 	}
 }
 
@@ -234,6 +307,12 @@ if ( ! function_exists( 'wp_remote_retrieve_body' ) ) {
 if ( ! function_exists( 'esc_html' ) ) {
 	function esc_html( string $text ): string {
 		return htmlspecialchars( $text, ENT_QUOTES, 'UTF-8' );
+	}
+}
+
+if ( ! function_exists( 'wp_json_encode' ) ) {
+	function wp_json_encode( $data, int $options = 0, int $depth = 512 ) {
+		return json_encode( $data, $options, $depth );
 	}
 }
 
@@ -359,5 +438,62 @@ if ( ! function_exists( 'as_unschedule_all_actions' ) ) {
 	function as_unschedule_all_actions( string $hook, array $args = [], string $group = '' ): void {
 		global $wp_test_as_unschedule_calls;
 		$wp_test_as_unschedule_calls[] = [ 'hook' => $hook, 'args' => $args, 'group' => $group ];
+	}
+}
+
+if ( ! function_exists( 'wp_schedule_event' ) ) {
+	function wp_schedule_event( int $timestamp, string $recurrence, string $hook, array $args = [], bool $wp_error = false ) {
+		global $wp_test_recurring_events, $wp_test_schedule_result;
+		$wp_test_recurring_events[] = [ 'timestamp' => $timestamp, 'recurrence' => $recurrence, 'hook' => $hook, 'args' => $args ];
+		return $wp_test_schedule_result;
+	}
+}
+
+if ( ! function_exists( 'wp_next_scheduled' ) ) {
+	function wp_next_scheduled( string $hook, array $args = [] ) {
+		global $wp_test_next_scheduled;
+		return $wp_test_next_scheduled;
+	}
+}
+
+if ( ! function_exists( 'as_schedule_recurring_action' ) ) {
+	function as_schedule_recurring_action( int $timestamp, int $interval_in_seconds, string $hook, array $args = [], string $group = '' ): int {
+		global $wp_test_as_recurring_calls;
+		$wp_test_as_recurring_calls[] = [ 'timestamp' => $timestamp, 'interval' => $interval_in_seconds, 'hook' => $hook, 'args' => $args, 'group' => $group ];
+		return count( $wp_test_as_recurring_calls );
+	}
+}
+
+if ( ! function_exists( 'as_has_scheduled_action' ) ) {
+	function as_has_scheduled_action( string $hook, $args = null, string $group = '' ): bool {
+		global $wp_test_as_has_scheduled;
+		return (bool) $wp_test_as_has_scheduled;
+	}
+}
+
+/*
+|--------------------------------------------------------------------------
+| Hooks
+|--------------------------------------------------------------------------
+*/
+
+if ( ! function_exists( 'is_admin' ) ) {
+	function is_admin(): bool {
+		global $wp_test_is_admin;
+		return (bool) $wp_test_is_admin;
+	}
+}
+
+/*
+|--------------------------------------------------------------------------
+| Database Upgrade Stubs
+|--------------------------------------------------------------------------
+*/
+
+if ( ! function_exists( 'dbDelta' ) ) {
+	function dbDelta( $queries = '', bool $execute = true ): array {
+		global $wp_test_dbdelta_queries;
+		$wp_test_dbdelta_queries[] = $queries;
+		return [];
 	}
 }

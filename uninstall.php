@@ -23,3 +23,9 @@ delete_option( 'supertab_connect_active_paths' );
 // Remove transients.
 delete_transient( 'supertab_connect_activating' );
 delete_transient( 'supertab_connect_license_xml' );
+
+// Remove the analytics queue table and its schema-version option.
+global $wpdb;
+// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.SchemaChange, WordPress.DB.DirectDatabaseQuery.NoCaching -- Uninstall cleanup of the plugin's own custom table.
+$wpdb->query( "DROP TABLE IF EXISTS {$wpdb->prefix}supertab_connect_analytics_queue" );
+delete_option( 'supertab_connect_db_version' );

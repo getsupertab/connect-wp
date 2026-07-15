@@ -86,7 +86,7 @@ class Plugin {
 
 		$dispatcher = null;
 		if ( $analytics_enabled && self::should_use_wp_queue() ) {
-			$dispatcher = new Analytics_Dispatcher( $settings, $http_client );
+			$dispatcher = new Analytics_Dispatcher( $settings, $http_client, new Analytics_Queue_Table() );
 			$dispatcher->register();
 		}
 
