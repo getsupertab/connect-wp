@@ -18,6 +18,7 @@ if ( ! defined( 'WP_UNINSTALL_PLUGIN' ) ) {
 delete_option( 'supertab_connect_merchant_api_key' );
 delete_option( 'supertab_connect_website_urn' );
 delete_option( 'supertab_connect_bot_protection_enabled' );
+delete_option( 'supertab_connect_analytics_enabled' );
 delete_option( 'supertab_connect_active_paths' );
 
 // Remove transients.
