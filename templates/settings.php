@@ -19,6 +19,7 @@ $supertab_connect_disconnected           = $template_data['disconnected'];
 $supertab_connect_website_urn            = $template_data['website_urn'];
 $supertab_connect_license_url            = $template_data['license_url'];
 $supertab_connect_bot_protection_enabled = $template_data['bot_protection_enabled'];
+$supertab_connect_analytics_enabled      = $template_data['analytics_enabled'];
 $supertab_connect_active_paths           = $template_data['active_paths'];
 $supertab_connect_site_url               = $template_data['site_url'];
 $supertab_connect_resource_links         = $template_data['resource_links'];
@@ -184,6 +185,24 @@ $supertab_connect_purged = isset( $_GET['purged'] ) && '1' === sanitize_text_fie
 				<div id="supertab-active-paths-section"
 					<?php echo ! $supertab_connect_bot_protection_enabled ? 'style="display:none;"' : ''; // Only hardcoded strings output. ?>
 				>
+					<!-- Analytics -->
+					<fieldset>
+						<label for="supertab-analytics-enabled">
+							<input
+								type="checkbox"
+								id="supertab-analytics-enabled"
+								name="analytics_enabled"
+								value="1"
+								<?php checked( $supertab_connect_analytics_enabled ); ?>
+							/>
+							<?php esc_html_e( 'Enable analytics', 'supertab-connect' ); ?>
+						</label>
+					</fieldset>
+
+					<p class="description">
+						<?php esc_html_e( 'Share bot-traffic analytics with Supertab Connect. Events are recorded only for requests classified by CAP. Disabled by default.', 'supertab-connect' ); ?>
+					</p>
+
 					<h4><?php esc_html_e( 'Active Paths', 'supertab-connect' ); ?></h4>
 
 					<p class="description">

@@ -82,7 +82,8 @@ class Plugin {
 		$status_handler = new Status_Handler( $settings, SUPERTAB_CONNECT_API_BASE_URL, $http_client );
 		$status_handler->register();
 
-		$analytics_enabled = $settings->has_merchant_api_key() && $settings->is_bot_protection_enabled();
+		$bot_protection_active = $settings->has_merchant_api_key() && $settings->is_bot_protection_enabled();
+		$analytics_enabled     = $bot_protection_active && $settings->is_analytics_enabled();
 
 		$dispatcher = null;
 		if ( $analytics_enabled && self::should_use_wp_queue() ) {
@@ -95,8 +96,8 @@ class Plugin {
 			return;
 		}
 
-		if ( $analytics_enabled && ! defined( 'REST_REQUEST' ) && ! wp_doing_cron() ) {
-			$this->init_bot_protection( $settings, $http_client, $dispatcher );
+		if ( $bot_protection_active && ! defined( 'REST_REQUEST' ) && ! wp_doing_cron() ) {
+			$this->init_bot_protection( $settings, $http_client, $dispatcher, $analytics_enabled );
 		}
 	}
 
@@ -148,13 +149,14 @@ class Plugin {
 	/**
 	 * Initialize bot protection for front-end requests.
 	 *
-	 * @param Settings              $settings    Settings manager.
-	 * @param HttpClientInterface   $http_client HTTP client for SDK requests.
-	 * @param ?Analytics_Dispatcher $dispatcher  When set, analytics events are queued via this
-	 *                                           dispatcher; when null, the SDK's default transport is used.
+	 * @param Settings              $settings          Settings manager.
+	 * @param HttpClientInterface   $http_client       HTTP client for SDK requests.
+	 * @param ?Analytics_Dispatcher $dispatcher        When set, analytics events are queued via this
+	 *                                                 dispatcher; when null, the SDK's default transport is used.
+	 * @param bool                  $analytics_enabled Whether the merchant opted in to analytics.
 	 * @return void
 	 */
-	private function init_bot_protection( Settings $settings, HttpClientInterface $http_client, ?Analytics_Dispatcher $dispatcher ): void {
+	private function init_bot_protection( Settings $settings, HttpClientInterface $http_client, ?Analytics_Dispatcher $dispatcher, bool $analytics_enabled ): void {
 		$enforcement = self::get_enforcement_mode();
 
 		if ( null !== $dispatcher ) {
@@ -174,7 +176,7 @@ class Plugin {
 			httpClient: $http_client,
 			baseUrl: SUPERTAB_CONNECT_API_BASE_URL,
 			cache: new WP_Transient_Cache(),
-			analyticsEnabled: true,
+			analyticsEnabled: $analytics_enabled,
 			analyticsTransport: $analytics_transport,
 		);
 		$bot_protection   = new Bot_Protection( $supertab_connect, $settings );

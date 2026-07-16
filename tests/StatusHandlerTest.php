@@ -142,6 +142,7 @@ class StatusHandlerTest extends TestCase {
 
 	public function test_valid_challenge_returns_status_payload(): void {
 		$this->enable_bot_protection();
+		$this->settings->set_analytics_enabled( true );
 
 		$handler  = $this->create_handler( static fn (): bool => true );
 		$response = $handler->build_response( 'Bearer good-token', 'https://example.com' );
@@ -176,6 +177,20 @@ class StatusHandlerTest extends TestCase {
 		$this->assertSame( 200, $response['status'] );
 		$this->assertSame( 'disabled', $payload['enforcement'] );
 		$this->assertFalse( $payload['eventReporting'] );
+	}
+
+	public function test_analytics_opt_in_required_for_event_reporting(): void {
+		$this->enable_bot_protection();
+		// Analytics enabled flag left off (opt-in default: disabled).
+
+		$handler  = $this->create_handler( static fn (): bool => true );
+		$response = $handler->build_response( 'Bearer good-token', 'https://example.com' );
+
+		$payload = json_decode( $response['body'], true );
+
+		$this->assertSame( 200, $response['status'] );
+		$this->assertSame( 'observe', $payload['enforcement'] );
+		$this->assertFalse( $payload['eventReporting'], 'eventReporting must be false when analytics is not opt-in enabled.' );
 	}
 
 	public function test_missing_credentials_reports_disabled(): void {

@@ -36,6 +36,13 @@ class Settings {
 	private const OPTION_BOT_PROTECTION_ENABLED = 'supertab_connect_bot_protection_enabled';
 
 	/**
+	 * Option name for the analytics enabled flag.
+	 *
+	 * @var string
+	 */
+	private const OPTION_ANALYTICS_ENABLED = 'supertab_connect_analytics_enabled';
+
+	/**
 	 * Option name for active paths.
 	 *
 	 * @var string
@@ -107,6 +114,27 @@ class Settings {
 	}
 
 	/**
+	 * Check if analytics is enabled.
+	 *
+	 * Opt-in: absent or falsy means disabled.
+	 *
+	 * @return bool True if analytics is enabled.
+	 */
+	public function is_analytics_enabled(): bool {
+		return (bool) get_option( self::OPTION_ANALYTICS_ENABLED, false );
+	}
+
+	/**
+	 * Set the analytics enabled flag.
+	 *
+	 * @param bool $enabled Whether analytics should be enabled.
+	 * @return void
+	 */
+	public function set_analytics_enabled( bool $enabled ): void {
+		update_option( self::OPTION_ANALYTICS_ENABLED, $enabled );
+	}
+
+	/**
 	 * Get the active paths for bot protection.
 	 *
 	 * @return array<int, string> Array of path patterns. Defaults to ['*'] (all paths).
@@ -173,6 +201,7 @@ class Settings {
 		delete_option( self::OPTION_MERCHANT_API_KEY );
 		delete_option( self::OPTION_WEBSITE_URN );
 		delete_option( self::OPTION_BOT_PROTECTION_ENABLED );
+		delete_option( self::OPTION_ANALYTICS_ENABLED );
 		delete_option( self::OPTION_ACTIVE_PATHS );
 
 		// Invalidate cached license XML.

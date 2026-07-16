@@ -153,10 +153,12 @@ class Status_Handler {
 			);
 		}
 
-		// Mirrors the gate in Plugin::init(): bot protection (and with it,
-		// event reporting) only runs when both conditions hold.
+		// Bot protection gate: requires both merchant API key and enabled flag.
+		// Event reporting additionally requires opt-in analytics.
 		$protection_active = $this->settings->has_merchant_api_key()
 			&& $this->settings->is_bot_protection_enabled();
+
+		$event_reporting = $protection_active && $this->settings->is_analytics_enabled();
 
 		return array(
 			'status' => 200,
@@ -169,7 +171,7 @@ class Status_Handler {
 						'version' => SUPERTAB_CONNECT_VERSION,
 					),
 					'enforcement'    => $protection_active ? Plugin::get_enforcement_mode()->value : 'disabled',
-					'eventReporting' => $protection_active,
+					'eventReporting' => $event_reporting,
 				)
 			),
 		);

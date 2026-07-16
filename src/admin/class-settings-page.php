@@ -171,6 +171,7 @@ class Settings_Page {
 				'website_urn'            => isset( $_POST['website_urn'] ) ? sanitize_text_field( wp_unslash( $_POST['website_urn'] ) ) : '',
 				'merchant_api_key'       => isset( $_POST['merchant_api_key'] ) ? sanitize_text_field( wp_unslash( $_POST['merchant_api_key'] ) ) : null,
 				'bot_protection_enabled' => isset( $_POST['bot_protection_enabled'] ),
+				'analytics_enabled'      => isset( $_POST['analytics_enabled'] ),
 				'active_paths'           => isset( $_POST['active_paths'] ) && is_array( $_POST['active_paths'] )
 					? array_map( 'sanitize_text_field', wp_unslash( $_POST['active_paths'] ) )
 					: array(),
@@ -202,11 +203,13 @@ class Settings_Page {
 		} elseif ( '' === $merchant_api_key ) {
 			// API key field was shown but submitted empty — disable bot protection.
 			$this->settings->set_bot_protection_enabled( false );
+			$this->settings->set_analytics_enabled( false );
 		}
 
 		// Bot protection settings are only present when API key is already saved.
 		if ( null === $merchant_api_key ) {
 			$this->settings->set_bot_protection_enabled( $form_data['bot_protection_enabled'] );
+			$this->settings->set_analytics_enabled( $form_data['analytics_enabled'] );
 
 			$raw_paths = $form_data['active_paths'];
 
@@ -296,6 +299,7 @@ class Settings_Page {
 			'website_urn'            => $this->settings->get_website_urn(),
 			'license_url'            => home_url( '/license.xml' ),
 			'bot_protection_enabled' => $this->settings->is_bot_protection_enabled(),
+			'analytics_enabled'      => $this->settings->is_analytics_enabled(),
 			'active_paths'           => $this->settings->get_active_paths(),
 			'site_url'               => home_url( '/' ),
 			'resource_links'         => array(
