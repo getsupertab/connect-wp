@@ -74,6 +74,19 @@ class AnalyticsDispatcherTest extends TestCase {
 	}
 
 	/**
+	 * Fire every callback register() deferred to init, as WordPress would.
+	 */
+	private function fire_init_callbacks(): void {
+		global $wp_test_actions;
+
+		foreach ( $wp_test_actions as $action ) {
+			if ( 'init' === $action['hook'] ) {
+				call_user_func( $action['callback'] );
+			}
+		}
+	}
+
+	/**
 	 * Build a dispatcher that reports Action Scheduler as unavailable.
 	 */
 	private function make_dispatcher_without_action_scheduler( Analytics_Queue_Table $table ): Analytics_Dispatcher {
@@ -330,12 +343,38 @@ class AnalyticsDispatcherTest extends TestCase {
 		$this->assertSame( array(), $table->rows );
 	}
 
+	public function test_register_defers_schedule_check_to_init(): void {
+		global $wp_test_doing_cron, $wp_test_actions, $wp_test_as_recurring_calls, $wp_test_recurring_events;
+
+		$wp_test_doing_cron = true;
+
+		$this->make_dispatcher()->register();
+
+		// register() runs at plugins_loaded, before Action Scheduler's data
+		// store initializes (init priority 1) — as_*() calls made that early
+		// silently no-op, so no scheduling API may be touched yet.
+		$this->assertSame( array(), $wp_test_as_recurring_calls, 'No AS call at registration time.' );
+		$this->assertSame( array(), $wp_test_recurring_events, 'No WP-Cron schedule at registration time.' );
+
+		$init_hooks = array_values(
+			array_filter( $wp_test_actions, static fn ( array $a ): bool => 'init' === $a['hook'] )
+		);
+		$this->assertCount( 1, $init_hooks, 'The schedule check must be deferred to init.' );
+
+		// Firing the deferred callback performs the actual scheduling.
+		call_user_func( $init_hooks[0]['callback'] );
+
+		$this->assertCount( 1, $wp_test_as_recurring_calls );
+		$this->assertSame( self::FLUSH_HOOK, $wp_test_as_recurring_calls[0]['hook'] );
+	}
+
 	public function test_register_schedules_recurring_via_action_scheduler_in_cron_context(): void {
 		global $wp_test_doing_cron, $wp_test_as_recurring_calls, $wp_test_recurring_events;
 
 		$wp_test_doing_cron = true;
 
 		$this->make_dispatcher()->register();
+		$this->fire_init_callbacks();
 
 		$this->assertCount( 1, $wp_test_as_recurring_calls );
 		$call = $wp_test_as_recurring_calls[0];
@@ -352,6 +391,7 @@ class AnalyticsDispatcherTest extends TestCase {
 		$wp_test_as_has_scheduled = true;
 
 		$this->make_dispatcher()->register();
+		$this->fire_init_callbacks();
 
 		$this->assertSame( array(), $wp_test_as_recurring_calls );
 	}
@@ -362,6 +402,7 @@ class AnalyticsDispatcherTest extends TestCase {
 		$wp_test_doing_cron = true;
 
 		$this->make_dispatcher_without_action_scheduler( $this->make_fake_table() )->register();
+		$this->fire_init_callbacks();
 
 		$this->assertCount( 1, $wp_test_recurring_events );
 		$this->assertSame( self::FLUSH_HOOK, $wp_test_recurring_events[0]['hook'] );
@@ -375,6 +416,7 @@ class AnalyticsDispatcherTest extends TestCase {
 		$wp_test_next_scheduled = time() + 100;
 
 		$this->make_dispatcher_without_action_scheduler( $this->make_fake_table() )->register();
+		$this->fire_init_callbacks();
 
 		$this->assertSame( array(), $wp_test_recurring_events );
 	}
@@ -386,6 +428,7 @@ class AnalyticsDispatcherTest extends TestCase {
 		$wp_test_next_scheduled = time() + 100;
 
 		$this->make_dispatcher()->register();
+		$this->fire_init_callbacks();
 
 		// The stale WP-Cron recurrence is cleared so both backends never fire.
 		$this->assertCount( 1, $wp_test_cleared_hooks );
@@ -416,6 +459,7 @@ class AnalyticsDispatcherTest extends TestCase {
 		};
 
 		$this->make_dispatcher( $table )->register();
+		$this->fire_init_callbacks();
 
 		$this->assertCount( 1, $wp_test_as_recurring_calls, 'Scheduling still proceeds after install failure.' );
 	}
@@ -430,5 +474,9 @@ class AnalyticsDispatcherTest extends TestCase {
 		$this->assertSame( 0, $table->install_calls );
 		$this->assertSame( array(), $wp_test_as_recurring_calls );
 		$this->assertSame( array(), $wp_test_recurring_events );
+
+		global $wp_test_actions;
+		$init_hooks = array_filter( $wp_test_actions, static fn ( array $a ): bool => 'init' === $a['hook'] );
+		$this->assertSame( array(), $init_hooks, 'No deferred schedule check on the front end.' );
 	}
 }

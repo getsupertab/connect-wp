@@ -129,7 +129,10 @@ class Analytics_Dispatcher {
 				self::log_debug( 'Analytics schema install error: ' . $e->getMessage() );
 			}
 
-			$this->ensure_scheduled();
+			// Deferred to init: Action Scheduler's data store is only usable
+			// from init priority 1 onward, and register() runs at plugins_loaded
+			// — as_*() calls made that early silently schedule nothing.
+			add_action( 'init', array( $this, 'ensure_scheduled' ) );
 		}
 	}
 
@@ -159,9 +162,13 @@ class Analytics_Dispatcher {
 	 * Ensure the hourly flush is scheduled exactly once, preferring Action
 	 * Scheduler and adapting when it appears or disappears.
 	 *
+	 * Runs on init (hooked by {@see register()}) because Action Scheduler's
+	 * data store initializes on init priority 1; called earlier, its API
+	 * functions return without scheduling.
+	 *
 	 * @return void
 	 */
-	protected function ensure_scheduled(): void {
+	public function ensure_scheduled(): void {
 		try {
 			if ( $this->action_scheduler_available() ) {
 				// Migrate a stale WP-Cron recurrence so both backends never fire.
