@@ -197,12 +197,12 @@ $supertab_connect_purged = isset( $_GET['purged'] ) && '1' === sanitize_text_fie
 								value="1"
 								<?php checked( $supertab_connect_analytics_enabled ); ?>
 							/>
-							<?php esc_html_e( 'Enable analytics', 'supertab-connect' ); ?>
+							<?php esc_html_e( 'Enable agent & bot classification', 'supertab-connect' ); ?>
 						</label>
 					</fieldset>
 
 					<p class="description">
-						<?php esc_html_e( 'Share bot-traffic analytics with Supertab Connect. Events are recorded only for requests classified by CAP. Disabled by default.', 'supertab-connect' ); ?>
+						<?php esc_html_e( 'Share agent & bot traffic analytics with Supertab to get insights into machine content consumption. Disabled by default.', 'supertab-connect' ); ?>
 					</p>
 
 					<h4><?php esc_html_e( 'Active Paths', 'supertab-connect' ); ?></h4>
