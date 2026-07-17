@@ -185,6 +185,8 @@ $supertab_connect_purged = isset( $_GET['purged'] ) && '1' === sanitize_text_fie
 				<div id="supertab-active-paths-section"
 					<?php echo ! $supertab_connect_bot_protection_enabled ? 'style="display:none;"' : ''; // Only hardcoded strings output. ?>
 				>
+					<br />
+
 					<!-- Analytics -->
 					<fieldset>
 						<label for="supertab-analytics-enabled">
