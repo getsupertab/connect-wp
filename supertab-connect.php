@@ -39,6 +39,15 @@ if ( ! defined( 'SUPERTAB_CONNECT_API_BASE_URL' ) ) {
 	);
 }
 
+if ( ! defined( 'SUPERTAB_CONNECT_ANALYTICS_BASE_URL' ) ) {
+	define(
+		'SUPERTAB_CONNECT_ANALYTICS_BASE_URL',
+		'prod' === SUPERTAB_CONNECT_ENVIRONMENT // @phpstan-ignore identical.alwaysTrue (value is overridable in wp-config.php)
+			? 'https://ingest-connect.supertab.co'
+			: 'https://ingest-connect.sbx.supertab.co'
+	);
+}
+
 // Autoloader.
 if ( file_exists( __DIR__ . '/vendor/autoload.php' ) ) {
 	require_once __DIR__ . '/vendor/autoload.php';

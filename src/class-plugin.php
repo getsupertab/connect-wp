@@ -178,6 +178,7 @@ class Plugin {
 			cache: new WP_Transient_Cache(),
 			analyticsEnabled: $analytics_enabled,
 			analyticsTransport: $analytics_transport,
+			analyticsBaseUrl: SUPERTAB_CONNECT_ANALYTICS_BASE_URL,
 		);
 		$bot_protection   = new Bot_Protection( $supertab_connect, $settings );
 		$bot_protection->register();
