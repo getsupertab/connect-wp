@@ -197,7 +197,7 @@ class Plugin {
 		$default = EnforcementMode::OBSERVE;
 
 		if ( defined( 'SUPERTAB_CONNECT_ENFORCEMENT_MODE' ) ) {
-			$mode = EnforcementMode::tryFrom( SUPERTAB_CONNECT_ENFORCEMENT_MODE );
+			$mode = self::map_enforcement_mode_value( (string) SUPERTAB_CONNECT_ENFORCEMENT_MODE );
 			if ( null !== $mode ) {
 				$default = $mode;
 			}
@@ -205,6 +205,23 @@ class Plugin {
 
 		/** This filter is documented in src/plugin.php */
 		return apply_filters( 'supertab_connect_enforcement_mode', $default );
+	}
+
+	/**
+	 * Map a raw enforcement mode value to the SDK enum.
+	 *
+	 * Accepts the legacy pre-2.0 SDK values 'soft' and 'strict' so sites
+	 * configured against plugin 1.2.x keep their behavior after upgrading.
+	 *
+	 * @param string $value Raw mode value, e.g. from wp-config.php.
+	 * @return ?EnforcementMode The matching mode, or null when unrecognized.
+	 */
+	public static function map_enforcement_mode_value( string $value ): ?EnforcementMode {
+		return match ( $value ) {
+			'soft'   => EnforcementMode::OBSERVE,
+			'strict' => EnforcementMode::ENFORCE,
+			default  => EnforcementMode::tryFrom( $value ),
+		};
 	}
 
 	/**
