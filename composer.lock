@@ -4,7 +4,7 @@
         "Read more about it at https://getcomposer.org/doc/01-basic-usage.md#installing-dependencies",
         "This file is @generated automatically"
     ],
-    "content-hash": "27d73b0be0f2d8d820573210e2a59ce4",
+    "content-hash": "83c9f54f6dcd697550b24c2bd7679ceb",
     "packages": [
         {
             "name": "firebase/php-jwt",
@@ -74,16 +74,16 @@
         },
         {
             "name": "getsupertab/connect-sdk-php",
-            "version": "v1.4.0-beta.10",
+            "version": "v2.0.1",
             "source": {
                 "type": "git",
                 "url": "https://github.com/getsupertab/connect-sdk-php.git",
-                "reference": "5f16f85ea477bab7c1272ed9dde9ba5eb513c6bf"
+                "reference": "9a8ce97db81efda5ba65b4966b2e13dfbbb95a52"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/getsupertab/connect-sdk-php/zipball/5f16f85ea477bab7c1272ed9dde9ba5eb513c6bf",
-                "reference": "5f16f85ea477bab7c1272ed9dde9ba5eb513c6bf",
+                "url": "https://api.github.com/repos/getsupertab/connect-sdk-php/zipball/9a8ce97db81efda5ba65b4966b2e13dfbbb95a52",
+                "reference": "9a8ce97db81efda5ba65b4966b2e13dfbbb95a52",
                 "shasum": ""
             },
             "require": {
@@ -125,9 +125,9 @@
             ],
             "support": {
                 "issues": "https://github.com/getsupertab/connect-sdk-php/issues",
-                "source": "https://github.com/getsupertab/connect-sdk-php/tree/v1.4.0-beta.10"
+                "source": "https://github.com/getsupertab/connect-sdk-php/tree/v2.0.1"
             },
-            "time": "2026-07-14T13:11:23+00:00"
+            "time": "2026-08-27T08:44:57+00:00"
         }
     ],
     "packages-dev": [
@@ -3021,9 +3021,7 @@
     ],
     "aliases": [],
     "minimum-stability": "stable",
-    "stability-flags": {
-        "getsupertab/connect-sdk-php": 10
-    },
+    "stability-flags": {},
     "prefer-stable": false,
     "prefer-lowest": false,
     "platform": {

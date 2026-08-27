@@ -14,6 +14,7 @@ define( 'SUPERTAB_CONNECT_PLUGIN_DIR', dirname( __DIR__ ) . '/' );
 define( 'SUPERTAB_CONNECT_PLUGIN_URL', 'https://example.com/wp-content/plugins/supertab-connect/' );
 define( 'SUPERTAB_CONNECT_ENVIRONMENT', 'sbx' );
 define( 'SUPERTAB_CONNECT_API_BASE_URL', 'https://api-connect.sbx.supertab.co' );
+define( 'SUPERTAB_CONNECT_ANALYTICS_BASE_URL', 'https://ingest-connect.sbx.supertab.co' );
 
 if ( ! defined( 'ABSPATH' ) ) {
 	define( 'ABSPATH', dirname( __DIR__ ) . '/' );

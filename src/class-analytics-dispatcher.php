@@ -292,7 +292,7 @@ class Analytics_Dispatcher {
 			}
 
 			$response = $this->http_client->post(
-				rtrim( SUPERTAB_CONNECT_API_BASE_URL, '/' ) . AnalyticsTransportInterface::ANALYTICS_EVENTS_PATH,
+				rtrim( SUPERTAB_CONNECT_ANALYTICS_BASE_URL, '/' ) . AnalyticsTransportInterface::ANALYTICS_EVENTS_PATH,
 				$body,
 				array(
 					'Authorization' => 'Bearer ' . $this->settings->get_merchant_api_key(),
@@ -329,7 +329,7 @@ class Analytics_Dispatcher {
 		try {
 			$transport = new HttpAnalyticsTransport(
 				$this->settings->get_merchant_api_key(),
-				SUPERTAB_CONNECT_API_BASE_URL,
+				SUPERTAB_CONNECT_ANALYTICS_BASE_URL,
 				$this->http_client,
 				defined( 'WP_DEBUG' ) && WP_DEBUG
 			);

@@ -133,7 +133,7 @@ class AnalyticsDispatcherTest extends TestCase {
 		$this->assertCount( 1, $wp_test_http_calls );
 		$call = $wp_test_http_calls[0];
 		$this->assertSame( 'POST', $call['method'] );
-		$this->assertSame( SUPERTAB_CONNECT_API_BASE_URL . '/ingest/events', $call['url'] );
+		$this->assertSame( SUPERTAB_CONNECT_ANALYTICS_BASE_URL . '/ingest/events', $call['url'] );
 
 		$body = json_decode( $call['args']['body'], true );
 		$this->assertSame( 'req-9', $body['request_id'] );
@@ -156,7 +156,7 @@ class AnalyticsDispatcherTest extends TestCase {
 		$call = $wp_test_http_calls[0];
 
 		$this->assertSame( 'POST', $call['method'] );
-		$this->assertSame( SUPERTAB_CONNECT_API_BASE_URL . '/ingest/events', $call['url'] );
+		$this->assertSame( SUPERTAB_CONNECT_ANALYTICS_BASE_URL . '/ingest/events', $call['url'] );
 		$this->assertSame( 'Bearer key-abc', $call['args']['headers']['Authorization'] );
 
 		$body = json_decode( $call['args']['body'], true );
@@ -218,7 +218,7 @@ class AnalyticsDispatcherTest extends TestCase {
 		$this->assertCount( 1, $wp_test_http_calls );
 		$call = $wp_test_http_calls[0];
 		$this->assertSame( 'POST', $call['method'] );
-		$this->assertSame( SUPERTAB_CONNECT_API_BASE_URL . '/ingest/events', $call['url'] );
+		$this->assertSame( SUPERTAB_CONNECT_ANALYTICS_BASE_URL . '/ingest/events', $call['url'] );
 		$this->assertSame( 'Bearer key-batch', $call['args']['headers']['Authorization'] );
 		$this->assertSame( 'application/json', $call['args']['headers']['Content-Type'] );
 

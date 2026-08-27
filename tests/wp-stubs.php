@@ -64,6 +64,10 @@ if ( ! defined( 'SUPERTAB_CONNECT_API_BASE_URL' ) ) {
 	define( 'SUPERTAB_CONNECT_API_BASE_URL', 'https://api-connect.sbx.supertab.co' );
 }
 
+if ( ! defined( 'SUPERTAB_CONNECT_ANALYTICS_BASE_URL' ) ) {
+	define( 'SUPERTAB_CONNECT_ANALYTICS_BASE_URL', 'https://ingest-connect.sbx.supertab.co' );
+}
+
 /*
 |--------------------------------------------------------------------------
 | In-Memory Store
