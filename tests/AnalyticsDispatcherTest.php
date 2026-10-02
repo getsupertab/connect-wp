@@ -1,6 +1,6 @@
 <?php
 /**
- * Tests for Analytics_Dispatcher buffering and inline fallback.
+ * Tests for Analytics_Dispatcher buffering and flushing.
  *
  * @package Supertab_Connect\Tests
  */
@@ -120,7 +120,7 @@ class AnalyticsDispatcherTest extends TestCase {
 		$this->assertSame( array(), $wp_test_http_calls, 'A capped buffer must not fall back to inline delivery.' );
 	}
 
-	public function test_enqueue_falls_back_inline_when_insert_fails(): void {
+	public function test_enqueue_drops_event_without_http_when_insert_fails(): void {
 		global $wp_test_http_calls;
 
 		update_option( 'supertab_connect_merchant_api_key', 'key-inline' );
@@ -130,13 +130,22 @@ class AnalyticsDispatcherTest extends TestCase {
 
 		$this->make_dispatcher( $table )->enqueue( array( 'request_id' => 'req-9' ) );
 
-		$this->assertCount( 1, $wp_test_http_calls );
-		$call = $wp_test_http_calls[0];
-		$this->assertSame( 'POST', $call['method'] );
-		$this->assertSame( SUPERTAB_CONNECT_ANALYTICS_BASE_URL . '/ingest/events', $call['url'] );
+		$this->assertSame( array(), $table->rows );
+		$this->assertSame( array(), $wp_test_http_calls, 'A visitor request must never POST inline, even when buffering fails.' );
+	}
 
-		$body = json_decode( $call['args']['body'], true );
-		$this->assertSame( 'req-9', $body['request_id'] );
+	public function test_enqueue_drops_event_without_http_when_table_throws(): void {
+		global $wp_test_http_calls;
+
+		$table = new class() extends Analytics_Queue_Table {
+			public function is_full( int $max_rows ): bool {
+				throw new \RuntimeException( 'table missing' );
+			}
+		};
+
+		$this->make_dispatcher( $table )->enqueue( array( 'request_id' => 'req-10' ) );
+
+		$this->assertSame( array(), $wp_test_http_calls );
 	}
 
 	public function test_dispatch_posts_classified_event_to_relay(): void {

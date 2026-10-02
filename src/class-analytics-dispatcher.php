@@ -25,7 +25,7 @@ use Supertab\Connect\Http\HttpClientInterface;
  *
  * Deliver-once, fail-open: rows are claimed (deleted) before sending; any
  * failure drops events with a debug log and never throws into a visitor
- * request or the queue runner.
+ * request or the queue runner. Visitor requests only ever touch the table.
  */
 class Analytics_Dispatcher {
 
@@ -201,11 +201,12 @@ class Analytics_Dispatcher {
 	}
 
 	/**
-	 * Buffer a serialized analytics event for the next hourly batch flush.
+	 * Buffer a serialized analytics event for the next batch flush.
 	 *
-	 * Fail-open: on a full buffer the event is dropped; on any insert/encode
-	 * failure (e.g. missing table) delivery falls back to the inline
-	 * single-event path so the event still has a chance to arrive.
+	 * Runs on the visitor request, so it never makes a network call. On a full
+	 * buffer or any insert/encode failure (e.g. a missing table) the event is
+	 * dropped: losing one event is cheap, while an inline POST on every request
+	 * of a site whose table is missing ties up PHP workers.
 	 *
 	 * @param array<string, mixed> $event_data Serialized {@see AnalyticsEvent}.
 	 * @return void
@@ -219,14 +220,12 @@ class Analytics_Dispatcher {
 
 			$payload = wp_json_encode( $event_data );
 
-			if ( false !== $payload && $this->table->insert( $payload ) ) {
-				return;
+			if ( false === $payload || ! $this->table->insert( $payload ) ) {
+				self::log_debug( 'Analytics buffer insert failed; dropping event.' );
 			}
 		} catch ( \Throwable $e ) {
-			self::log_debug( 'Analytics enqueue error: ' . $e->getMessage() );
+			self::log_debug( 'Analytics enqueue error: ' . $e->getMessage() . '; dropping event.' );
 		}
-
-		$this->dispatch( $event_data );
 	}
 
 	/**
@@ -317,8 +316,7 @@ class Analytics_Dispatcher {
 	/**
 	 * Deliver one event to the relay, inline.
 	 *
-	 * Serves as the legacy queued-job handler and the buffering last-resort
-	 * path. Fail-open: rehydration and delivery are wrapped so a malformed
+	 * Serves as the legacy queued-job handler. Fail-open: rehydration and delivery are wrapped so a malformed
 	 * payload can never throw; {@see HttpAnalyticsTransport} additionally
 	 * swallows transport errors.
 	 *
