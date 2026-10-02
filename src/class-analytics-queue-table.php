@@ -1,7 +1,7 @@
 <?php
 /**
  * Custom table that buffers analytics events between visitor requests and the
- * hourly batch flush.
+ * batch flush.
  *
  * @package Supertab_Connect
  */

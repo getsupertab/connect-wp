@@ -1,7 +1,7 @@
 <?php
 /**
  * Buffers analytics events into a custom table and delivers them to the
- * Supertab Connect relay in hourly batches.
+ * Supertab Connect relay in batches every few minutes.
  *
  * @package Supertab_Connect
  */
@@ -20,8 +20,8 @@ use Supertab\Connect\Analytics\HttpAnalyticsTransport;
 use Supertab\Connect\Http\HttpClientInterface;
 
 /**
- * Routes analytics events through a table buffer drained by an hourly
- * recurring job, so batched POSTs to the relay happen off visitor requests.
+ * Routes analytics events through a table buffer drained by a recurring
+ * job, so batched POSTs to the relay happen off visitor requests.
  *
  * Deliver-once, fail-open: rows are claimed (deleted) before sending; any
  * failure drops events with a debug log and never throws into a visitor
@@ -45,6 +45,30 @@ class Analytics_Dispatcher {
 	public const LEGACY_HOOK = 'supertab_connect_emit_analytics';
 
 	/**
+	 * How often the buffer drains: the shortest WP-Cron interval the VIP
+	 * coding standard accepts. At BATCH_SIZE x MAX_BATCHES_PER_RUN per run this
+	 * delivers up to 40,000 events an hour.
+	 *
+	 * @var int
+	 */
+	private const FLUSH_INTERVAL = 15 * MINUTE_IN_SECONDS;
+
+	/**
+	 * WP-Cron recurrence name for FLUSH_INTERVAL.
+	 *
+	 * @var string
+	 */
+	public const CRON_RECURRENCE = 'supertab_connect_fifteen_minutes';
+
+	/**
+	 * Option recording the interval the flush is scheduled at, so a schedule
+	 * left by a version with another interval gets replaced.
+	 *
+	 * @var string
+	 */
+	private const INTERVAL_OPTION = 'supertab_connect_flush_interval';
+
+	/**
 	 * Action Scheduler group.
 	 *
 	 * @var string
@@ -63,7 +87,7 @@ class Analytics_Dispatcher {
 	 *
 	 * @var int
 	 */
-	private const MAX_BATCHES_PER_RUN = 10;
+	private const MAX_BATCHES_PER_RUN = 20;
 
 	/**
 	 * Row cap: when the buffer holds this many rows (broken cron), new events
@@ -109,7 +133,7 @@ class Analytics_Dispatcher {
 
 	/**
 	 * Register job handlers and (in admin/cron contexts) self-heal the schema
-	 * and the hourly schedule.
+	 * and the flush schedule.
 	 *
 	 * Handlers must be registered in every request context (admin, front-end,
 	 * cron) so the queue runner can dispatch wherever it executes. Schema
@@ -121,6 +145,9 @@ class Analytics_Dispatcher {
 	public function register(): void {
 		add_action( self::FLUSH_HOOK, array( $this, 'flush' ) );
 		add_action( self::LEGACY_HOOK, array( $this, 'dispatch' ) );
+		// WP-Cron looks the recurrence up when it reschedules, so it must be
+		// known in every context, not only where the schedule is created.
+		add_filter( 'cron_schedules', array( $this, 'add_cron_schedule' ) );
 
 		if ( is_admin() || wp_doing_cron() ) {
 			try {
@@ -159,8 +186,23 @@ class Analytics_Dispatcher {
 	}
 
 	/**
-	 * Ensure the hourly flush is scheduled exactly once, preferring Action
-	 * Scheduler and adapting when it appears or disappears.
+	 * Add the FLUSH_INTERVAL recurrence to WP-Cron.
+	 *
+	 * @param array<string, array{interval: int, display: string}> $schedules Registered schedules.
+	 * @return array<string, array{interval: int, display: string}>
+	 */
+	public function add_cron_schedule( array $schedules ): array {
+		$schedules[ self::CRON_RECURRENCE ] = array(
+			'interval' => 15 * MINUTE_IN_SECONDS,
+			'display'  => 'Every 15 minutes (Supertab Connect)',
+		);
+
+		return $schedules;
+	}
+
+	/**
+	 * Ensure the flush is scheduled exactly once, every FLUSH_INTERVAL,
+	 * preferring Action Scheduler and adapting when it appears or disappears.
 	 *
 	 * Runs on init (hooked by {@see register()}) because Action Scheduler's
 	 * data store initializes on init priority 1; called earlier, its API
@@ -170,6 +212,17 @@ class Analytics_Dispatcher {
 	 */
 	public function ensure_scheduled(): void {
 		try {
+			if ( self::FLUSH_INTERVAL !== (int) get_option( self::INTERVAL_OPTION ) ) {
+				// Replace a schedule an earlier version created at another interval.
+				wp_clear_scheduled_hook( self::FLUSH_HOOK );
+
+				if ( function_exists( 'as_unschedule_all_actions' ) ) {
+					call_user_func( 'as_unschedule_all_actions', self::FLUSH_HOOK );
+				}
+
+				update_option( self::INTERVAL_OPTION, self::FLUSH_INTERVAL, false );
+			}
+
 			if ( $this->action_scheduler_available() ) {
 				// Migrate a stale WP-Cron recurrence so both backends never fire.
 				if ( false !== wp_next_scheduled( self::FLUSH_HOOK ) ) {
@@ -177,14 +230,14 @@ class Analytics_Dispatcher {
 				}
 
 				if ( ! call_user_func( 'as_has_scheduled_action', self::FLUSH_HOOK ) ) {
-					call_user_func( 'as_schedule_recurring_action', time() + HOUR_IN_SECONDS, HOUR_IN_SECONDS, self::FLUSH_HOOK, array(), self::GROUP );
+					call_user_func( 'as_schedule_recurring_action', time() + self::FLUSH_INTERVAL, self::FLUSH_INTERVAL, self::FLUSH_HOOK, array(), self::GROUP );
 				}
 
 				return;
 			}
 
 			if ( false === wp_next_scheduled( self::FLUSH_HOOK ) ) {
-				wp_schedule_event( time() + HOUR_IN_SECONDS, 'hourly', self::FLUSH_HOOK );
+				wp_schedule_event( time() + self::FLUSH_INTERVAL, self::CRON_RECURRENCE, self::FLUSH_HOOK );
 			}
 		} catch ( \Throwable $e ) {
 			self::log_debug( 'Analytics ensure_scheduled error: ' . $e->getMessage() );
