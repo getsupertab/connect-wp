@@ -262,15 +262,20 @@ class Plugin {
 	/**
 	 * Whether to route analytics through the WordPress job queue.
 	 *
-	 * Opt-in via the SUPERTAB_CONNECT_USE_WP_QUEUE constant (define it truthy in
-	 * wp-config.php). When unset or falsy, analytics uses the SDK's default
-	 * transport — deferred past response flush on FastCGI SAPIs, synchronous
-	 * otherwise — exactly as before this feature.
+	 * On by default: a visitor request then only writes one row to the buffer
+	 * table, and delivery happens in the background job. Opt out by defining
+	 * SUPERTAB_CONNECT_USE_WP_QUEUE as false in wp-config.php, which sends one
+	 * POST per request instead (deferred past response flush on FastCGI SAPIs,
+	 * synchronous otherwise).
 	 *
 	 * @return bool
 	 */
 	private static function should_use_wp_queue(): bool {
-		return defined( 'SUPERTAB_CONNECT_USE_WP_QUEUE' ) && SUPERTAB_CONNECT_USE_WP_QUEUE;
+		if ( ! defined( 'SUPERTAB_CONNECT_USE_WP_QUEUE' ) ) {
+			return true;
+		}
+
+		return filter_var( constant( 'SUPERTAB_CONNECT_USE_WP_QUEUE' ), FILTER_VALIDATE_BOOLEAN );
 	}
 
 	/**

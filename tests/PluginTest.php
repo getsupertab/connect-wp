@@ -65,4 +65,10 @@ class PluginTest extends TestCase {
 		$this->assertSame( SUPERTAB_CONNECT_ANALYTICS_BASE_URL . '/ingest/events', $wp_test_http_calls[0]['url'] );
 		$this->assertSame( 1, $wp_test_http_calls[0]['args']['timeout'], 'The visitor-request POST must not inherit the 5s WordPress default.' );
 	}
+
+	public function test_queue_is_on_when_constant_is_undefined(): void {
+		// The unit bootstrap never defines SUPERTAB_CONNECT_USE_WP_QUEUE.
+		$this->assertFalse( defined( 'SUPERTAB_CONNECT_USE_WP_QUEUE' ) );
+		$this->assertTrue( ( new \ReflectionMethod( Plugin::class, 'should_use_wp_queue' ) )->invoke( null ) );
+	}
 }
