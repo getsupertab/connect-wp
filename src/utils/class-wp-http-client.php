@@ -19,6 +19,22 @@ use Supertab\Connect\Http\HttpClientInterface;
 class WP_Http_Client implements HttpClientInterface {
 
 	/**
+	 * Request timeout in seconds; null keeps the WordPress default.
+	 *
+	 * @var ?int
+	 */
+	private ?int $timeout;
+
+	/**
+	 * Constructor.
+	 *
+	 * @param ?int $timeout Request timeout in seconds; null keeps the WordPress default.
+	 */
+	public function __construct( ?int $timeout = null ) {
+		$this->timeout = $timeout;
+	}
+
+	/**
 	 * Perform a GET request.
 	 *
 	 * @param string               $url     Request URL.
@@ -28,13 +44,15 @@ class WP_Http_Client implements HttpClientInterface {
 	 * @throws HttpException On request failure.
 	 */
 	public function get( string $url, array $headers = array() ): array {
-		$args = array(
-			'headers'    => $headers,
-			'user-agent' => HttpClient::resolveUserAgent(),
+		$args = $this->with_timeout(
+			array(
+				'headers'    => $headers,
+				'user-agent' => HttpClient::resolveUserAgent(),
+			)
 		);
 
 		if ( function_exists( 'vip_safe_wp_remote_get' ) ) {
-			$response = vip_safe_wp_remote_get( $url, '', 3, 3, 20, $args );
+			$response = vip_safe_wp_remote_get( $url, '', 3, $this->timeout ?? 3, 20, $args );
 		} else {
 			// phpcs:ignore WordPressVIPMinimum.Functions.RestrictedFunctions.wp_remote_get_wp_remote_get -- Fallback for non-VIP environments.
 			$response = wp_remote_get( $url, $args );
@@ -54,15 +72,31 @@ class WP_Http_Client implements HttpClientInterface {
 	 * @throws HttpException On request failure.
 	 */
 	public function post( string $url, string $body, array $headers = array() ): array {
-		$args = array(
-			'headers'    => $headers,
-			'body'       => $body,
-			'user-agent' => HttpClient::resolveUserAgent(),
+		$args = $this->with_timeout(
+			array(
+				'headers'    => $headers,
+				'body'       => $body,
+				'user-agent' => HttpClient::resolveUserAgent(),
+			)
 		);
 
 		$response = wp_remote_post( $url, $args );
 
 		return $this->parse_response( $response );
+	}
+
+	/**
+	 * Add the configured timeout to request args, if one is set.
+	 *
+	 * @param array<string,mixed> $args Request args.
+	 * @return array<string,mixed>
+	 */
+	private function with_timeout( array $args ): array {
+		if ( null !== $this->timeout ) {
+			$args['timeout'] = $this->timeout;
+		}
+
+		return $args;
 	}
 
 	/**
