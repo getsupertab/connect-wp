@@ -1,6 +1,6 @@
 <?php
 /**
- * Tests for Analytics_Dispatcher buffering and inline fallback.
+ * Tests for Analytics_Dispatcher buffering and flushing.
  *
  * @package Supertab_Connect\Tests
  */
@@ -20,6 +20,8 @@ class AnalyticsDispatcherTest extends TestCase {
 
 	private const FLUSH_HOOK  = 'supertab_connect_flush_analytics';
 	private const LEGACY_HOOK = 'supertab_connect_emit_analytics';
+
+	private const INTERVAL_OPTION = 'supertab_connect_flush_interval';
 
 	protected function setUp(): void {
 		parent::setUp();
@@ -120,7 +122,7 @@ class AnalyticsDispatcherTest extends TestCase {
 		$this->assertSame( array(), $wp_test_http_calls, 'A capped buffer must not fall back to inline delivery.' );
 	}
 
-	public function test_enqueue_falls_back_inline_when_insert_fails(): void {
+	public function test_enqueue_drops_event_without_http_when_insert_fails(): void {
 		global $wp_test_http_calls;
 
 		update_option( 'supertab_connect_merchant_api_key', 'key-inline' );
@@ -130,13 +132,22 @@ class AnalyticsDispatcherTest extends TestCase {
 
 		$this->make_dispatcher( $table )->enqueue( array( 'request_id' => 'req-9' ) );
 
-		$this->assertCount( 1, $wp_test_http_calls );
-		$call = $wp_test_http_calls[0];
-		$this->assertSame( 'POST', $call['method'] );
-		$this->assertSame( SUPERTAB_CONNECT_ANALYTICS_BASE_URL . '/ingest/events', $call['url'] );
+		$this->assertSame( array(), $table->rows );
+		$this->assertSame( array(), $wp_test_http_calls, 'A visitor request must never POST inline, even when buffering fails.' );
+	}
 
-		$body = json_decode( $call['args']['body'], true );
-		$this->assertSame( 'req-9', $body['request_id'] );
+	public function test_enqueue_drops_event_without_http_when_table_throws(): void {
+		global $wp_test_http_calls;
+
+		$table = new class() extends Analytics_Queue_Table {
+			public function is_full( int $max_rows ): bool {
+				throw new \RuntimeException( 'table missing' );
+			}
+		};
+
+		$this->make_dispatcher( $table )->enqueue( array( 'request_id' => 'req-10' ) );
+
+		$this->assertSame( array(), $wp_test_http_calls );
 	}
 
 	public function test_dispatch_posts_classified_event_to_relay(): void {
@@ -264,14 +275,14 @@ class AnalyticsDispatcherTest extends TestCase {
 		global $wp_test_http_calls;
 
 		$table = $this->make_fake_table();
-		for ( $i = 0; $i < 5500; $i++ ) {
+		for ( $i = 0; $i < 10500; $i++ ) {
 			$table->rows[] = '{"request_id":"req-' . $i . '"}';
 		}
 
 		$this->make_dispatcher( $table )->flush();
 
-		$this->assertCount( 10, $wp_test_http_calls, '10 batches of 500, then stop.' );
-		$this->assertSame( array_fill( 0, 10, 500 ), $table->claim_calls );
+		$this->assertCount( 20, $wp_test_http_calls, '20 batches of 500, then stop.' );
+		$this->assertSame( array_fill( 0, 20, 500 ), $table->claim_calls );
 		$this->assertCount( 500, $table->rows, 'Remainder waits for the next run.' );
 	}
 
@@ -379,7 +390,7 @@ class AnalyticsDispatcherTest extends TestCase {
 		$this->assertCount( 1, $wp_test_as_recurring_calls );
 		$call = $wp_test_as_recurring_calls[0];
 		$this->assertSame( self::FLUSH_HOOK, $call['hook'] );
-		$this->assertSame( HOUR_IN_SECONDS, $call['interval'] );
+		$this->assertSame( 15 * MINUTE_IN_SECONDS, $call['interval'] );
 		$this->assertSame( 'supertab-connect', $call['group'] );
 		$this->assertSame( array(), $wp_test_recurring_events, 'No duplicate WP-Cron schedule.' );
 	}
@@ -406,7 +417,7 @@ class AnalyticsDispatcherTest extends TestCase {
 
 		$this->assertCount( 1, $wp_test_recurring_events );
 		$this->assertSame( self::FLUSH_HOOK, $wp_test_recurring_events[0]['hook'] );
-		$this->assertSame( 'hourly', $wp_test_recurring_events[0]['recurrence'] );
+		$this->assertSame( Analytics_Dispatcher::CRON_RECURRENCE, $wp_test_recurring_events[0]['recurrence'] );
 	}
 
 	public function test_register_skips_wp_cron_when_already_scheduled(): void {
@@ -426,6 +437,7 @@ class AnalyticsDispatcherTest extends TestCase {
 
 		$wp_test_doing_cron     = true;
 		$wp_test_next_scheduled = time() + 100;
+		update_option( self::INTERVAL_OPTION, 15 * MINUTE_IN_SECONDS );
 
 		$this->make_dispatcher()->register();
 		$this->fire_init_callbacks();
@@ -478,5 +490,82 @@ class AnalyticsDispatcherTest extends TestCase {
 		global $wp_test_actions;
 		$init_hooks = array_filter( $wp_test_actions, static fn ( array $a ): bool => 'init' === $a['hook'] );
 		$this->assertSame( array(), $init_hooks, 'No deferred schedule check on the front end.' );
+	}
+
+	public function test_register_replaces_schedule_left_at_another_interval(): void {
+		global $wp_test_doing_cron, $wp_test_cleared_hooks, $wp_test_as_unschedule_calls, $wp_test_as_recurring_calls;
+
+		// No recorded interval: an install that ran the hourly flush.
+		$wp_test_doing_cron = true;
+
+		$this->make_dispatcher()->register();
+		$this->fire_init_callbacks();
+
+		$this->assertSame( self::FLUSH_HOOK, $wp_test_cleared_hooks[0]['hook'], 'The old WP-Cron schedule is cleared.' );
+		$this->assertSame( self::FLUSH_HOOK, $wp_test_as_unschedule_calls[0]['hook'], 'The old Action Scheduler schedule is cleared.' );
+		$this->assertSame( 15 * MINUTE_IN_SECONDS, get_option( self::INTERVAL_OPTION ) );
+		$this->assertCount( 1, $wp_test_as_recurring_calls );
+		$this->assertSame( 15 * MINUTE_IN_SECONDS, $wp_test_as_recurring_calls[0]['interval'] );
+	}
+
+	public function test_register_keeps_schedule_at_current_interval(): void {
+		global $wp_test_doing_cron, $wp_test_cleared_hooks, $wp_test_as_unschedule_calls;
+
+		$wp_test_doing_cron = true;
+		update_option( self::INTERVAL_OPTION, 15 * MINUTE_IN_SECONDS );
+
+		$this->make_dispatcher()->register();
+		$this->fire_init_callbacks();
+
+		$this->assertSame( array(), $wp_test_cleared_hooks );
+		$this->assertSame( array(), $wp_test_as_unschedule_calls );
+	}
+
+	public function test_add_cron_schedule_registers_fifteen_minute_recurrence(): void {
+		$schedules = $this->make_dispatcher()->add_cron_schedule( array() );
+
+		$this->assertSame( 15 * MINUTE_IN_SECONDS, $schedules[ Analytics_Dispatcher::CRON_RECURRENCE ]['interval'] );
+	}
+
+	public function test_flush_stops_after_first_failed_batch(): void {
+		global $wp_test_http_calls, $wp_test_http_response;
+
+		$wp_test_http_response = array(
+			'response' => array( 'code' => 503 ),
+			'body'     => '{}',
+		);
+
+		$table = $this->make_fake_table();
+		for ( $i = 0; $i < 1500; $i++ ) {
+			$table->rows[] = '{"request_id":"req-' . $i . '"}';
+		}
+
+		$this->make_dispatcher( $table )->flush();
+
+		$this->assertCount( 1, $wp_test_http_calls, 'A down relay costs one POST per run, not twenty.' );
+		$this->assertCount( 1000, $table->rows, 'Unclaimed rows wait for the next run.' );
+	}
+
+	public function test_flush_stops_after_transport_error(): void {
+		$table = $this->make_fake_table();
+		for ( $i = 0; $i < 1500; $i++ ) {
+			$table->rows[] = '{"request_id":"req-' . $i . '"}';
+		}
+
+		$throwing_client = new class() implements \Supertab\Connect\Http\HttpClientInterface {
+			public int $posts = 0;
+			public function get( string $url, array $headers = array() ): array {
+				throw new \RuntimeException( 'timeout' );
+			}
+			public function post( string $url, string $body, array $headers = array() ): array {
+				++$this->posts;
+				throw new \RuntimeException( 'timeout' );
+			}
+		};
+
+		( new Analytics_Dispatcher( new Settings(), $throwing_client, $table ) )->flush();
+
+		$this->assertSame( 1, $throwing_client->posts );
+		$this->assertCount( 1000, $table->rows );
 	}
 }

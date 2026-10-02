@@ -17,7 +17,10 @@ use Supertab\Connect\Http\HttpClientInterface;
 use Supertab\Connect\Enum\EnforcementMode;
 use Supertab\Connect\SupertabConnect;
 use Supertab\Connect\Analytics\AnalyticsEvent;
+use Supertab\Connect\Analytics\AnalyticsTransportInterface;
 use Supertab\Connect\Analytics\CallbackAnalyticsTransport;
+use Supertab\Connect\Analytics\DeferredAnalyticsTransport;
+use Supertab\Connect\Analytics\HttpAnalyticsTransport;
 use Supertab_Connect\Admin\Notices;
 use Supertab_Connect\Admin\Settings_Page;
 use Supertab_Connect\Utils\WP_Http_Client;
@@ -27,6 +30,15 @@ use Supertab_Connect\Utils\WP_Transient_Cache;
  * Plugin singleton class.
  */
 class Plugin {
+
+	/**
+	 * Timeout in seconds for the analytics POST made on a visitor request when
+	 * the queue is off. WordPress's 5s default would hold a PHP worker (and,
+	 * without FastCGI, the visitor) for that long whenever the relay is slow.
+	 *
+	 * @var int
+	 */
+	private const REQUEST_ANALYTICS_TIMEOUT = 1;
 
 	/**
 	 * Singleton instance.
@@ -165,8 +177,12 @@ class Plugin {
 				static fn ( AnalyticsEvent $event ) => $dispatcher->enqueue( $event->toArray() ),
 				defined( 'WP_DEBUG' ) && WP_DEBUG
 			);
+		} elseif ( $analytics_enabled ) {
+			// Queue disabled: the SDK's default transport shape (deferred on FastCGI,
+			// synchronous otherwise), built here so the POST gets its own short timeout.
+			$analytics_transport = self::request_analytics_transport( $settings );
 		} else {
-			// Queue disabled: fall back to the SDK's default transport (deferred on FastCGI, synchronous otherwise).
+			// Analytics off: the SDK falls back to its no-op transport.
 			$analytics_transport = null;
 		}
 
@@ -182,6 +198,25 @@ class Plugin {
 		);
 		$bot_protection   = new Bot_Protection( $supertab_connect, $settings );
 		$bot_protection->register();
+	}
+
+	/**
+	 * Per-request analytics transport used when the queue is off.
+	 *
+	 * @param Settings $settings Settings manager.
+	 * @return AnalyticsTransportInterface
+	 */
+	private static function request_analytics_transport( Settings $settings ): AnalyticsTransportInterface {
+		return new DeferredAnalyticsTransport(
+			new HttpAnalyticsTransport(
+				$settings->get_merchant_api_key(),
+				SUPERTAB_CONNECT_ANALYTICS_BASE_URL,
+				new WP_Http_Client( self::REQUEST_ANALYTICS_TIMEOUT ),
+				defined( 'WP_DEBUG' ) && WP_DEBUG
+			),
+			defined( 'WP_DEBUG' ) && WP_DEBUG,
+			deferralAvailable: self::should_force_sync_analytics() ? false : null
+		);
 	}
 
 	/**
@@ -227,14 +262,30 @@ class Plugin {
 	/**
 	 * Whether to route analytics through the WordPress job queue.
 	 *
-	 * Opt-in via the SUPERTAB_CONNECT_USE_WP_QUEUE constant (define it truthy in
-	 * wp-config.php). When unset or falsy, analytics uses the SDK's default
-	 * transport — deferred past response flush on FastCGI SAPIs, synchronous
-	 * otherwise — exactly as before this feature.
+	 * On by default: a visitor request then only writes one row to the buffer
+	 * table, and delivery happens in the background job. Opt out by defining
+	 * SUPERTAB_CONNECT_USE_WP_QUEUE as false in wp-config.php, which sends one
+	 * POST per request instead (deferred past response flush on FastCGI SAPIs,
+	 * synchronous otherwise).
 	 *
 	 * @return bool
 	 */
 	private static function should_use_wp_queue(): bool {
-		return defined( 'SUPERTAB_CONNECT_USE_WP_QUEUE' ) && SUPERTAB_CONNECT_USE_WP_QUEUE;
+		if ( ! defined( 'SUPERTAB_CONNECT_USE_WP_QUEUE' ) ) {
+			return true;
+		}
+
+		return filter_var( constant( 'SUPERTAB_CONNECT_USE_WP_QUEUE' ), FILTER_VALIDATE_BOOLEAN );
+	}
+
+	/**
+	 * Mirror of the SDK's SUPERTAB_CONNECT_FORCE_SYNC_ANALYTICS escape hatch,
+	 * which only applies to the SDK-built transport this plugin replaces.
+	 *
+	 * @return bool
+	 */
+	private static function should_force_sync_analytics(): bool {
+		return defined( 'SUPERTAB_CONNECT_FORCE_SYNC_ANALYTICS' )
+			&& filter_var( constant( 'SUPERTAB_CONNECT_FORCE_SYNC_ANALYTICS' ), FILTER_VALIDATE_BOOLEAN );
 	}
 }

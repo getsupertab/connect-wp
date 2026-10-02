@@ -30,3 +30,4 @@ global $wpdb;
 // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.SchemaChange, WordPress.DB.DirectDatabaseQuery.NoCaching -- Uninstall cleanup of the plugin's own custom table.
 $wpdb->query( "DROP TABLE IF EXISTS {$wpdb->prefix}supertab_connect_analytics_queue" );
 delete_option( 'supertab_connect_db_version' );
+delete_option( 'supertab_connect_flush_interval' );

@@ -67,4 +67,23 @@ class WPHttpClientTest extends TestCase {
 		$this->assertSame( 'Bearer key', $call['args']['headers']['Authorization'] );
 		$this->assertSame( 'application/json', $call['args']['headers']['Content-Type'] );
 	}
+
+	public function test_default_client_keeps_wordpress_timeout(): void {
+		global $wp_test_http_calls;
+
+		( new WP_Http_Client() )->post( 'https://ingest-connect.supertab.co/ingest/events', '{}' );
+
+		$this->assertArrayNotHasKey( 'timeout', $wp_test_http_calls[0]['args'] );
+	}
+
+	public function test_configured_timeout_applies_to_post_and_get(): void {
+		global $wp_test_http_calls;
+
+		$client = new WP_Http_Client( 1 );
+		$client->post( 'https://ingest-connect.supertab.co/ingest/events', '{}' );
+		$client->get( 'https://api-connect.supertab.co/.well-known/jwks.json' );
+
+		$this->assertSame( 1, $wp_test_http_calls[0]['args']['timeout'] );
+		$this->assertSame( 1, $wp_test_http_calls[1]['args']['timeout'] );
+	}
 }
