@@ -526,4 +526,46 @@ class AnalyticsDispatcherTest extends TestCase {
 
 		$this->assertSame( 15 * MINUTE_IN_SECONDS, $schedules[ Analytics_Dispatcher::CRON_RECURRENCE ]['interval'] );
 	}
+
+	public function test_flush_stops_after_first_failed_batch(): void {
+		global $wp_test_http_calls, $wp_test_http_response;
+
+		$wp_test_http_response = array(
+			'response' => array( 'code' => 503 ),
+			'body'     => '{}',
+		);
+
+		$table = $this->make_fake_table();
+		for ( $i = 0; $i < 1500; $i++ ) {
+			$table->rows[] = '{"request_id":"req-' . $i . '"}';
+		}
+
+		$this->make_dispatcher( $table )->flush();
+
+		$this->assertCount( 1, $wp_test_http_calls, 'A down relay costs one POST per run, not twenty.' );
+		$this->assertCount( 1000, $table->rows, 'Unclaimed rows wait for the next run.' );
+	}
+
+	public function test_flush_stops_after_transport_error(): void {
+		$table = $this->make_fake_table();
+		for ( $i = 0; $i < 1500; $i++ ) {
+			$table->rows[] = '{"request_id":"req-' . $i . '"}';
+		}
+
+		$throwing_client = new class() implements \Supertab\Connect\Http\HttpClientInterface {
+			public int $posts = 0;
+			public function get( string $url, array $headers = array() ): array {
+				throw new \RuntimeException( 'timeout' );
+			}
+			public function post( string $url, string $body, array $headers = array() ): array {
+				++$this->posts;
+				throw new \RuntimeException( 'timeout' );
+			}
+		};
+
+		( new Analytics_Dispatcher( new Settings(), $throwing_client, $table ) )->flush();
+
+		$this->assertSame( 1, $throwing_client->posts );
+		$this->assertCount( 1000, $table->rows );
+	}
 }

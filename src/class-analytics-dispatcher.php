@@ -286,7 +286,9 @@ class Analytics_Dispatcher {
 	 * batch as a JSON array, for at most MAX_BATCHES_PER_RUN batches.
 	 *
 	 * Deliver-once: rows are deleted at claim time, so a failed POST drops
-	 * those events (debug-logged). Malformed rows are skipped. Fail-open
+	 * those events (debug-logged). The run then stops, so a relay outage costs
+	 * one batch and one timeout per run, and the remaining rows wait for the
+	 * next run. Malformed rows are skipped. Fail-open
 	 * throughout — this is the FLUSH_HOOK job handler and must never throw
 	 * into the queue runner.
 	 *
@@ -312,8 +314,8 @@ class Analytics_Dispatcher {
 					}
 				}
 
-				if ( array() !== $events ) {
-					$this->post_batch( $events );
+				if ( array() !== $events && ! $this->post_batch( $events ) ) {
+					return;
 				}
 
 				if ( count( $payloads ) < self::BATCH_SIZE ) {
@@ -332,15 +334,15 @@ class Analytics_Dispatcher {
 	 * are debug-logged only — never retried or re-buffered.
 	 *
 	 * @param array<int, array<string, mixed>> $events Decoded event payloads.
-	 * @return void
+	 * @return bool False when the relay did not accept the batch.
 	 */
-	private function post_batch( array $events ): void {
+	private function post_batch( array $events ): bool {
 		try {
 			$body = wp_json_encode( array_values( $events ) );
 
 			if ( false === $body ) {
 				self::log_debug( 'Failed to encode analytics batch.' );
-				return;
+				return true;
 			}
 
 			$response = $this->http_client->post(
@@ -354,15 +356,18 @@ class Analytics_Dispatcher {
 
 			if ( $response['statusCode'] < 200 || $response['statusCode'] >= 300 ) {
 				self::log_debug( 'Analytics batch POST returned ' . $response['statusCode'] . '; ' . count( $events ) . ' events dropped.' );
-				return;
+				return false;
 			}
 
 			$decoded = json_decode( $response['body'], true );
 			if ( is_array( $decoded ) && ( $decoded['rejected_count'] ?? 0 ) > 0 ) {
 				self::log_debug( 'Analytics batch partially rejected: ' . $decoded['rejected_count'] . ' events dropped server-side.' );
 			}
+
+			return true;
 		} catch ( \Throwable $e ) {
 			self::log_debug( 'Analytics batch POST error: ' . $e->getMessage() . '; ' . count( $events ) . ' events dropped.' );
+			return false;
 		}
 	}
 
