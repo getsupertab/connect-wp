@@ -13,6 +13,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 	exit;
 }
 
+use Supertab_Connect\Robots_Txt_Handler;
 use Supertab_Connect\RSL_License_Handler;
 use Supertab_Connect\Settings;
 
@@ -43,12 +44,21 @@ class Settings_Page {
 	private Settings $settings;
 
 	/**
+	 * Robots.txt handler.
+	 *
+	 * @var Robots_Txt_Handler
+	 */
+	private Robots_Txt_Handler $robots_txt_handler;
+
+	/**
 	 * Constructor.
 	 *
-	 * @param Settings $settings Settings manager.
+	 * @param Settings           $settings           Settings manager.
+	 * @param Robots_Txt_Handler $robots_txt_handler Robots.txt handler.
 	 */
-	public function __construct( Settings $settings ) {
-		$this->settings = $settings;
+	public function __construct( Settings $settings, Robots_Txt_Handler $robots_txt_handler ) {
+		$this->settings           = $settings;
+		$this->robots_txt_handler = $robots_txt_handler;
 	}
 
 	/**
@@ -298,6 +308,8 @@ class Settings_Page {
 			'disconnected'           => $disconnected,
 			'website_urn'            => $this->settings->get_website_urn(),
 			'license_url'            => home_url( '/license.xml' ),
+			'robots_txt_warning'     => $this->robots_txt_handler->needs_manual_license_directive(),
+			'other_license_urls'     => $this->robots_txt_handler->get_other_license_urls(),
 			'bot_protection_enabled' => $this->settings->is_bot_protection_enabled(),
 			'analytics_enabled'      => $this->settings->is_analytics_enabled(),
 			'active_paths'           => $this->settings->get_active_paths(),

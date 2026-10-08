@@ -33,13 +33,14 @@ This allows you to:
 **How It Works**
 
 1. Enter your Website URN from the [Supertab Connect dashboard](https://merchant-connect.supertab.co/)
-2. Your `license.xml` is immediately served at your site root
+2. Your `license.xml` is immediately served at your site root and listed in your robots.txt
 3. Optionally add your Merchant API Key to enable license verification
 4. Configure which parts of your site require verification via the Crawler Authentication Protocol
 
 **Features**
 
 * Automatically serves your license file at /license.xml
+* Adds the License directive to your robots.txt so crawlers can find your license
 * Caches license XML locally for performance
 * No infrastructure changes required
 * Optional verification for connected partners via the Crawler Authentication Protocol
@@ -70,6 +71,10 @@ You will need a Supertab Connect account. Visit [Supertab Connect](https://merch
 = What is an RSL license? =
 
 An RSL is a machine-readable license file that declares how crawlers and AI agents may access your content. Serving it at /license.xml makes your licensing terms discoverable.
+
+= Do I need to edit my robots.txt? =
+
+Usually not. The plugin adds a `License:` line pointing to your license.xml to the robots.txt that WordPress generates, unless it already has one. If your server has a physical robots.txt file, WordPress can't change it, so the plugin settings page shows the line to add by hand, or tells you when the file points to a different license.
 
 = What is Crawler Authentication Protocol (CAP)? =
 

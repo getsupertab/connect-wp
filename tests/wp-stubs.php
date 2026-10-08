@@ -108,6 +108,11 @@ global $wp_test_dbdelta_queries;
 
 $wp_test_dbdelta_queries = [];
 
+global $wp_test_filters, $wp_test_home_path;
+
+$wp_test_filters   = [];
+$wp_test_home_path = '/tmp/wordpress/';
+
 /**
  * Minimal wpdb spy. Records calls; returns configurable canned results.
  */
@@ -160,7 +165,7 @@ $wpdb = new WP_Test_Wpdb();
  * Reset all in-memory stores. Call in setUp()/tearDown().
  */
 function wp_stubs_reset(): void {
-	global $wp_test_options, $wp_test_transients, $wp_test_headers_sent, $wp_test_status_code, $wp_test_http_calls, $wp_test_http_response, $wp_test_option_autoload, $wp_test_actions, $wp_test_scheduled_events, $wp_test_cleared_hooks, $wp_test_unscheduled_hooks, $wp_test_schedule_result, $wp_test_doing_cron, $wp_test_as_enqueue_calls, $wp_test_as_unschedule_calls, $wp_test_recurring_events, $wp_test_next_scheduled, $wp_test_as_recurring_calls, $wp_test_as_has_scheduled, $wp_test_is_admin, $wp_test_dbdelta_queries, $wpdb;
+	global $wp_test_options, $wp_test_transients, $wp_test_headers_sent, $wp_test_status_code, $wp_test_http_calls, $wp_test_http_response, $wp_test_option_autoload, $wp_test_actions, $wp_test_scheduled_events, $wp_test_cleared_hooks, $wp_test_unscheduled_hooks, $wp_test_schedule_result, $wp_test_doing_cron, $wp_test_as_enqueue_calls, $wp_test_as_unschedule_calls, $wp_test_recurring_events, $wp_test_next_scheduled, $wp_test_as_recurring_calls, $wp_test_as_has_scheduled, $wp_test_is_admin, $wp_test_dbdelta_queries, $wp_test_filters, $wp_test_home_path, $wpdb;
 	$wp_test_options        = [];
 	$wp_test_transients     = [];
 	$wp_test_headers_sent   = [];
@@ -182,6 +187,8 @@ function wp_stubs_reset(): void {
 	$wp_test_as_has_scheduled     = false;
 	$wp_test_is_admin             = false;
 	$wp_test_dbdelta_queries      = [];
+	$wp_test_filters              = [];
+	$wp_test_home_path            = '/tmp/wordpress/';
 	$wpdb                         = new WP_Test_Wpdb();
 }
 
@@ -340,6 +347,12 @@ if ( ! function_exists( 'add_action' ) ) {
 
 if ( ! function_exists( 'add_filter' ) ) {
 	function add_filter( string $hook, $callback, int $priority = 10, int $accepted_args = 1 ): bool {
+		global $wp_test_filters;
+		$wp_test_filters[] = [
+			'hook'     => $hook,
+			'callback' => $callback,
+			'priority' => $priority,
+		];
 		return true;
 	}
 }
@@ -371,6 +384,19 @@ if ( ! function_exists( 'sanitize_text_field' ) ) {
 if ( ! function_exists( 'wp_unslash' ) ) {
 	function wp_unslash( $value ) {
 		return is_string( $value ) ? stripslashes( $value ) : $value;
+	}
+}
+
+if ( ! function_exists( 'home_url' ) ) {
+	function home_url( string $path = '' ): string {
+		return 'https://example.com' . ( '' === $path ? '' : '/' . ltrim( $path, '/' ) );
+	}
+}
+
+if ( ! function_exists( 'get_home_path' ) ) {
+	function get_home_path(): string {
+		global $wp_test_home_path;
+		return $wp_test_home_path;
 	}
 }
 
