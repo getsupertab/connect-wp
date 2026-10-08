@@ -19,6 +19,7 @@ declare( strict_types=1 );
 namespace Supertab_Connect\Tests\Integration;
 
 use Supertab_Connect\Admin\Settings_Page;
+use Supertab_Connect\Robots_Txt_Handler;
 use Supertab_Connect\Settings;
 use WP_UnitTestCase;
 
@@ -87,7 +88,8 @@ class LicenseRoutingTest extends WP_UnitTestCase {
 			5
 		);
 
-		$page = new Settings_Page( new Settings() );
+		$settings = new Settings();
+		$page     = new Settings_Page( $settings, new Robots_Txt_Handler( $settings ) );
 
 		try {
 			$page->handle_activation_redirect();
@@ -117,7 +119,8 @@ class LicenseRoutingTest extends WP_UnitTestCase {
 			5
 		);
 
-		$page = new Settings_Page( new Settings() );
+		$settings = new Settings();
+		$page     = new Settings_Page( $settings, new Robots_Txt_Handler( $settings ) );
 		$page->handle_activation_redirect();
 
 		$this->assertFalse( $redirected, 'Configured site should not be redirected.' );

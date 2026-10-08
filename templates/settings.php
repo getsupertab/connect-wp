@@ -18,6 +18,7 @@ $supertab_connect_has_merchant_api_key   = $template_data['has_merchant_api_key'
 $supertab_connect_disconnected           = $template_data['disconnected'];
 $supertab_connect_website_urn            = $template_data['website_urn'];
 $supertab_connect_license_url            = $template_data['license_url'];
+$supertab_connect_robots_txt_warning     = $template_data['robots_txt_warning'];
 $supertab_connect_bot_protection_enabled = $template_data['bot_protection_enabled'];
 $supertab_connect_analytics_enabled      = $template_data['analytics_enabled'];
 $supertab_connect_active_paths           = $template_data['active_paths'];
@@ -98,6 +99,15 @@ $supertab_connect_purged = isset( $_GET['purged'] ) && '1' === sanitize_text_fie
 				</tr>
 			<?php endif; ?>
 		</table>
+
+		<?php if ( $supertab_connect_robots_txt_warning ) : ?>
+			<div id="supertab-robots-txt-notice" class="notice notice-warning inline">
+				<p><strong><?php esc_html_e( "We couldn't update your robots.txt automatically.", 'supertab-connect' ); ?></strong></p>
+				<p><?php esc_html_e( "Your site uses a robots.txt file stored on the server, which WordPress can't change. Add this line to the end of that file so crawlers can find your license:", 'supertab-connect' ); ?></p>
+				<p><code>License: <?php echo esc_html( $supertab_connect_license_url ); ?></code></p>
+				<p><?php esc_html_e( "You can edit the file with your hosting provider's file manager or over SFTP. If you're not sure how, ask your hosting provider or web developer.", 'supertab-connect' ); ?></p>
+			</div>
+		<?php endif; ?>
 
 		<?php if ( $supertab_connect_has_website_urn ) : ?>
 			<?php submit_button( __( 'Purge license.xml from cache', 'supertab-connect' ), 'secondary', 'submit-purge-cache', false ); ?>

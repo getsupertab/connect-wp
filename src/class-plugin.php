@@ -94,6 +94,9 @@ class Plugin {
 		$status_handler = new Status_Handler( $settings, SUPERTAB_CONNECT_API_BASE_URL, $http_client );
 		$status_handler->register();
 
+		$robots_txt_handler = new Robots_Txt_Handler( $settings );
+		$robots_txt_handler->register();
+
 		$bot_protection_active = $settings->has_merchant_api_key() && $settings->is_bot_protection_enabled();
 		$analytics_enabled     = $bot_protection_active && $settings->is_analytics_enabled();
 
@@ -104,7 +107,7 @@ class Plugin {
 		}
 
 		if ( is_admin() ) {
-			$this->init_admin( $settings );
+			$this->init_admin( $settings, $robots_txt_handler );
 			return;
 		}
 
@@ -116,11 +119,12 @@ class Plugin {
 	/**
 	 * Initialize admin components.
 	 *
-	 * @param Settings $settings Settings manager.
+	 * @param Settings           $settings           Settings manager.
+	 * @param Robots_Txt_Handler $robots_txt_handler Robots.txt handler, for the physical file check.
 	 * @return void
 	 */
-	private function init_admin( Settings $settings ): void {
-		$settings_page = new Settings_Page( $settings );
+	private function init_admin( Settings $settings, Robots_Txt_Handler $robots_txt_handler ): void {
+		$settings_page = new Settings_Page( $settings, $robots_txt_handler );
 		$settings_page->register();
 
 		$notices = new Notices( $settings );
