@@ -309,6 +309,7 @@ class Settings_Page {
 			'website_urn'            => $this->settings->get_website_urn(),
 			'license_url'            => home_url( '/license.xml' ),
 			'robots_txt_warning'     => $this->robots_txt_handler->needs_manual_license_directive(),
+			'other_license_urls'     => $this->robots_txt_handler->get_other_license_urls(),
 			'bot_protection_enabled' => $this->settings->is_bot_protection_enabled(),
 			'analytics_enabled'      => $this->settings->is_analytics_enabled(),
 			'active_paths'           => $this->settings->get_active_paths(),

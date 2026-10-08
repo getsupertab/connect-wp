@@ -138,6 +138,14 @@ class RobotsTxtHandlerTest extends TestCase {
 		$this->assertSame( "# License: https://example.com/license.xml\nUser-agent: *\nDisallow:\n\nLicense: https://example.com/license.xml\n", $output );
 	}
 
+	public function test_license_line_without_url_does_not_count_as_directive(): void {
+		$this->configure_urn();
+
+		$output = ( new Robots_Txt_Handler( $this->settings ) )->add_license_directive( "User-agent: *\nDisallow:\nLicense:\n" );
+
+		$this->assertSame( "User-agent: *\nDisallow:\nLicense:\n\nLicense: https://example.com/license.xml\n", $output );
+	}
+
 	public function test_passes_through_non_string_output_from_earlier_filters(): void {
 		$this->configure_urn();
 
@@ -181,5 +189,56 @@ class RobotsTxtHandlerTest extends TestCase {
 		$this->use_home_dir( "User-agent: *\nDisallow: /private/\n" );
 
 		$this->assertFalse( ( new Robots_Txt_Handler( $this->settings ) )->needs_manual_license_directive() );
+	}
+
+	public function test_physical_file_with_empty_license_line_needs_manual_directive(): void {
+		$this->configure_urn();
+		$this->use_home_dir( "User-agent: *\nLicense:\n" );
+
+		$this->assertTrue( ( new Robots_Txt_Handler( $this->settings ) )->needs_manual_license_directive() );
+	}
+
+	public function test_lists_license_urls_of_physical_file_pointing_elsewhere(): void {
+		$this->configure_urn();
+		$this->use_home_dir( "User-agent: *\nDisallow:\n\nLicense: https://cdn.example.net/license.xml\nlicense:https://old.example.com/terms.xml # previous terms\nLicense: https://cdn.example.net/license.xml\n" );
+
+		$this->assertSame(
+			array( 'https://cdn.example.net/license.xml', 'https://old.example.com/terms.xml' ),
+			( new Robots_Txt_Handler( $this->settings ) )->get_other_license_urls()
+		);
+	}
+
+	public function test_lists_nothing_when_physical_file_also_declares_own_license(): void {
+		$this->configure_urn();
+		$this->use_home_dir( "License: https://cdn.example.net/license.xml\nLicense: https://example.com/license.xml\n" );
+
+		$this->assertSame( array(), ( new Robots_Txt_Handler( $this->settings ) )->get_other_license_urls() );
+	}
+
+	public function test_own_license_url_matches_regardless_of_scheme(): void {
+		$this->configure_urn();
+		$this->use_home_dir( "License: http://example.com/license.xml\n" );
+
+		$this->assertSame( array(), ( new Robots_Txt_Handler( $this->settings ) )->get_other_license_urls() );
+	}
+
+	public function test_lists_nothing_without_physical_file(): void {
+		$this->configure_urn();
+		$this->use_home_dir();
+
+		$this->assertSame( array(), ( new Robots_Txt_Handler( $this->settings ) )->get_other_license_urls() );
+	}
+
+	public function test_lists_nothing_when_physical_file_has_no_directive(): void {
+		$this->configure_urn();
+		$this->use_home_dir( "User-agent: *\nDisallow: /private/\n" );
+
+		$this->assertSame( array(), ( new Robots_Txt_Handler( $this->settings ) )->get_other_license_urls() );
+	}
+
+	public function test_lists_nothing_without_website_urn(): void {
+		$this->use_home_dir( "License: https://cdn.example.net/license.xml\n" );
+
+		$this->assertSame( array(), ( new Robots_Txt_Handler( $this->settings ) )->get_other_license_urls() );
 	}
 }

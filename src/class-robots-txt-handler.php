@@ -29,11 +29,12 @@ class Robots_Txt_Handler {
 	private const LICENSE_PATH = '/license.xml';
 
 	/**
-	 * Matches a License directive line, ignoring case, surrounding blanks and a leading byte order mark.
+	 * Matches a License directive line and captures its URL, ignoring case,
+	 * surrounding blanks and a leading byte order mark.
 	 *
 	 * @var string
 	 */
-	private const LICENSE_DIRECTIVE_PATTERN = '/^(?:\xEF\xBB\xBF)?[ \t]*license[ \t]*:/im';
+	private const LICENSE_DIRECTIVE_PATTERN = '/^(?:\xEF\xBB\xBF)?[ \t]*license[ \t]*:[ \t]*(\S+)/im';
 
 	/**
 	 * Settings instance.
@@ -94,8 +95,51 @@ class Robots_Txt_Handler {
 	 * @return bool True when the merchant has to add the License directive by hand.
 	 */
 	public function needs_manual_license_directive(): bool {
-		if ( ! $this->settings->has_website_urn() ) {
+		$contents = $this->read_physical_robots_txt();
+		if ( null === $contents ) {
 			return false;
+		}
+
+		// An unreadable file still hides the generated robots.txt, so ask for the directive.
+		return false === $contents || ! self::has_license_directive( $contents );
+	}
+
+	/**
+	 * License URLs that a physical robots.txt declares instead of this site's license.
+	 *
+	 * Empty when there is no physical file, it declares no license, or one of its
+	 * License directives already points at this site's license.xml (over http or https).
+	 *
+	 * @return array<int, string> Unique URLs, in file order.
+	 */
+	public function get_other_license_urls(): array {
+		$contents = $this->read_physical_robots_txt();
+		if ( ! is_string( $contents ) ) {
+			return array();
+		}
+
+		preg_match_all( self::LICENSE_DIRECTIVE_PATTERN, $contents, $matches );
+		$urls = array_values( array_unique( $matches[1] ) );
+
+		$own_url = self::without_scheme( home_url( self::LICENSE_PATH ) );
+		foreach ( $urls as $url ) {
+			if ( self::without_scheme( $url ) === $own_url ) {
+				return array();
+			}
+		}
+
+		return $urls;
+	}
+
+	/**
+	 * Read the physical robots.txt file that hides the generated one.
+	 *
+	 * @return string|false|null The file contents, false when the file can't be read,
+	 *                           or null when there is no file or no website URN.
+	 */
+	private function read_physical_robots_txt() {
+		if ( ! $this->settings->has_website_urn() ) {
+			return null;
 		}
 
 		if ( ! function_exists( 'get_home_path' ) ) {
@@ -104,24 +148,31 @@ class Robots_Txt_Handler {
 
 		$path = get_home_path() . 'robots.txt';
 		if ( ! file_exists( $path ) ) {
+			return null;
+		}
+
+		if ( ! is_readable( $path ) ) {
 			return false;
 		}
 
-		// An unreadable file still hides the generated robots.txt, so ask for the directive.
-		if ( ! is_readable( $path ) ) {
-			return true;
-		}
-
 		// phpcs:ignore WordPressVIPMinimum.Performance.FetchingRemoteData.FileGetContentsUnknown -- Local file under the site root, not a remote URL.
-		$contents = file_get_contents( $path );
+		return file_get_contents( $path );
+	}
 
-		return false === $contents || ! self::has_license_directive( $contents );
+	/**
+	 * Strip the http or https scheme from a URL.
+	 *
+	 * @param string $url The URL.
+	 * @return string
+	 */
+	private static function without_scheme( string $url ): string {
+		return (string) preg_replace( '#^https?://#i', '', $url );
 	}
 
 	/**
 	 * Whether robots.txt content declares a License directive.
 	 *
-	 * Commented-out lines don't count.
+	 * Commented-out lines and License lines without a URL don't count.
 	 *
 	 * @param string $content The robots.txt content.
 	 * @return bool

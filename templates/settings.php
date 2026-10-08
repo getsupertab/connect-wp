@@ -19,6 +19,7 @@ $supertab_connect_disconnected           = $template_data['disconnected'];
 $supertab_connect_website_urn            = $template_data['website_urn'];
 $supertab_connect_license_url            = $template_data['license_url'];
 $supertab_connect_robots_txt_warning     = $template_data['robots_txt_warning'];
+$supertab_connect_other_license_urls     = $template_data['other_license_urls'];
 $supertab_connect_bot_protection_enabled = $template_data['bot_protection_enabled'];
 $supertab_connect_analytics_enabled      = $template_data['analytics_enabled'];
 $supertab_connect_active_paths           = $template_data['active_paths'];
@@ -106,6 +107,18 @@ $supertab_connect_purged = isset( $_GET['purged'] ) && '1' === sanitize_text_fie
 				<p><?php esc_html_e( "Your site uses a robots.txt file stored on the server, which WordPress can't change. Add this line to the end of that file so crawlers can find your license:", 'supertab-connect' ); ?></p>
 				<p><code>License: <?php echo esc_html( $supertab_connect_license_url ); ?></code></p>
 				<p><?php esc_html_e( "You can edit the file with your hosting provider's file manager or over SFTP. If you're not sure how, ask your hosting provider or web developer.", 'supertab-connect' ); ?></p>
+			</div>
+		<?php endif; ?>
+
+		<?php if ( ! empty( $supertab_connect_other_license_urls ) ) : ?>
+			<div id="supertab-robots-txt-other-license-notice" class="notice notice-info inline">
+				<p><strong><?php esc_html_e( 'Your robots.txt points to a different license.', 'supertab-connect' ); ?></strong></p>
+				<p><?php esc_html_e( 'The robots.txt file stored on your server declares:', 'supertab-connect' ); ?></p>
+				<?php foreach ( $supertab_connect_other_license_urls as $supertab_connect_other_license_url ) : ?>
+					<p><code>License: <?php echo esc_html( $supertab_connect_other_license_url ); ?></code></p>
+				<?php endforeach; ?>
+				<p><?php esc_html_e( "If that's not intended, replace it with this line so crawlers find the license served by this plugin:", 'supertab-connect' ); ?></p>
+				<p><code>License: <?php echo esc_html( $supertab_connect_license_url ); ?></code></p>
 			</div>
 		<?php endif; ?>
 

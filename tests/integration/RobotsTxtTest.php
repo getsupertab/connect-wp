@@ -83,6 +83,29 @@ class RobotsTxtTest extends WP_UnitTestCase {
 
 		$this->assertStringContainsString( 'id="supertab-robots-txt-notice"', $html );
 		$this->assertStringContainsString( 'License: ' . home_url( '/license.xml' ), $html );
+		$this->assertStringNotContainsString( 'supertab-robots-txt-other-license-notice', $html );
+	}
+
+	public function test_settings_page_notes_physical_robots_txt_pointing_to_other_license(): void {
+		update_option( 'supertab_connect_website_urn', 'urn:supertab:website:example' );
+		file_put_contents( $this->physical_robots_txt, "User-agent: *\nDisallow:\n\nLicense: https://cdn.example.net/license.xml\n" );
+
+		$html = $this->render_settings_page();
+
+		$this->assertStringContainsString( 'id="supertab-robots-txt-other-license-notice"', $html );
+		$this->assertStringContainsString( 'License: https://cdn.example.net/license.xml', $html );
+		$this->assertStringContainsString( 'License: ' . home_url( '/license.xml' ), $html );
+		$this->assertStringNotContainsString( 'id="supertab-robots-txt-notice"', $html );
+	}
+
+	public function test_settings_page_has_no_robots_notice_when_physical_file_declares_own_license(): void {
+		update_option( 'supertab_connect_website_urn', 'urn:supertab:website:example' );
+		file_put_contents( $this->physical_robots_txt, "User-agent: *\nDisallow:\n\nLicense: " . home_url( '/license.xml' ) . "\n" );
+
+		$html = $this->render_settings_page();
+
+		$this->assertStringNotContainsString( 'supertab-robots-txt-notice', $html );
+		$this->assertStringNotContainsString( 'supertab-robots-txt-other-license-notice', $html );
 	}
 
 	public function test_settings_page_has_no_robots_warning_without_physical_file(): void {

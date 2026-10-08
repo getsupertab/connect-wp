@@ -74,7 +74,7 @@ An RSL is a machine-readable license file that declares how crawlers and AI agen
 
 = Do I need to edit my robots.txt? =
 
-Usually not. The plugin adds a `License:` line pointing to your license.xml to the robots.txt that WordPress generates, unless it already has one. If your server has a physical robots.txt file, WordPress can't change it, so the plugin settings page shows the line to add by hand.
+Usually not. The plugin adds a `License:` line pointing to your license.xml to the robots.txt that WordPress generates, unless it already has one. If your server has a physical robots.txt file, WordPress can't change it, so the plugin settings page shows the line to add by hand, or tells you when the file points to a different license.
 
 = What is Crawler Authentication Protocol (CAP)? =
 
