@@ -10,6 +10,8 @@ declare( strict_types=1 );
 namespace Supertab_Connect\Tests;
 
 use PHPUnit\Framework\TestCase;
+use Supertab\Connect\Enum\EnforcementMode;
+use Supertab\Connect\SupertabConnect;
 use Supertab_Connect\Bot_Protection;
 use Supertab_Connect\Settings;
 use Yoast\PHPUnitPolyfills\Polyfills\AssertionRenames;
@@ -41,9 +43,21 @@ class BotProtectionTest extends TestCase {
 	 */
 	private Bot_Protection $bot;
 
+	/**
+	 * $_SERVER keys this test class overrides, restored in tearDown.
+	 *
+	 * @var array<string, mixed>
+	 */
+	private array $server_snapshot = array();
+
 	protected function setUp(): void {
 		parent::setUp();
 		wp_stubs_reset();
+
+		SupertabConnect::resetInstance();
+		foreach ( array( 'HTTP_HOST', 'REQUEST_URI', 'HTTPS', 'HTTP_USER_AGENT', 'HTTP_AUTHORIZATION', 'REDIRECT_HTTP_AUTHORIZATION' ) as $key ) {
+			$this->server_snapshot[ $key ] = $_SERVER[ $key ] ?? null;
+		}
 
 		$this->settings = new Settings();
 
@@ -66,6 +80,14 @@ class BotProtectionTest extends TestCase {
 	}
 
 	protected function tearDown(): void {
+		foreach ( $this->server_snapshot as $key => $value ) {
+			if ( null === $value ) {
+				unset( $_SERVER[ $key ] );
+			} else {
+				$_SERVER[ $key ] = $value;
+			}
+		}
+		SupertabConnect::resetInstance();
 		wp_stubs_reset();
 		parent::tearDown();
 	}
@@ -198,5 +220,29 @@ class BotProtectionTest extends TestCase {
 			array( 'X-Supertab-Signal' => 'botX-Injected: evil' ),
 			$this->filter_headers( $headers )
 		);
+	}
+
+	public function test_allowed_request_adds_no_license_link_and_keeps_existing_headers(): void {
+		$_SERVER['HTTP_HOST']       = 'example.com';
+		$_SERVER['REQUEST_URI']     = '/some-article/';
+		$_SERVER['HTTPS']           = 'on';
+		$_SERVER['HTTP_USER_AGENT'] = 'GPTBot/1.0';
+		unset( $_SERVER['HTTP_AUTHORIZATION'], $_SERVER['REDIRECT_HTTP_AUTHORIZATION'] );
+
+		$bot = new Bot_Protection(
+			new SupertabConnect( apiKey: 'test-key', enforcement: EnforcementMode::OBSERVE ),
+			$this->settings
+		);
+
+		$wp          = new \WP();
+		$wp->request = 'some-article';
+
+		// No token and no bot detector: the SDK allows the request, so nothing exits here.
+		$bot->maybe_handle_request( $wp );
+
+		$existing = array( 'Content-Type' => 'text/html; charset=UTF-8' );
+
+		// A plain allow carries no RSL headers.
+		$this->assertSame( $existing, $bot->add_signal_headers( $existing ) );
 	}
 }
