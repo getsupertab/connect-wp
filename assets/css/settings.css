@@ -156,3 +156,16 @@
 		max-width: 480px;
 	}
 }
+
+.supertab-manual-credentials {
+	margin-top: 24px;
+}
+
+.supertab-manual-credentials summary {
+	cursor: pointer;
+	font-weight: 600;
+}
+
+.supertab-connection {
+	font-size: 14px;
+}
