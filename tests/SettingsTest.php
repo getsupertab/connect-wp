@@ -75,6 +75,62 @@ class SettingsTest extends TestCase {
 		$this->assertFalse( $settings->has_credentials() );
 	}
 
+	public function test_connection_round_trips_without_autoload(): void {
+		global $wp_test_option_autoload;
+		$settings = new Settings();
+
+		$settings->save_connection( 'connect', 'Palm Springs Post', 'https://palmspringspost.com' );
+
+		$connection = $settings->get_connection();
+		$this->assertSame( 'connect', $connection['method'] );
+		$this->assertSame( 'Palm Springs Post', $connection['website_name'] );
+		$this->assertSame( 'https://palmspringspost.com', $connection['base_url'] );
+		$this->assertEqualsWithDelta( time(), $connection['connected_at'], 5 );
+		$this->assertFalse( $wp_test_option_autoload['supertab_connect_connection'] );
+		$this->assertSame( 'connect', $settings->get_connection_method() );
+	}
+
+	public function test_connection_is_null_until_saved(): void {
+		$this->assertNull( ( new Settings() )->get_connection() );
+	}
+
+	public function test_credentials_without_a_connection_record_count_as_manual(): void {
+		$settings = new Settings();
+		$settings->save( 'pasted-key', 'urn:supertab:merchant-system:123' );
+
+		$this->assertSame( 'manual', $settings->get_connection_method() );
+	}
+
+	public function test_clear_connection_forgets_the_site_and_turns_cap_off(): void {
+		global $wp_test_transients;
+		$settings = new Settings();
+		$settings->save( 'k3y', 'urn:supertab:merchant-system:123' );
+		$settings->save_connection( 'connect', 'News', 'https://news.example.com' );
+		$settings->set_bot_protection_enabled( true );
+		$settings->set_analytics_enabled( true );
+		$settings->set_active_paths( array( 'blog/*' ) );
+		$wp_test_transients['supertab_connect_license_xml'] = '<xml>cached</xml>';
+
+		$settings->clear_connection();
+
+		$this->assertSame( '', $settings->get_merchant_api_key() );
+		$this->assertSame( '', $settings->get_website_urn() );
+		$this->assertNull( $settings->get_connection() );
+		$this->assertFalse( $settings->is_bot_protection_enabled() );
+		$this->assertFalse( $settings->is_analytics_enabled() );
+		$this->assertSame( array( 'blog/*' ), $settings->get_active_paths() );
+		$this->assertArrayNotHasKey( 'supertab_connect_license_xml', $wp_test_transients );
+	}
+
+	public function test_delete_removes_the_connection_record(): void {
+		$settings = new Settings();
+		$settings->save_connection( 'manual', '', 'https://news.example.com' );
+
+		$settings->delete();
+
+		$this->assertNull( $settings->get_connection() );
+	}
+
 	public function test_delete_removes_credentials(): void {
 		$settings = new Settings();
 		$settings->save( 'test-api-key', 'urn:supertab:merchant-system:123' );
