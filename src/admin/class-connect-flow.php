@@ -73,6 +73,7 @@ final class Connect_Flow {
 	public function register(): void {
 		add_action( 'admin_post_' . self::START_ACTION, array( $this, 'start' ) );
 		add_action( 'admin_post_' . self::CALLBACK_ACTION, array( $this, 'callback' ) );
+		add_action( 'admin_post_nopriv_' . self::CALLBACK_ACTION, array( $this, 'callback_signed_out' ) );
 		add_action( 'admin_post_' . self::DISCONNECT_ACTION, array( $this, 'disconnect' ) );
 	}
 
@@ -170,6 +171,27 @@ final class Connect_Flow {
 		$this->settings->save( $credentials['api_key'], $credentials['website_urn'] );
 		$this->settings->save_connection( 'connect', $credentials['website_name'], $credentials['base_url'] );
 		$this->back( array( 'connect' => 'connected' ) );
+	}
+
+	/**
+	 * Handle a return after the merchant's WordPress session ended: sign in, then start over.
+	 *
+	 * The callback nonce belongs to the old session, so the flow can't resume after signing in.
+	 *
+	 * @return void
+	 */
+	public function callback_signed_out(): void {
+		$settings_url = add_query_arg(
+			array(
+				'page'          => Settings_Page::PAGE_SLUG,
+				'connect_error' => 'invalid_state',
+			),
+			admin_url( 'options-general.php' )
+		);
+
+		add_filter( 'allowed_redirect_hosts', array( $this, 'allow_admin_host' ) );
+		wp_safe_redirect( wp_login_url( $settings_url ) );
+		exit;
 	}
 
 	/**

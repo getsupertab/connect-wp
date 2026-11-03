@@ -229,6 +229,19 @@ class ConnectFlowTest extends WP_UnitTestCase {
 		$this->assertSame( 'news.example.com', query_of( $this->start() )['site_name'] );
 	}
 
+	public function test_a_signed_out_return_goes_to_sign_in_then_the_settings_page(): void {
+		$this->flow->register();
+		$this->assertNotFalse( has_action( 'admin_post_nopriv_supertab_connect_callback', array( $this->flow, 'callback_signed_out' ) ) );
+		wp_set_current_user( 0 );
+
+		$location = $this->redirect_of( array( $this->flow, 'callback_signed_out' ) );
+
+		$this->assertStringStartsWith( site_url( 'wp-login.php' ), $location );
+		$back = query_of( query_of( $location )['redirect_to'] );
+		$this->assertSame( 'supertab-connect-settings', $back['page'] );
+		$this->assertSame( 'invalid_state', $back['connect_error'] );
+	}
+
 	public function test_callback_saves_the_credentials_from_the_code(): void {
 		$flow = $this->begin_flow();
 
