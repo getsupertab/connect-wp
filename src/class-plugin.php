@@ -21,6 +21,7 @@ use Supertab\Connect\Analytics\AnalyticsTransportInterface;
 use Supertab\Connect\Analytics\CallbackAnalyticsTransport;
 use Supertab\Connect\Analytics\DeferredAnalyticsTransport;
 use Supertab\Connect\Analytics\HttpAnalyticsTransport;
+use Supertab_Connect\Admin\Connect_Flow;
 use Supertab_Connect\Admin\Notices;
 use Supertab_Connect\Admin\Settings_Page;
 use Supertab_Connect\Utils\WP_Http_Client;
@@ -129,6 +130,9 @@ class Plugin {
 
 		$notices = new Notices( $settings );
 		$notices->register();
+
+		$connect_flow = new Connect_Flow( $settings, new Connect_Api( SUPERTAB_CONNECT_API_BASE_URL ) );
+		$connect_flow->register();
 
 		add_action( 'admin_init', array( $this, 'add_privacy_policy_content' ) );
 	}
