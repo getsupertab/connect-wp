@@ -161,7 +161,7 @@ class ConnectFlowTest extends WP_UnitTestCase {
 	public function test_start_sends_the_merchant_to_the_portal_with_the_link_it_checks(): void {
 		$location = $this->start();
 
-		$this->assertStringStartsWith( 'https://merchant-connect.supertab.co/connect/wordpress?', $location );
+		$this->assertStringStartsWith( SUPERTAB_CONNECT_DASHBOARD_URL . '/connect/wordpress?', $location );
 		$params = query_of( $location );
 		$flow   = get_transient( 'supertab_connect_flow_' . $params['state'] );
 		$this->assertSame( $this->admin_id, $flow['user_id'] );
@@ -208,7 +208,7 @@ class ConnectFlowTest extends WP_UnitTestCase {
 		unset( $_SERVER['HTTPS'] );
 		$this->use_urls( 'http://localhost:8888', 'http://localhost:8888' );
 
-		$this->assertStringStartsWith( 'https://merchant-connect.supertab.co/connect/wordpress?', $this->start() );
+		$this->assertStringStartsWith( SUPERTAB_CONNECT_DASHBOARD_URL . '/connect/wordpress?', $this->start() );
 	}
 
 	public function test_start_sends_a_subdirectory_install_with_its_path(): void {
