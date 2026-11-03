@@ -32,9 +32,9 @@ This allows you to:
 
 **How It Works**
 
-1. Enter your Website URN from the [Supertab Connect dashboard](https://merchant-connect.supertab.co/)
+1. Click **Connect website**, sign in to Supertab Connect or create an account, and approve the connection
 2. Your `license.xml` is immediately served at your site root and listed in your robots.txt
-3. Optionally add your Merchant API Key to enable license verification
+3. Optionally enable license verification
 4. Configure which parts of your site require verification via the Crawler Authentication Protocol
 
 **Features**
@@ -52,6 +52,9 @@ This plugin connects to the [Supertab Connect API](https://api-connect.supertab.
 
 * **RSL License Serving** — Your Website URN is sent to retrieve your site's license XML file. This happens on every request to `/license.xml` (cached locally after first fetch).
 * **Crawler Authentication Protocol** — When enabled by the site administrator, page URLs and user agent strings from bot requests are sent to verify license tokens and record usage events.
+* **Connect website** — When an administrator clicks Connect website, they are sent to the [Supertab Connect merchant portal](https://merchant-connect.supertab.co) with your site's address, its title and the address to return to in your WordPress admin, so they can sign in or create an account and approve the connection.
+* **Connection setup** — After the administrator approves, your site sends the one-time code from the portal, its matching verification code, your site's title and its address to the Supertab Connect API, which returns your Website URN and an API key.
+* **Disconnect** — When an administrator disconnects the site or deletes the plugin, the API key issued by Connect website is sent to the Supertab Connect API to revoke it.
 
 No personal data from your site visitors is collected or transmitted.
 
@@ -61,10 +64,10 @@ No personal data from your site visitors is collected or transmitted.
 
 1. Upload the `supertab-connect` folder to the `/wp-content/plugins/` directory, or install through the WordPress plugin screen directly.
 2. Activate the plugin through the "Plugins" screen in WordPress.
-3. Navigate to Settings > Supertab Connect to configure your Website URN.
-4. (Optional) Enter your Merchant API Key and enable the Crawler Authentication Protocol.
+3. Navigate to Settings > Supertab Connect and click Connect website. You'll sign in to Supertab Connect or create an account, then come straight back to WordPress.
+4. (Optional) Enable the Crawler Authentication Protocol.
 
-You will need a Supertab Connect account. Visit [Supertab Connect](https://merchant-connect.supertab.co/) to get started.
+Connect website requires a Supertab Connect account: it signs you in to yours or creates one. To set the plugin up without it, choose Enter credentials manually and paste the Website URN and Merchant API Key from the [Supertab Connect dashboard](https://merchant-connect.supertab.co/).
 
 == Frequently Asked Questions ==
 
