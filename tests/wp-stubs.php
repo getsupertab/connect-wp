@@ -291,6 +291,20 @@ if ( ! function_exists( 'wp_remote_get' ) ) {
 	}
 }
 
+if ( ! class_exists( 'WP_Error' ) ) {
+	class WP_Error {
+		private string $message;
+
+		public function __construct( string $code = '', string $message = '' ) {
+			$this->message = $message;
+		}
+
+		public function get_error_message(): string {
+			return $this->message;
+		}
+	}
+}
+
 if ( ! function_exists( 'is_wp_error' ) ) {
 	function is_wp_error( $thing ): bool {
 		return $thing instanceof \WP_Error;
