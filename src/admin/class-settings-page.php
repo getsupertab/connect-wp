@@ -216,6 +216,8 @@ class Settings_Page {
 		// API key field is only present when entering a new key; save only if non-empty.
 		if ( is_string( $merchant_api_key ) && '' !== $merchant_api_key ) {
 			$this->settings->save_merchant_api_key( $merchant_api_key );
+			// A key typed in by hand may be used elsewhere, so Disconnect must never revoke it.
+			$this->settings->save_connection( 'manual', '', home_url() );
 		} elseif ( '' === $merchant_api_key ) {
 			// API key field was shown but submitted empty — disable bot protection.
 			$this->settings->set_bot_protection_enabled( false );

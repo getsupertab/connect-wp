@@ -192,6 +192,15 @@ class SettingsPageTest extends WP_UnitTestCase {
 		$this->assertSame( 'manual', $this->settings->get_connection_method() );
 	}
 
+	public function test_a_key_entered_by_hand_on_a_connected_site_is_never_revoked(): void {
+		$this->connected_via_connect();
+
+		$this->submit( array( 'merchant_api_key' => 'pasted-key' ) );
+
+		$this->assertSame( 'pasted-key', $this->settings->get_merchant_api_key() );
+		$this->assertSame( 'manual', $this->settings->get_connection_method() );
+	}
+
 	public function test_a_user_who_cannot_manage_the_plugin_sees_nothing(): void {
 		wp_set_current_user( self::factory()->user->create( array( 'role' => 'editor' ) ) );
 
