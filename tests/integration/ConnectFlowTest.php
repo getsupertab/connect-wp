@@ -10,6 +10,7 @@ declare( strict_types=1 );
 namespace Supertab_Connect\Tests\Integration;
 
 use Supertab_Connect\Admin\Connect_Flow;
+use Supertab_Connect\Analytics_Queue_Table;
 use Supertab_Connect\Connect_Api;
 use Supertab_Connect\Pkce;
 use Supertab_Connect\Settings;
@@ -21,6 +22,8 @@ class ConnectFlowTest extends WP_UnitTestCase {
 	private Connect_Flow $flow;
 
 	private Settings $settings;
+
+	private Analytics_Queue_Table $queue;
 
 	private int $admin_id;
 
@@ -45,7 +48,11 @@ class ConnectFlowTest extends WP_UnitTestCase {
 		$_SERVER['HTTPS'] = 'on';
 
 		$this->settings = new Settings();
-		$this->flow     = new Connect_Flow( $this->settings, new Connect_Api( 'https://api.test' ) );
+		// An earlier test's commit can leave the version option behind, which would skip install().
+		delete_option( 'supertab_connect_db_version' );
+		$this->queue    = new Analytics_Queue_Table();
+		$this->queue->install();
+		$this->flow     = new Connect_Flow( $this->settings, new Connect_Api( 'https://api.test' ), $this->queue );
 		$this->admin_id = self::factory()->user->create( array( 'role' => 'administrator' ) );
 		wp_set_current_user( $this->admin_id );
 
@@ -390,5 +397,110 @@ class ConnectFlowTest extends WP_UnitTestCase {
 		$this->assertSame( 'connect-key', $this->settings->get_merchant_api_key() );
 		$this->assertSame( 'urn:supertab:website:42', $this->settings->get_website_urn() );
 		$this->assertSame( 'connect', $this->settings->get_connection_method() );
+	}
+
+	/**
+	 * Submit Disconnect and return the settings-page query.
+	 *
+	 * @return array<string, string>
+	 */
+	private function disconnect( bool $force = false ): array {
+		$_REQUEST['_wpnonce'] = wp_create_nonce( 'supertab_connect_disconnect' );
+		if ( $force ) {
+			$_POST['force'] = '1';
+		}
+		return query_of( $this->redirect_of( array( $this->flow, 'disconnect' ) ) );
+	}
+
+	private function connected_via( string $method ): void {
+		$this->settings->save( 'the-key', 'urn:supertab:website:42' );
+		$this->settings->save_connection( $method, 'News', 'https://news.example.com' );
+		$this->settings->set_bot_protection_enabled( true );
+		$this->queue->insert( '{"request_id":"req-1"}' );
+	}
+
+	private function assert_disconnected(): void {
+		global $wpdb;
+		$this->assertSame( '', $this->settings->get_merchant_api_key() );
+		$this->assertSame( '', $this->settings->get_website_urn() );
+		$this->assertNull( $this->settings->get_connection() );
+		$this->assertFalse( $this->settings->is_bot_protection_enabled() );
+		$this->assertSame( '0', $wpdb->get_var( "SELECT COUNT(*) FROM {$this->queue->name()}" ) ); // phpcs:ignore WordPress.DB
+	}
+
+	public function test_disconnect_revokes_a_connect_issued_key(): void {
+		$this->connected_via( 'connect' );
+		$this->api_responds( 204, '' );
+
+		$this->assertSame( 'disconnected', $this->disconnect()['connect'] );
+
+		$this->assertCount( 1, $this->requests );
+		$this->assertSame( 'https://api.test/connect/disconnect', $this->requests[0]['url'] );
+		$this->assertSame( 'Bearer the-key', $this->requests[0]['args']['headers']['Authorization'] );
+		$this->assert_disconnected();
+	}
+
+	public function test_disconnect_treats_an_already_revoked_key_as_done(): void {
+		$this->connected_via( 'connect' );
+		$this->api_responds( 401, array( 'detail' => 'Invalid API key' ) );
+
+		$this->assertSame( 'disconnected', $this->disconnect()['connect'] );
+		$this->assert_disconnected();
+	}
+
+	/**
+	 * @dataProvider unreachable_responses
+	 */
+	public function test_disconnect_keeps_the_connection_when_supertab_is_unreachable( int $status ): void {
+		$this->connected_via( 'connect' );
+		if ( 0 === $status ) {
+			$this->api_response = new \WP_Error( 'http_request_failed', 'cURL error 28' );
+		} else {
+			$this->api_responds( $status, 'boom' );
+		}
+
+		$this->assertSame( 'unreachable', $this->disconnect()['disconnect'] );
+		$this->assertSame( 'the-key', $this->settings->get_merchant_api_key() );
+		$this->assertSame( 'connect', $this->settings->get_connection_method() );
+	}
+
+	public static function unreachable_responses(): array {
+		return array(
+			'network error' => array( 0 ),
+			'server error'  => array( 500 ),
+		);
+	}
+
+	public function test_disconnect_anyway_clears_without_calling_supertab(): void {
+		$this->connected_via( 'connect' );
+
+		$this->assertSame( 'disconnected', $this->disconnect( true )['connect'] );
+		$this->assertSame( array(), $this->requests );
+		$this->assert_disconnected();
+	}
+
+	public function test_disconnect_never_revokes_a_pasted_key(): void {
+		$this->connected_via( 'manual' );
+
+		$this->assertSame( 'disconnected', $this->disconnect()['connect'] );
+		$this->assertSame( array(), $this->requests );
+		$this->assert_disconnected();
+	}
+
+	public function test_disconnect_treats_a_site_set_up_before_connect_as_manual(): void {
+		$this->settings->save( 'pasted-key', 'urn:supertab:website:legacy' );
+
+		$this->disconnect();
+
+		$this->assertSame( array(), $this->requests );
+		$this->assertSame( '', $this->settings->get_merchant_api_key() );
+	}
+
+	public function test_disconnect_refuses_a_forged_request(): void {
+		$this->connected_via( 'connect' );
+		$_REQUEST['_wpnonce'] = 'forged';
+
+		$this->expectException( WPDieException::class );
+		$this->flow->disconnect();
 	}
 }

@@ -9,6 +9,8 @@ declare( strict_types=1 );
 
 namespace Supertab_Connect\Admin;
 
+use Supertab_Connect\Analytics_Dispatcher;
+use Supertab_Connect\Analytics_Queue_Table;
 use Supertab_Connect\Connect_Api;
 use Supertab_Connect\Connect_Api_Error;
 use Supertab_Connect\Pkce;
@@ -20,8 +22,9 @@ use Supertab_Connect\Utils\Site_Address;
  */
 final class Connect_Flow {
 
-	public const START_ACTION    = 'supertab_connect_start';
-	public const CALLBACK_ACTION = 'supertab_connect_callback';
+	public const START_ACTION      = 'supertab_connect_start';
+	public const CALLBACK_ACTION   = 'supertab_connect_callback';
+	public const DISCONNECT_ACTION = 'supertab_connect_disconnect';
 
 	private const FLOW_TRANSIENT_PREFIX = 'supertab_connect_flow_';
 	private const FLOW_TTL              = 30 * MINUTE_IN_SECONDS;
@@ -43,14 +46,23 @@ final class Connect_Flow {
 	private Connect_Api $api;
 
 	/**
+	 * Analytics queue, emptied on disconnect.
+	 *
+	 * @var Analytics_Queue_Table
+	 */
+	private Analytics_Queue_Table $queue;
+
+	/**
 	 * Constructor.
 	 *
-	 * @param Settings    $settings Plugin settings.
-	 * @param Connect_Api $api      Connect API client.
+	 * @param Settings              $settings Plugin settings.
+	 * @param Connect_Api           $api      Connect API client.
+	 * @param Analytics_Queue_Table $queue    Analytics queue.
 	 */
-	public function __construct( Settings $settings, Connect_Api $api ) {
+	public function __construct( Settings $settings, Connect_Api $api, Analytics_Queue_Table $queue ) {
 		$this->settings = $settings;
 		$this->api      = $api;
+		$this->queue    = $queue;
 	}
 
 	/**
@@ -61,6 +73,7 @@ final class Connect_Flow {
 	public function register(): void {
 		add_action( 'admin_post_' . self::START_ACTION, array( $this, 'start' ) );
 		add_action( 'admin_post_' . self::CALLBACK_ACTION, array( $this, 'callback' ) );
+		add_action( 'admin_post_' . self::DISCONNECT_ACTION, array( $this, 'disconnect' ) );
 	}
 
 	/**
@@ -157,6 +170,30 @@ final class Connect_Flow {
 		$this->settings->save( $credentials['api_key'], $credentials['website_urn'] );
 		$this->settings->save_connection( 'connect', $credentials['website_name'], $credentials['base_url'] );
 		$this->back( array( 'connect' => 'connected' ) );
+	}
+
+	/**
+	 * Forget the connected website, revoking the key first when the connect flow issued it.
+	 *
+	 * Pasted keys may be used elsewhere, so they are only cleared here. When Supertab
+	 * can't be reached, nothing is cleared until the merchant chooses Disconnect anyway.
+	 *
+	 * @return void
+	 */
+	public function disconnect(): void {
+		$this->authorize();
+		check_admin_referer( self::DISCONNECT_ACTION );
+
+		$force   = isset( $_POST['force'] ) && '1' === sanitize_text_field( wp_unslash( $_POST['force'] ) );
+		$api_key = $this->settings->get_merchant_api_key();
+		if ( ! $force && 'connect' === $this->settings->get_connection_method() && '' !== $api_key && ! $this->api->disconnect( $api_key ) ) {
+			$this->back( array( 'disconnect' => 'unreachable' ) );
+		}
+
+		$this->settings->clear_connection();
+		$this->queue->clear();
+		Analytics_Dispatcher::clear_scheduled();
+		$this->back( array( 'connect' => 'disconnected' ) );
 	}
 
 	/**

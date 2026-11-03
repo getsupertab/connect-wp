@@ -131,7 +131,7 @@ class Plugin {
 		$notices = new Notices( $settings );
 		$notices->register();
 
-		$connect_flow = new Connect_Flow( $settings, new Connect_Api( SUPERTAB_CONNECT_API_BASE_URL ) );
+		$connect_flow = new Connect_Flow( $settings, new Connect_Api( SUPERTAB_CONNECT_API_BASE_URL ), new Analytics_Queue_Table() );
 		$connect_flow->register();
 
 		add_action( 'admin_init', array( $this, 'add_privacy_policy_content' ) );
