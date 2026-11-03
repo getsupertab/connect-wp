@@ -60,6 +60,10 @@ if ( ! defined( 'SUPERTAB_CONNECT_ENVIRONMENT' ) ) {
 	define( 'SUPERTAB_CONNECT_ENVIRONMENT', 'sbx' );
 }
 
+if ( ! defined( 'SUPERTAB_CONNECT_DASHBOARD_URL' ) ) {
+	define( 'SUPERTAB_CONNECT_DASHBOARD_URL', 'https://merchant-connect.sbx.supertab.co' );
+}
+
 if ( ! defined( 'SUPERTAB_CONNECT_API_BASE_URL' ) ) {
 	define( 'SUPERTAB_CONNECT_API_BASE_URL', 'https://api-connect.sbx.supertab.co' );
 }

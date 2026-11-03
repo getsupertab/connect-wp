@@ -83,7 +83,7 @@ class Settings_Page {
 			'options-general.php',
 			'Supertab Connect',
 			'Supertab Connect',
-			'manage_options',
+			Access::capability(),
 			self::PAGE_SLUG,
 			array( $this, 'render_page' )
 		);
@@ -168,7 +168,7 @@ class Settings_Page {
 			return;
 		}
 
-		if ( ! current_user_can( 'manage_options' ) ) {
+		if ( ! current_user_can( Access::capability() ) ) {
 			return;
 		}
 
@@ -294,7 +294,7 @@ class Settings_Page {
 	 * @return void
 	 */
 	public function render_page(): void {
-		if ( ! current_user_can( 'manage_options' ) ) {
+		if ( ! current_user_can( Access::capability() ) ) {
 			return;
 		}
 
