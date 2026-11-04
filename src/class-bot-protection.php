@@ -16,6 +16,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 	exit;
 }
 
+use Supertab\Connect\Http\RequestContext;
 use Supertab\Connect\Result\BlockResult;
 use Supertab\Connect\Result\RespondResult;
 use Supertab\Connect\SupertabConnect;
@@ -90,7 +91,13 @@ class Bot_Protection {
 		}
 
 		try {
-			$result = $this->supertab_connect->handleRequest();
+			// WordPress slashes $_SERVER (wp_magic_quotes); signatures only verify against the raw header values.
+			$result = $this->supertab_connect->handleRequest(
+				RequestContext::fromServer(
+					wp_unslash( $_SERVER ), // phpcs:ignore WordPress.Security.ValidatedSanitizedInput.InputNotSanitized -- Raw headers are needed for signature verification.
+					function_exists( 'getallheaders' ) ? (array) getallheaders() : array()
+				)
+			);
 		} catch ( \Throwable $e ) {
 			// phpcs:ignore WordPress.PHP.DevelopmentFunctions.error_log_error_log -- Intentional error logging for SDK failures.
 			error_log( '[Supertab Connect] Bot protection error: ' . $e->getMessage() );

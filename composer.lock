@@ -4,7 +4,7 @@
         "Read more about it at https://getcomposer.org/doc/01-basic-usage.md#installing-dependencies",
         "This file is @generated automatically"
     ],
-    "content-hash": "32ac3ef8b941f933272aceefd09d690e",
+    "content-hash": "c06061619035e91f1388235f4ca05b96",
     "packages": [
         {
             "name": "firebase/php-jwt",
@@ -74,16 +74,16 @@
         },
         {
             "name": "getsupertab/connect-sdk-php",
-            "version": "v2.1.0",
+            "version": "v2.2.0",
             "source": {
                 "type": "git",
                 "url": "https://github.com/getsupertab/connect-sdk-php.git",
-                "reference": "f91e2594fc5c81d04a9a29da7fb97fa79fc8f0d0"
+                "reference": "dca124518600429efa646e6e4b4169aab6d059fb"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/getsupertab/connect-sdk-php/zipball/f91e2594fc5c81d04a9a29da7fb97fa79fc8f0d0",
-                "reference": "f91e2594fc5c81d04a9a29da7fb97fa79fc8f0d0",
+                "url": "https://api.github.com/repos/getsupertab/connect-sdk-php/zipball/dca124518600429efa646e6e4b4169aab6d059fb",
+                "reference": "dca124518600429efa646e6e4b4169aab6d059fb",
                 "shasum": ""
             },
             "require": {
@@ -125,9 +125,10 @@
             ],
             "support": {
                 "issues": "https://github.com/getsupertab/connect-sdk-php/issues",
-                "source": "https://github.com/getsupertab/connect-sdk-php/tree/v2.1.0"
+                "source": "https://github.com/getsupertab/connect-sdk-php/tree/v2.2.0"
             },
-            "time": "2026-10-13T08:42:11+00:00"
+            "time": "2026-11-04T09:38:12+00:00",
+            "published-time": "2026-11-04T09:46:41+00:00"
         }
     ],
     "packages-dev": [
@@ -3028,5 +3029,5 @@
         "php": ">=8.1"
     },
     "platform-dev": {},
-    "plugin-api-version": "2.9.0"
+    "plugin-api-version": "2.11.0"
 }

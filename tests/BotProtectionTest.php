@@ -10,7 +10,9 @@ declare( strict_types=1 );
 namespace Supertab_Connect\Tests;
 
 use PHPUnit\Framework\TestCase;
+use Supertab\Connect\Bot\BotDetectorInterface;
 use Supertab\Connect\Enum\EnforcementMode;
+use Supertab\Connect\Http\RequestContext;
 use Supertab\Connect\SupertabConnect;
 use Supertab_Connect\Bot_Protection;
 use Supertab_Connect\Settings;
@@ -55,7 +57,7 @@ class BotProtectionTest extends TestCase {
 		wp_stubs_reset();
 
 		SupertabConnect::resetInstance();
-		foreach ( array( 'HTTP_HOST', 'REQUEST_URI', 'HTTPS', 'HTTP_USER_AGENT', 'HTTP_AUTHORIZATION', 'REDIRECT_HTTP_AUTHORIZATION' ) as $key ) {
+		foreach ( array( 'HTTP_HOST', 'REQUEST_URI', 'HTTPS', 'HTTP_USER_AGENT', 'HTTP_AUTHORIZATION', 'REDIRECT_HTTP_AUTHORIZATION', 'HTTP_SIGNATURE_AGENT' ) as $key ) {
 			$this->server_snapshot[ $key ] = $_SERVER[ $key ] ?? null;
 		}
 
@@ -244,5 +246,36 @@ class BotProtectionTest extends TestCase {
 
 		// A plain allow carries no RSL headers.
 		$this->assertSame( $existing, $bot->add_signal_headers( $existing ) );
+	}
+
+	public function test_sdk_receives_unslashed_server_headers(): void {
+		// WordPress magic quotes leave $_SERVER like this.
+		$_SERVER['HTTP_HOST']            = 'example.com';
+		$_SERVER['REQUEST_URI']          = '/some-article/';
+		$_SERVER['HTTP_USER_AGENT']      = 'Mozilla/5.0 (compatible; \\"Exa\\")';
+		$_SERVER['HTTP_SIGNATURE_AGENT'] = '\\"https://crawler.exa.ai\\"';
+		unset( $_SERVER['HTTP_AUTHORIZATION'], $_SERVER['REDIRECT_HTTP_AUTHORIZATION'] );
+
+		$seen     = null;
+		$detector = $this->createMock( BotDetectorInterface::class );
+		$detector->method( 'isBot' )->willReturnCallback(
+			function ( RequestContext $context ) use ( &$seen ): bool {
+				$seen = $context;
+				return false;
+			}
+		);
+
+		$bot = new Bot_Protection(
+			new SupertabConnect( apiKey: 'test-key', enforcement: EnforcementMode::OBSERVE, botDetector: $detector ),
+			$this->settings
+		);
+
+		$wp          = new \WP();
+		$wp->request = 'some-article';
+		$bot->maybe_handle_request( $wp );
+
+		$this->assertInstanceOf( RequestContext::class, $seen );
+		$this->assertSame( 'Mozilla/5.0 (compatible; "Exa")', $seen->userAgent );
+		$this->assertSame( '"https://crawler.exa.ai"', $seen->headers['signature-agent'] );
 	}
 }
