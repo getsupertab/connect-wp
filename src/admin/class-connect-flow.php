@@ -120,7 +120,7 @@ final class Connect_Flow {
 					'code_challenge_method' => 'S256',
 				)
 			),
-			SUPERTAB_CONNECT_DASHBOARD_URL . '/connect/wordpress'
+			SUPERTAB_CONNECT_DASHBOARD_URL . '/websites/setup/wordpress'
 		);
 
 		add_filter( 'allowed_redirect_hosts', array( $this, 'allow_dashboard_host' ) );

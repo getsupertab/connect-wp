@@ -59,7 +59,7 @@ final class Connect_Api {
 
 		try {
 			$response = ( new WP_Http_Client( self::REDEEM_TIMEOUT ) )->post(
-				$this->api_base_url . '/connect/websites',
+				$this->api_base_url . '/website/setup/credentials',
 				$body,
 				array( 'Content-Type' => 'application/json' )
 			);
@@ -98,7 +98,7 @@ final class Connect_Api {
 	public function disconnect( string $api_key, int $timeout = self::DISCONNECT_TIMEOUT ): bool {
 		try {
 			$response = ( new WP_Http_Client( $timeout ) )->post(
-				$this->api_base_url . '/connect/disconnect',
+				$this->api_base_url . '/website/setup/disconnect',
 				'',
 				array( 'Authorization' => 'Bearer ' . $api_key )
 			);

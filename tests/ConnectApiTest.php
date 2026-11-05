@@ -71,7 +71,7 @@ class ConnectApiTest extends TestCase {
 
 		$this->assertCount( 1, $wp_test_http_calls );
 		$call = $wp_test_http_calls[0];
-		$this->assertSame( 'https://api.test/connect/websites', $call['url'] );
+		$this->assertSame( 'https://api.test/website/setup/credentials', $call['url'] );
 		$this->assertSame( 'application/json', $call['args']['headers']['Content-Type'] );
 		$this->assertSame( 15, $call['args']['timeout'] );
 		$this->assertSame(
@@ -120,7 +120,7 @@ class ConnectApiTest extends TestCase {
 		$this->assertTrue( ( new Connect_Api( 'https://api.test/' ) )->disconnect( 'k3y' ) );
 
 		$call = $wp_test_http_calls[0];
-		$this->assertSame( 'https://api.test/connect/disconnect', $call['url'] );
+		$this->assertSame( 'https://api.test/website/setup/disconnect', $call['url'] );
 		$this->assertSame( 'Bearer k3y', $call['args']['headers']['Authorization'] );
 		$this->assertSame( 5, $call['args']['timeout'] );
 	}

@@ -161,7 +161,7 @@ class ConnectFlowTest extends WP_UnitTestCase {
 	public function test_start_sends_the_merchant_to_the_portal_with_the_link_it_checks(): void {
 		$location = $this->start();
 
-		$this->assertStringStartsWith( SUPERTAB_CONNECT_DASHBOARD_URL . '/connect/wordpress?', $location );
+		$this->assertStringStartsWith( SUPERTAB_CONNECT_DASHBOARD_URL . '/websites/setup/wordpress?', $location );
 		$params = query_of( $location );
 		$flow   = get_transient( 'supertab_connect_flow_' . $params['state'] );
 		$this->assertSame( $this->admin_id, $flow['user_id'] );
@@ -208,7 +208,7 @@ class ConnectFlowTest extends WP_UnitTestCase {
 		unset( $_SERVER['HTTPS'] );
 		$this->use_urls( 'http://localhost:8888', 'http://localhost:8888' );
 
-		$this->assertStringStartsWith( SUPERTAB_CONNECT_DASHBOARD_URL . '/connect/wordpress?', $this->start() );
+		$this->assertStringStartsWith( SUPERTAB_CONNECT_DASHBOARD_URL . '/websites/setup/wordpress?', $this->start() );
 	}
 
 	public function test_start_sends_a_subdirectory_install_with_its_path(): void {
@@ -254,7 +254,7 @@ class ConnectFlowTest extends WP_UnitTestCase {
 
 		$this->assertSame( 'connected', $query['connect'] );
 		$this->assertCount( 1, $this->requests );
-		$this->assertSame( 'https://api.test/connect/websites', $this->requests[0]['url'] );
+		$this->assertSame( 'https://api.test/website/setup/credentials', $this->requests[0]['url'] );
 		$this->assertSame(
 			array(
 				'code'          => 'one-time-code',
@@ -448,7 +448,7 @@ class ConnectFlowTest extends WP_UnitTestCase {
 		$this->assertSame( 'disconnected', $this->disconnect()['connect'] );
 
 		$this->assertCount( 1, $this->requests );
-		$this->assertSame( 'https://api.test/connect/disconnect', $this->requests[0]['url'] );
+		$this->assertSame( 'https://api.test/website/setup/disconnect', $this->requests[0]['url'] );
 		$this->assertSame( 'Bearer the-key', $this->requests[0]['args']['headers']['Authorization'] );
 		$this->assert_disconnected();
 	}

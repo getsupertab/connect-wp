@@ -77,7 +77,7 @@ class UninstallTest extends WP_UnitTestCase {
 		$this->uninstall();
 
 		$this->assertCount( 1, $this->requests );
-		$this->assertStringEndsWith( '/connect/disconnect', $this->requests[0]['url'] );
+		$this->assertStringEndsWith( '/website/setup/disconnect', $this->requests[0]['url'] );
 		$this->assertSame( 'Bearer the-key', $this->requests[0]['args']['headers']['Authorization'] );
 		$this->assertSame( 3, $this->requests[0]['args']['timeout'] );
 		$this->assert_options_gone();
