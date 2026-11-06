@@ -82,7 +82,7 @@ class SettingsPageTest extends WP_UnitTestCase {
 		$this->assertMatchesRegularExpression( '/name="_wpnonce" value="([^"]+)"/', $html );
 		preg_match( '/name="_wpnonce" value="([^"]+)"/', $html, $nonce );
 		$this->assertNotFalse( wp_verify_nonce( $nonce[1], 'supertab_connect_start' ) );
-		$this->assertStringContainsString( 'Connect website', $html );
+		$this->assertStringContainsString( 'Connect my website', $html );
 		$this->assertStringContainsString( 'You&#039;ll create a Supertab account or sign in, then come straight back.', $html );
 		$this->assertStringContainsString( 'Enter credentials manually', $html );
 		$this->assertStringContainsString( 'name="website_urn"', $html );
@@ -145,14 +145,14 @@ class SettingsPageTest extends WP_UnitTestCase {
 			'connected'           => array( array( 'connect' => 'connected' ), 'Connected' ),
 			'cancelled'           => array( array( 'connect' => 'cancelled' ), 'Connection cancelled' ),
 			'disconnected'        => array( array( 'connect' => 'disconnected' ), 'Disconnected from Supertab.' ),
-			'expired code'        => array( array( 'connect_error' => 'invalid_code' ), 'This connection link expired or was already used. Click Connect website to try again.' ),
-			'unknown state'       => array( array( 'connect_error' => 'invalid_state' ), 'This connection link expired or was already used. Click Connect website to try again.' ),
-			'other user'          => array( array( 'connect_error' => 'wrong_user' ), 'This connection was started by a different WordPress user. Click Connect website to try again.' ),
-			'different site'      => array( array( 'connect_error' => 'site_mismatch' ), 'Supertab approved this connection for a different site address. Click Connect website to try again.' ),
-			'failed'              => array( array( 'connect_error' => 'failed' ), 'Supertab couldn&#039;t connect this site. Click Connect website to try again, or enter your credentials manually.' ),
+			'expired code'        => array( array( 'connect_error' => 'invalid_code' ), 'This connection link expired or was already used. Click Connect my website to try again.' ),
+			'unknown state'       => array( array( 'connect_error' => 'invalid_state' ), 'This connection link expired or was already used. Click Connect my website to try again.' ),
+			'other user'          => array( array( 'connect_error' => 'wrong_user' ), 'Supertab couldn&#039;t connect this site. Click Connect my website to try again, or enter your credentials manually.' ),
+			'different site'      => array( array( 'connect_error' => 'site_mismatch' ), 'Supertab couldn&#039;t connect this site. Click Connect my website to try again, or enter your credentials manually.' ),
+			'failed'              => array( array( 'connect_error' => 'failed' ), 'Supertab couldn&#039;t connect this site. Click Connect my website to try again, or enter your credentials manually.' ),
 			'unreachable'         => array( array( 'connect_error' => 'unreachable' ), 'Couldn&#039;t reach Supertab. Check that your site can make outgoing requests and try again.' ),
-			'admin on other host' => array( array( 'connect_error' => 'admin_host_mismatch' ), 'Connect website needs your WordPress admin on the same address as your site (palmspringspost.com). Enter your credentials manually instead.' ),
-			'admin on HTTP'       => array( array( 'connect_error' => 'insecure_admin' ), 'Connect website needs your WordPress admin on HTTPS. Enter your credentials manually instead.' ),
+			'admin on other host' => array( array( 'connect_error' => 'admin_host_mismatch' ), 'To connect, your WordPress admin needs to be on the same address as your site (palmspringspost.com). Enter your credentials manually instead.' ),
+			'admin on HTTP'       => array( array( 'connect_error' => 'insecure_admin' ), 'To connect, your WordPress admin needs to be on HTTPS. Enter your credentials manually instead.' ),
 		);
 	}
 

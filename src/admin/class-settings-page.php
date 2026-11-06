@@ -306,20 +306,22 @@ class Settings_Page {
 		$error  = isset( $_GET['connect_error'] ) ? sanitize_text_field( wp_unslash( $_GET['connect_error'] ) ) : '';
 		// phpcs:enable WordPress.Security.NonceVerification.Recommended
 
-		$expired = __( 'This connection link expired or was already used. Click Connect website to try again.', 'supertab-connect' );
-		$errors  = array(
+		$expired = __( 'This connection link expired or was already used. Click Connect my website to try again.', 'supertab-connect' );
+		// A different user or site address is rare and fixed by trying again, so it gets the general message.
+		$failed = __( "Supertab couldn't connect this site. Click Connect my website to try again, or enter your credentials manually.", 'supertab-connect' );
+		$errors = array(
 			'invalid_code'        => $expired,
 			'invalid_state'       => $expired,
-			'wrong_user'          => __( 'This connection was started by a different WordPress user. Click Connect website to try again.', 'supertab-connect' ),
-			'site_mismatch'       => __( 'Supertab approved this connection for a different site address. Click Connect website to try again.', 'supertab-connect' ),
-			'failed'              => __( "Supertab couldn't connect this site. Click Connect website to try again, or enter your credentials manually.", 'supertab-connect' ),
+			'wrong_user'          => $failed,
+			'site_mismatch'       => $failed,
+			'failed'              => $failed,
 			'unreachable'         => __( "Couldn't reach Supertab. Check that your site can make outgoing requests and try again.", 'supertab-connect' ),
 			'admin_host_mismatch' => sprintf(
 				/* translators: %s: the site's host, e.g. example.com */
-				__( 'Connect website needs your WordPress admin on the same address as your site (%s). Enter your credentials manually instead.', 'supertab-connect' ),
+				__( 'To connect, your WordPress admin needs to be on the same address as your site (%s). Enter your credentials manually instead.', 'supertab-connect' ),
 				Site_Address::host( home_url() )
 			),
-			'insecure_admin'      => __( 'Connect website needs your WordPress admin on HTTPS. Enter your credentials manually instead.', 'supertab-connect' ),
+			'insecure_admin'      => __( 'To connect, your WordPress admin needs to be on HTTPS. Enter your credentials manually instead.', 'supertab-connect' ),
 		);
 		if ( isset( $errors[ $error ] ) ) {
 			return array(

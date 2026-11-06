@@ -105,7 +105,7 @@ $supertab_connect_purged = isset( $_GET['purged'] ) && '1' === sanitize_text_fie
 		<form method="post" action="<?php echo esc_url( $supertab_connect_admin_post_url ); ?>">
 			<input type="hidden" name="action" value="<?php echo esc_attr( $supertab_connect_start_action ); ?>" />
 			<?php wp_nonce_field( $supertab_connect_start_action ); ?>
-			<?php submit_button( __( 'Connect website', 'supertab-connect' ), 'primary', 'submit-connect', false ); ?>
+			<?php submit_button( __( 'Connect my website', 'supertab-connect' ), 'primary', 'submit-connect', false ); ?>
 		</form>
 
 		<p class="description"><?php esc_html_e( "You'll create a Supertab account or sign in, then come straight back.", 'supertab-connect' ); ?></p>
