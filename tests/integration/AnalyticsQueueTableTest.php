@@ -73,6 +73,16 @@ class AnalyticsQueueTableTest extends WP_UnitTestCase {
 	 * ("bigint(20) unsigned"), so integer types are matched loosely while
 	 * payload/created_at are exact.
 	 */
+	public function test_clear_removes_every_queued_event(): void {
+		global $wpdb;
+		$this->table->insert( '{"request_id":"req-1"}' );
+		$this->table->insert( '{"request_id":"req-2"}' );
+
+		$this->table->clear();
+
+		$this->assertSame( '0', $wpdb->get_var( "SELECT COUNT(*) FROM {$this->table->name()}" ) );
+	}
+
 	public function test_install_creates_schema_and_records_version(): void {
 		global $wpdb;
 

@@ -5,6 +5,7 @@ parameters:
 	level: 5
 	paths:
 		- supertab-connect.php
+		- includes/
 		- src/
 	excludePaths:
 		- vendor/

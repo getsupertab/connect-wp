@@ -16,6 +16,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 use Supertab_Connect\Robots_Txt_Handler;
 use Supertab_Connect\RSL_License_Handler;
 use Supertab_Connect\Settings;
+use Supertab_Connect\Utils\Site_Address;
 
 /**
  * Handles the plugin settings page.
@@ -83,7 +84,7 @@ class Settings_Page {
 			'options-general.php',
 			'Supertab Connect',
 			'Supertab Connect',
-			'manage_options',
+			Access::capability(),
 			self::PAGE_SLUG,
 			array( $this, 'render_page' )
 		);
@@ -168,17 +169,18 @@ class Settings_Page {
 			return;
 		}
 
-		if ( ! current_user_can( 'manage_options' ) ) {
+		if ( ! current_user_can( Access::capability() ) ) {
 			return;
 		}
 
 		if ( isset( $_POST['submit-purge-cache'] ) ) {
 			$this->process_purge_cache();
-		} elseif ( isset( $_POST['submit-disconnect'] ) ) {
-			$this->process_disconnect();
+		} elseif ( isset( $_POST['submit-change-api-key'] ) ) {
+			$this->process_change_api_key();
 		} else {
 			$form_data = array(
-				'website_urn'            => isset( $_POST['website_urn'] ) ? sanitize_text_field( wp_unslash( $_POST['website_urn'] ) ) : '',
+				// Only the manual credentials form has a URN field; the connected view keeps the stored one.
+				'website_urn'            => isset( $_POST['website_urn'] ) ? sanitize_text_field( wp_unslash( $_POST['website_urn'] ) ) : null,
 				'merchant_api_key'       => isset( $_POST['merchant_api_key'] ) ? sanitize_text_field( wp_unslash( $_POST['merchant_api_key'] ) ) : null,
 				'bot_protection_enabled' => isset( $_POST['bot_protection_enabled'] ),
 				'analytics_enabled'      => isset( $_POST['analytics_enabled'] ),
@@ -205,11 +207,17 @@ class Settings_Page {
 
 		$merchant_api_key = $form_data['merchant_api_key'];
 
-		$this->settings->save_website_urn( $website_urn );
+		if ( is_string( $website_urn ) ) {
+			$this->settings->save_website_urn( $website_urn );
+			// Typed in by hand: the key may be used elsewhere, so Disconnect never revokes it.
+			$this->settings->save_connection( 'manual', '', home_url() );
+		}
 
 		// API key field is only present when entering a new key; save only if non-empty.
 		if ( is_string( $merchant_api_key ) && '' !== $merchant_api_key ) {
 			$this->settings->save_merchant_api_key( $merchant_api_key );
+			// A key typed in by hand may be used elsewhere, so Disconnect must never revoke it.
+			$this->settings->save_connection( 'manual', '', home_url() );
 		} elseif ( '' === $merchant_api_key ) {
 			// API key field was shown but submitted empty — disable bot protection.
 			$this->settings->set_bot_protection_enabled( false );
@@ -261,15 +269,14 @@ class Settings_Page {
 	}
 
 	/**
-	 * Disconnect the Merchant API Key.
+	 * Show the API key form again so a manually entered key can be replaced.
 	 *
-	 * Does not delete the API key — just redirects back with a flag
-	 * so the template shows the API key form.
+	 * Does not delete the API key; it stays active until a new one is saved.
 	 *
 	 * @return void
 	 */
-	private function process_disconnect(): void {
-		$this->redirect( array( 'disconnected' => '1' ) );
+	private function process_change_api_key(): void {
+		$this->redirect( array( 'change_key' => '1' ) );
 	}
 
 	/**
@@ -289,23 +296,91 @@ class Settings_Page {
 	}
 
 	/**
+	 * The notice for a connect, cancel, disconnect or error result in the query string.
+	 *
+	 * @return array{class: string, text: string}|null
+	 */
+	private function result_notice(): ?array {
+		// phpcs:disable WordPress.Security.NonceVerification.Recommended -- Only reading query params for display logic.
+		$result = isset( $_GET['connect'] ) ? sanitize_text_field( wp_unslash( $_GET['connect'] ) ) : '';
+		$error  = isset( $_GET['connect_error'] ) ? sanitize_text_field( wp_unslash( $_GET['connect_error'] ) ) : '';
+		// phpcs:enable WordPress.Security.NonceVerification.Recommended
+
+		$expired = __( 'This connection link expired or was already used. Click Connect my website to try again.', 'supertab-connect' );
+		// A different user or site address is rare and fixed by trying again, so it gets the general message.
+		$failed = __( "Supertab couldn't connect this site. Click Connect my website to try again, or enter your credentials manually.", 'supertab-connect' );
+		$errors = array(
+			'invalid_code'        => $expired,
+			'invalid_state'       => $expired,
+			'wrong_user'          => $failed,
+			'site_mismatch'       => $failed,
+			'failed'              => $failed,
+			'unreachable'         => __( "Couldn't reach Supertab. Check that your site can make outgoing requests and try again.", 'supertab-connect' ),
+			'admin_host_mismatch' => sprintf(
+				/* translators: %s: the site's host, e.g. example.com */
+				__( 'To connect, your WordPress admin needs to be on the same address as your site (%s). Enter your credentials manually instead.', 'supertab-connect' ),
+				Site_Address::host( home_url() )
+			),
+			'insecure_admin'      => __( 'To connect, your WordPress admin needs to be on HTTPS. Enter your credentials manually instead.', 'supertab-connect' ),
+		);
+		if ( isset( $errors[ $error ] ) ) {
+			return array(
+				'class' => 'notice-error',
+				'text'  => $errors[ $error ],
+			);
+		}
+
+		$results = array(
+			'connected'    => array( 'notice-success', __( 'Connected', 'supertab-connect' ) ),
+			'disconnected' => array( 'notice-success', __( 'Disconnected from Supertab.', 'supertab-connect' ) ),
+			'cancelled'    => array( 'notice-info', __( 'Connection cancelled', 'supertab-connect' ) ),
+		);
+		if ( isset( $results[ $result ] ) ) {
+			return array(
+				'class' => $results[ $result ][0],
+				'text'  => $results[ $result ][1],
+			);
+		}
+
+		return null;
+	}
+
+	/**
 	 * Render the settings page.
 	 *
 	 * @return void
 	 */
 	public function render_page(): void {
-		if ( ! current_user_can( 'manage_options' ) ) {
+		if ( ! current_user_can( Access::capability() ) ) {
 			return;
 		}
 
-		// phpcs:ignore WordPress.Security.NonceVerification.Recommended -- Only reading query param for display logic.
-		$disconnected = isset( $_GET['disconnected'] ) && '1' === sanitize_text_field( wp_unslash( $_GET['disconnected'] ) );
+		// phpcs:disable WordPress.Security.NonceVerification.Recommended -- Only reading query params for display logic.
+		$changing_key           = isset( $_GET['change_key'] ) && '1' === sanitize_text_field( wp_unslash( $_GET['change_key'] ) );
+		$disconnect_unreachable = isset( $_GET['disconnect'] ) && 'unreachable' === sanitize_text_field( wp_unslash( $_GET['disconnect'] ) );
+		// phpcs:enable WordPress.Security.NonceVerification.Recommended
+
+		$connection     = $this->settings->get_connection();
+		$connected_base = null !== $connection ? $connection['base_url'] : '';
+		$method         = $this->settings->get_connection_method();
 
 		$template_data = array(
 			'nonce_action'           => self::NONCE_ACTION,
 			'has_website_urn'        => $this->settings->has_website_urn(),
 			'has_merchant_api_key'   => $this->settings->has_merchant_api_key(),
-			'disconnected'           => $disconnected,
+			'changing_key'           => $changing_key,
+			'connection_method'      => $method,
+			'website_name'           => null !== $connection ? $connection['website_name'] : '',
+			'connected_host'         => Site_Address::host( $connected_base ),
+			'home_origin'            => Site_Address::origin( home_url() ),
+			'connected_origin'       => Site_Address::origin( $connected_base ),
+			// The API stores the origin only, so a subdirectory install is not a move.
+			'address_changed'        => 'connect' === $method && '' !== $connected_base && Site_Address::origin( home_url() ) !== Site_Address::origin( $connected_base ),
+			'result_notice'          => $this->result_notice(),
+			'disconnect_unreachable' => $disconnect_unreachable,
+			'admin_post_url'         => admin_url( 'admin-post.php' ),
+			'start_action'           => Connect_Flow::START_ACTION,
+			'disconnect_action'      => Connect_Flow::DISCONNECT_ACTION,
 			'website_urn'            => $this->settings->get_website_urn(),
 			'license_url'            => home_url( '/license.xml' ),
 			'robots_txt_warning'     => $this->robots_txt_handler->needs_manual_license_directive(),
