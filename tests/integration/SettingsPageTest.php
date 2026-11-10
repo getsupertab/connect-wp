@@ -143,16 +143,16 @@ class SettingsPageTest extends WP_UnitTestCase {
 	public static function messages(): array {
 		return array(
 			'connected'           => array( array( 'connect' => 'connected' ), 'Connected' ),
-			'cancelled'           => array( array( 'connect' => 'cancelled' ), 'Connection cancelled' ),
+			'cancelled'           => array( array( 'connect' => 'cancelled' ), 'Connection cancelled. Click Connect my website whenever you&#039;re ready.' ),
 			'disconnected'        => array( array( 'connect' => 'disconnected' ), 'Disconnected from Supertab.' ),
 			'expired code'        => array( array( 'connect_error' => 'invalid_code' ), 'This connection link expired or was already used. Click Connect my website to try again.' ),
 			'unknown state'       => array( array( 'connect_error' => 'invalid_state' ), 'This connection link expired or was already used. Click Connect my website to try again.' ),
 			'other user'          => array( array( 'connect_error' => 'wrong_user' ), 'Supertab couldn&#039;t connect this site. Click Connect my website to try again, or enter your credentials manually.' ),
 			'different site'      => array( array( 'connect_error' => 'site_mismatch' ), 'Supertab couldn&#039;t connect this site. Click Connect my website to try again, or enter your credentials manually.' ),
 			'failed'              => array( array( 'connect_error' => 'failed' ), 'Supertab couldn&#039;t connect this site. Click Connect my website to try again, or enter your credentials manually.' ),
-			'unreachable'         => array( array( 'connect_error' => 'unreachable' ), 'Couldn&#039;t reach Supertab. Check that your site can make outgoing requests and try again.' ),
-			'admin on other host' => array( array( 'connect_error' => 'admin_host_mismatch' ), 'To connect, your WordPress admin needs to be on the same address as your site (palmspringspost.com). Enter your credentials manually instead.' ),
-			'admin on HTTP'       => array( array( 'connect_error' => 'insecure_admin' ), 'To connect, your WordPress admin needs to be on HTTPS. Enter your credentials manually instead.' ),
+			'unreachable'         => array( array( 'connect_error' => 'unreachable' ), 'Couldn&#039;t reach Supertab. Try again, or ask your hosting provider to allow connections to Supertab.' ),
+			'admin on other host' => array( array( 'connect_error' => 'admin_host_mismatch' ), 'For security, your WordPress admin needs to be on the same address as your site (palmspringspost.com) to connect. Enter your credentials manually instead.' ),
+			'admin on HTTP'       => array( array( 'connect_error' => 'insecure_admin' ), 'For security, your WordPress admin needs to be on HTTPS to connect. Enter your credentials manually instead.' ),
 		);
 	}
 

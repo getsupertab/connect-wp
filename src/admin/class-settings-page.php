@@ -315,13 +315,13 @@ class Settings_Page {
 			'wrong_user'          => $failed,
 			'site_mismatch'       => $failed,
 			'failed'              => $failed,
-			'unreachable'         => __( "Couldn't reach Supertab. Check that your site can make outgoing requests and try again.", 'supertab-connect' ),
+			'unreachable'         => __( "Couldn't reach Supertab. Try again, or ask your hosting provider to allow connections to Supertab.", 'supertab-connect' ),
 			'admin_host_mismatch' => sprintf(
 				/* translators: %s: the site's host, e.g. example.com */
-				__( 'To connect, your WordPress admin needs to be on the same address as your site (%s). Enter your credentials manually instead.', 'supertab-connect' ),
+				__( 'For security, your WordPress admin needs to be on the same address as your site (%s) to connect. Enter your credentials manually instead.', 'supertab-connect' ),
 				Site_Address::host( home_url() )
 			),
-			'insecure_admin'      => __( 'To connect, your WordPress admin needs to be on HTTPS. Enter your credentials manually instead.', 'supertab-connect' ),
+			'insecure_admin'      => __( 'For security, your WordPress admin needs to be on HTTPS to connect. Enter your credentials manually instead.', 'supertab-connect' ),
 		);
 		if ( isset( $errors[ $error ] ) ) {
 			return array(
@@ -333,7 +333,7 @@ class Settings_Page {
 		$results = array(
 			'connected'    => array( 'notice-success', __( 'Connected', 'supertab-connect' ) ),
 			'disconnected' => array( 'notice-success', __( 'Disconnected from Supertab.', 'supertab-connect' ) ),
-			'cancelled'    => array( 'notice-info', __( 'Connection cancelled', 'supertab-connect' ) ),
+			'cancelled'    => array( 'notice-info', __( "Connection cancelled. Click Connect my website whenever you're ready.", 'supertab-connect' ) ),
 		);
 		if ( isset( $results[ $result ] ) ) {
 			return array(
