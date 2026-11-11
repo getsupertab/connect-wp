@@ -48,7 +48,9 @@ $supertab_connect_purged = isset( $_GET['purged'] ) && '1' === sanitize_text_fie
 <div class="wrap">
 	<h1><?php esc_html_e( 'Supertab Connect', 'supertab-connect' ); ?></h1>
 
-	<p class="description"><?php esc_html_e( 'Publish a machine-readable license file on your website, manage how partners access your content and track licensed usage.', 'supertab-connect' ); ?></p>
+	<?php if ( $supertab_connect_has_website_urn ) : ?>
+		<p class="description"><?php esc_html_e( 'Publish a machine-readable license file on your website, manage how partners access your content and track licensed usage.', 'supertab-connect' ); ?></p>
+	<?php endif; ?>
 
 	<?php if ( null !== $supertab_connect_result_notice ) : ?>
 		<div class="notice <?php echo esc_attr( $supertab_connect_result_notice['class'] ); ?>">
@@ -98,68 +100,96 @@ $supertab_connect_purged = isset( $_GET['purged'] ) && '1' === sanitize_text_fie
 	<?php if ( ! $supertab_connect_has_website_urn ) : ?>
 
 		<!-- Not connected -->
-		<h2><?php esc_html_e( 'Connect your website', 'supertab-connect' ); ?></h2>
+		<div class="supertab-onboarding">
+			<div class="supertab-card">
+				<img
+					class="supertab-card__logo"
+					src="<?php echo esc_url( SUPERTAB_CONNECT_PLUGIN_URL . 'assets/images/supertab-connect-logo.svg' ); ?>"
+					alt="<?php esc_attr_e( 'Supertab Connect', 'supertab-connect' ); ?>"
+					width="172"
+					height="22"
+				/>
+				<h2 class="supertab-card__title"><?php esc_html_e( 'Connect your website', 'supertab-connect' ); ?></h2>
+				<p class="supertab-card__lead"><?php esc_html_e( "You need a Supertab Connect account to continue. We'll handle the connection:", 'supertab-connect' ); ?></p>
 
-		<p><?php esc_html_e( 'Connect this site to Supertab to publish your license and manage how partners access your content.', 'supertab-connect' ); ?></p>
+				<ol class="supertab-steps">
+					<li><?php esc_html_e( 'Sign in or create an account.', 'supertab-connect' ); ?></li>
+					<li><?php esc_html_e( 'Approve the connection in the Supertab Connect portal.', 'supertab-connect' ); ?></li>
+					<li><?php esc_html_e( 'Come back here, your site will be connected and ready.', 'supertab-connect' ); ?></li>
+				</ol>
 
-		<form method="post" action="<?php echo esc_url( $supertab_connect_admin_post_url ); ?>">
-			<input type="hidden" name="action" value="<?php echo esc_attr( $supertab_connect_start_action ); ?>" />
-			<?php wp_nonce_field( $supertab_connect_start_action ); ?>
-			<?php submit_button( __( 'Connect my website', 'supertab-connect' ), 'primary', 'submit-connect', false ); ?>
-		</form>
+				<form method="post" action="<?php echo esc_url( $supertab_connect_admin_post_url ); ?>">
+					<input type="hidden" name="action" value="<?php echo esc_attr( $supertab_connect_start_action ); ?>" />
+					<?php wp_nonce_field( $supertab_connect_start_action ); ?>
+					<?php submit_button( __( 'Connect my website', 'supertab-connect' ), 'primary large supertab-card__button', 'submit-connect', false ); ?>
+				</form>
+			</div>
 
-		<p class="description"><?php esc_html_e( "You'll create a Supertab account or sign in, then come straight back.", 'supertab-connect' ); ?></p>
+			<details class="supertab-manual-credentials"<?php echo '' !== $supertab_connect_error ? ' open' : ''; // Only hardcoded strings output. ?>>
+				<summary>
+					<?php esc_html_e( 'Already have a Website URN and API key?', 'supertab-connect' ); ?>
+					<span class="supertab-manual-credentials__link"><?php esc_html_e( 'Enter them manually', 'supertab-connect' ); ?></span>
+				</summary>
 
-		<details class="supertab-manual-credentials"<?php echo '' !== $supertab_connect_error ? ' open' : ''; // Only hardcoded strings output. ?>>
-			<summary><?php esc_html_e( 'Enter credentials manually', 'supertab-connect' ); ?></summary>
+				<form method="post" action="" class="supertab-card supertab-card--manual">
+					<?php wp_nonce_field( $supertab_connect_nonce_action, 'supertab_connect_nonce' ); ?>
 
-			<form method="post" action="">
-				<?php wp_nonce_field( $supertab_connect_nonce_action, 'supertab_connect_nonce' ); ?>
-
-				<table class="form-table" role="presentation">
-					<tr>
-						<th scope="row">
-							<label for="supertab-website-urn"><?php esc_html_e( 'Website URN', 'supertab-connect' ); ?></label>
-						</th>
-						<td>
-							<input
-								type="text"
-								id="supertab-website-urn"
-								name="website_urn"
-								class="regular-text"
-								value=""
-							/>
-						</td>
-					</tr>
-					<tr>
-						<th scope="row">
-							<label for="supertab-merchant-api-key"><?php esc_html_e( 'Merchant API Key', 'supertab-connect' ); ?></label>
-						</th>
-						<td>
-							<div class="wp-pwd">
+					<table class="form-table" role="presentation">
+						<tr>
+							<th scope="row">
+								<label for="supertab-website-urn"><?php esc_html_e( 'Website URN', 'supertab-connect' ); ?></label>
+							</th>
+							<td>
 								<input
-									type="password"
-									id="supertab-merchant-api-key"
-									name="merchant_api_key"
+									type="text"
+									id="supertab-website-urn"
+									name="website_urn"
 									class="regular-text"
+									value=""
 								/>
-								<button type="button"
-									class="wp-hide-pw hide-if-no-js"
-									aria-label="<?php esc_attr_e( 'Show API key', 'supertab-connect' ); ?>"
-									data-show-label="<?php esc_attr_e( 'Show API key', 'supertab-connect' ); ?>"
-									data-hide-label="<?php esc_attr_e( 'Hide API key', 'supertab-connect' ); ?>"
-								>
-									<span class="dashicons dashicons-visibility" aria-hidden="true"></span>
-								</button>
-							</div>
-							<p class="description"><?php esc_html_e( 'Optional. Needed for license verification.', 'supertab-connect' ); ?></p>
-						</td>
-					</tr>
-				</table>
+							</td>
+						</tr>
+						<tr>
+							<th scope="row">
+								<label for="supertab-merchant-api-key"><?php esc_html_e( 'Merchant API Key', 'supertab-connect' ); ?></label>
+							</th>
+							<td>
+								<div class="wp-pwd">
+									<input
+										type="password"
+										id="supertab-merchant-api-key"
+										name="merchant_api_key"
+										class="regular-text"
+									/>
+									<button type="button"
+										class="wp-hide-pw hide-if-no-js"
+										aria-label="<?php esc_attr_e( 'Show API key', 'supertab-connect' ); ?>"
+										data-show-label="<?php esc_attr_e( 'Show API key', 'supertab-connect' ); ?>"
+										data-hide-label="<?php esc_attr_e( 'Hide API key', 'supertab-connect' ); ?>"
+									>
+										<span class="dashicons dashicons-visibility" aria-hidden="true"></span>
+									</button>
+								</div>
+								<p class="description"><?php esc_html_e( 'Optional. Needed for license verification.', 'supertab-connect' ); ?></p>
+							</td>
+						</tr>
+					</table>
 
-				<?php submit_button( __( 'Save credentials', 'supertab-connect' ), 'secondary', 'submit-settings', false ); ?>
-			</form>
-		</details>
+					<?php submit_button( __( 'Save credentials', 'supertab-connect' ), 'secondary', 'submit-settings', false ); ?>
+				</form>
+			</details>
+
+			<ul class="supertab-onboarding__links">
+				<?php foreach ( $supertab_connect_resource_links as $supertab_connect_link ) : ?>
+					<li>
+						<a href="<?php echo esc_url( $supertab_connect_link['url'] ); ?>" target="_blank" rel="noopener noreferrer">
+							<?php echo esc_html( $supertab_connect_link['label'] ); ?>
+							<span class="screen-reader-text"><?php esc_html_e( '(opens in a new tab)', 'supertab-connect' ); ?></span>
+						</a>
+					</li>
+				<?php endforeach; ?>
+			</ul>
+		</div>
 
 	<?php else : ?>
 
@@ -436,6 +466,7 @@ $supertab_connect_purged = isset( $_GET['purged'] ) && '1' === sanitize_text_fie
 
 		</div><!-- .supertab-settings-main -->
 
+		<?php if ( $supertab_connect_has_website_urn ) : // Not connected, the links sit under the card instead. ?>
 		<aside class="supertab-settings-sidebar">
 			<div class="postbox">
 				<h2 class="hndle"><?php esc_html_e( 'Resources', 'supertab-connect' ); ?></h2>
@@ -454,6 +485,7 @@ $supertab_connect_purged = isset( $_GET['purged'] ) && '1' === sanitize_text_fie
 				</div>
 			</div>
 		</aside>
+		<?php endif; ?>
 
 	</div><!-- .supertab-settings-layout -->
 </div>

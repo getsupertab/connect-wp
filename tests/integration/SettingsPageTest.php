@@ -83,10 +83,44 @@ class SettingsPageTest extends WP_UnitTestCase {
 		preg_match( '/name="_wpnonce" value="([^"]+)"/', $html, $nonce );
 		$this->assertNotFalse( wp_verify_nonce( $nonce[1], 'supertab_connect_start' ) );
 		$this->assertStringContainsString( 'Connect my website', $html );
-		$this->assertStringContainsString( 'You&#039;ll create a Supertab account or sign in, then come straight back.', $html );
-		$this->assertStringContainsString( 'Enter credentials manually', $html );
+		$this->assertStringContainsString( 'Already have a Website URN and API key?', $html );
+		$this->assertStringContainsString( 'Enter them manually', $html );
 		$this->assertStringContainsString( 'name="website_urn"', $html );
 		$this->assertStringNotContainsString( 'supertab_connect_disconnect', $html );
+	}
+
+	public function test_a_new_site_sees_the_connect_steps(): void {
+		$html = $this->render();
+
+		$this->assertStringContainsString( 'assets/images/supertab-connect-logo.svg', $html );
+		$this->assertStringContainsString( 'Connect your website', $html );
+		$this->assertStringContainsString( 'You need a Supertab Connect account to continue. We&#039;ll handle the connection:', $html );
+		$this->assertMatchesRegularExpression(
+			'#<ol class="supertab-steps">\s*'
+				. '<li>Sign in or create an account\.</li>\s*'
+				. '<li>Approve the connection in the Supertab Connect portal\.</li>\s*'
+				. '<li>Come back here, your site will be connected and ready\.</li>\s*'
+				. '</ol>#',
+			$html
+		);
+	}
+
+	public function test_a_new_site_gets_the_resource_links_under_the_card_instead_of_a_sidebar(): void {
+		$html = $this->render();
+
+		$this->assertStringNotContainsString( '<h2 class="hndle">Resources</h2>', $html );
+		$this->assertStringNotContainsString( 'Publish a machine-readable license file on your website', $html );
+		$this->assertMatchesRegularExpression( '#<ul class="supertab-onboarding__links">.*Documentation.*Supertab Connect Dashboard.*</ul>#s', $html );
+	}
+
+	public function test_a_connected_site_keeps_the_intro_and_the_resources_sidebar(): void {
+		$this->connected_via_connect();
+
+		$html = $this->render();
+
+		$this->assertStringContainsString( '<h2 class="hndle">Resources</h2>', $html );
+		$this->assertStringContainsString( 'Publish a machine-readable license file on your website', $html );
+		$this->assertStringNotContainsString( 'supertab-onboarding__links', $html );
 	}
 
 	public function test_a_connected_site_shows_its_website_and_disconnect(): void {

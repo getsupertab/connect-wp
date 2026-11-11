@@ -67,7 +67,7 @@ No personal data from your site visitors is collected or transmitted.
 3. Navigate to Settings > Supertab Connect and click Connect my website. You'll sign in to Supertab Connect or create an account, then come straight back to WordPress.
 4. (Optional) Enable the Crawler Authentication Protocol.
 
-Connect my website requires a Supertab Connect account: it signs you in to yours or creates one. To set the plugin up without it, choose Enter credentials manually and paste the Website URN and Merchant API Key from the [Supertab Connect dashboard](https://merchant-connect.supertab.co/).
+Connect my website requires a Supertab Connect account: it signs you in to yours or creates one. To set the plugin up without it, click Enter them manually under the card and paste the Website URN and Merchant API Key from the [Supertab Connect dashboard](https://merchant-connect.supertab.co/).
 
 == Frequently Asked Questions ==
 

@@ -1,6 +1,6 @@
 <?php
 /**
- * One-click Connect website flow.
+ * One-click Connect my website flow.
  *
  * @package Supertab_Connect
  */
