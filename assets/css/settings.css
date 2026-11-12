@@ -184,6 +184,18 @@
 	margin: 0 auto 24px;
 }
 
+.supertab-card .supertab-card__check {
+	display: block;
+	width: 48px;
+	height: 48px;
+	margin: 0 auto 16px;
+	border-radius: 50%;
+	background: rgba(0, 163, 42, 0.1);
+	color: #00a32a;
+	font-size: 32px;
+	line-height: 48px;
+}
+
 .supertab-card .supertab-card__title {
 	margin: 0 0 8px;
 	padding: 0;

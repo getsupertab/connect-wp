@@ -36,7 +36,11 @@ $supertab_connect_disconnect_unreachable = $template_data['disconnect_unreachabl
 $supertab_connect_admin_post_url         = $template_data['admin_post_url'];
 $supertab_connect_start_action           = $template_data['start_action'];
 $supertab_connect_disconnect_action      = $template_data['disconnect_action'];
-$supertab_connect_show_api_key_form      = ! $supertab_connect_has_merchant_api_key || $supertab_connect_changing_key;
+$supertab_connect_just_connected         = $template_data['just_connected'];
+$supertab_connect_settings_url           = $template_data['settings_url'];
+// The settings and their sidebar show once connected, after the success card.
+$supertab_connect_show_settings     = $supertab_connect_has_website_urn && ! $supertab_connect_just_connected;
+$supertab_connect_show_api_key_form = ! $supertab_connect_has_merchant_api_key || $supertab_connect_changing_key;
 
 // phpcs:ignore WordPress.Security.NonceVerification.Recommended -- Only reading query params for display logic.
 $supertab_connect_setup_status = isset( $_GET['setup'] ) ? sanitize_text_field( wp_unslash( $_GET['setup'] ) ) : '';
@@ -48,7 +52,7 @@ $supertab_connect_purged = isset( $_GET['purged'] ) && '1' === sanitize_text_fie
 <div class="wrap">
 	<h1><?php esc_html_e( 'Supertab Connect', 'supertab-connect' ); ?></h1>
 
-	<?php if ( $supertab_connect_has_website_urn ) : ?>
+	<?php if ( $supertab_connect_show_settings ) : ?>
 		<p class="description"><?php esc_html_e( 'Publish a machine-readable license file on your website, manage how partners access your content and track licensed usage.', 'supertab-connect' ); ?></p>
 	<?php endif; ?>
 
@@ -97,7 +101,40 @@ $supertab_connect_purged = isset( $_GET['purged'] ) && '1' === sanitize_text_fie
 	<div class="supertab-settings-layout">
 		<div class="supertab-settings-main">
 
-	<?php if ( ! $supertab_connect_has_website_urn ) : ?>
+	<?php if ( $supertab_connect_just_connected ) : ?>
+
+		<!-- Back from Connect my website -->
+		<div class="supertab-onboarding">
+			<div class="supertab-card">
+				<img
+					class="supertab-card__logo"
+					src="<?php echo esc_url( SUPERTAB_CONNECT_PLUGIN_URL . 'assets/images/supertab-connect-logo.svg' ); ?>"
+					alt="<?php esc_attr_e( 'Supertab Connect', 'supertab-connect' ); ?>"
+					width="172"
+					height="22"
+				/>
+				<span class="supertab-card__check dashicons dashicons-yes" aria-hidden="true"></span>
+				<h2 class="supertab-card__title"><?php esc_html_e( "You're connected", 'supertab-connect' ); ?></h2>
+				<p class="supertab-card__lead">
+					<?php
+					echo wp_kses(
+						sprintf(
+							/* translators: 1: website name in Supertab Connect, 2: website host */
+							__( '%1$s (%2$s) is now connected to Supertab Connect.', 'supertab-connect' ),
+							'<strong>' . esc_html( $supertab_connect_website_name ) . '</strong>',
+							esc_html( $supertab_connect_connected_host )
+						),
+						array( 'strong' => array() )
+					);
+					?>
+				</p>
+				<a href="<?php echo esc_url( $supertab_connect_settings_url ); ?>" class="button button-primary button-large supertab-card__button">
+					<?php esc_html_e( 'Continue to settings', 'supertab-connect' ); ?>
+				</a>
+			</div>
+		</div>
+
+	<?php elseif ( ! $supertab_connect_has_website_urn ) : ?>
 
 		<!-- Not connected -->
 		<div class="supertab-onboarding">
@@ -466,7 +503,7 @@ $supertab_connect_purged = isset( $_GET['purged'] ) && '1' === sanitize_text_fie
 
 		</div><!-- .supertab-settings-main -->
 
-		<?php if ( $supertab_connect_has_website_urn ) : // Not connected, the links sit under the card instead. ?>
+		<?php if ( $supertab_connect_show_settings ) : // Not connected, the links sit under the card instead. ?>
 		<aside class="supertab-settings-sidebar">
 			<div class="postbox">
 				<h2 class="hndle"><?php esc_html_e( 'Resources', 'supertab-connect' ); ?></h2>

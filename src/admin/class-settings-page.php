@@ -296,7 +296,8 @@ class Settings_Page {
 	}
 
 	/**
-	 * The notice for a connect, cancel, disconnect or error result in the query string.
+	 * The notice for a cancel, disconnect or error result in the query string.
+	 * A successful connect gets the success card instead.
 	 *
 	 * @return array{class: string, text: string}|null
 	 */
@@ -331,7 +332,6 @@ class Settings_Page {
 		}
 
 		$results = array(
-			'connected'    => array( 'notice-success', __( 'Connected', 'supertab-connect' ) ),
 			'disconnected' => array( 'notice-success', __( 'Disconnected from Supertab.', 'supertab-connect' ) ),
 			'cancelled'    => array( 'notice-info', __( "Connection cancelled. Click Connect my website whenever you're ready.", 'supertab-connect' ) ),
 		);
@@ -358,6 +358,7 @@ class Settings_Page {
 		// phpcs:disable WordPress.Security.NonceVerification.Recommended -- Only reading query params for display logic.
 		$changing_key           = isset( $_GET['change_key'] ) && '1' === sanitize_text_field( wp_unslash( $_GET['change_key'] ) );
 		$disconnect_unreachable = isset( $_GET['disconnect'] ) && 'unreachable' === sanitize_text_field( wp_unslash( $_GET['disconnect'] ) );
+		$back_connected         = isset( $_GET['connect'] ) && 'connected' === sanitize_text_field( wp_unslash( $_GET['connect'] ) );
 		// phpcs:enable WordPress.Security.NonceVerification.Recommended
 
 		$connection     = $this->settings->get_connection();
@@ -367,6 +368,9 @@ class Settings_Page {
 		$template_data = array(
 			'nonce_action'           => self::NONCE_ACTION,
 			'has_website_urn'        => $this->settings->has_website_urn(),
+			// Back from Connect my website: a success card stands in for the settings until Continue.
+			'just_connected'         => $back_connected && 'connect' === $method && $this->settings->has_website_urn(),
+			'settings_url'           => add_query_arg( 'page', self::PAGE_SLUG, admin_url( 'options-general.php' ) ),
 			'has_merchant_api_key'   => $this->settings->has_merchant_api_key(),
 			'changing_key'           => $changing_key,
 			'connection_method'      => $method,

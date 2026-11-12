@@ -136,6 +136,56 @@ class SettingsPageTest extends WP_UnitTestCase {
 		$this->assertStringNotContainsString( 'Reconnect', $html );
 	}
 
+	public function test_coming_back_connected_shows_a_success_card(): void {
+		$this->connected_via_connect();
+
+		$html = $this->render( array( 'connect' => 'connected' ) );
+
+		$this->assertStringContainsString( 'assets/images/supertab-connect-logo.svg', $html );
+		$this->assertStringContainsString( 'You&#039;re connected', $html );
+		$this->assertStringContainsString( '<strong>Palm Springs Post</strong> (palmspringspost.com) is now connected to Supertab Connect.', $html );
+	}
+
+	public function test_continue_on_the_success_card_opens_the_settings_page(): void {
+		$this->connected_via_connect();
+
+		$html = $this->render( array( 'connect' => 'connected' ) );
+
+		$this->assertMatchesRegularExpression(
+			'#<a href="' . preg_quote( esc_url( admin_url( 'options-general.php?page=supertab-connect-settings' ) ), '#' ) . '"[^>]*>\s*Continue to settings\s*</a>#',
+			$html
+		);
+	}
+
+	public function test_the_success_card_replaces_the_settings_until_continue(): void {
+		$this->connected_via_connect();
+
+		$html = $this->render( array( 'connect' => 'connected' ) );
+
+		$this->assertStringNotContainsString( 'notice-success', $html );
+		$this->assertStringNotContainsString( 'Publish a machine-readable license file on your website', $html );
+		$this->assertStringNotContainsString( 'supertab_connect_disconnect', $html );
+		$this->assertStringNotContainsString( 'name="bot_protection_enabled"', $html );
+		$this->assertStringNotContainsString( '<h2 class="hndle">Resources</h2>', $html );
+	}
+
+	public function test_a_disconnected_site_ignores_a_stale_connected_link(): void {
+		$html = $this->render( array( 'connect' => 'connected' ) );
+
+		$this->assertStringNotContainsString( 'You&#039;re connected', $html );
+		$this->assertStringNotContainsString( 'notice-success', $html );
+		$this->assertStringContainsString( 'Connect your website', $html );
+	}
+
+	public function test_a_manually_connected_site_ignores_a_stale_connected_link(): void {
+		$this->settings->save( 'pasted-key', 'urn:supertab:website:manual' );
+
+		$html = $this->render( array( 'connect' => 'connected' ) );
+
+		$this->assertStringNotContainsString( 'You&#039;re connected', $html );
+		$this->assertStringContainsString( 'Connected with Website URN <code>urn:supertab:website:manual</code>', $html );
+	}
+
 	public function test_a_subdirectory_install_is_not_flagged_as_moved(): void {
 		$this->use_home( 'https://palmspringspost.com/news' );
 		$this->connected_via_connect();
@@ -176,7 +226,6 @@ class SettingsPageTest extends WP_UnitTestCase {
 
 	public static function messages(): array {
 		return array(
-			'connected'           => array( array( 'connect' => 'connected' ), 'Connected' ),
 			'cancelled'           => array( array( 'connect' => 'cancelled' ), 'Connection cancelled. Click Connect my website whenever you&#039;re ready.' ),
 			'disconnected'        => array( array( 'connect' => 'disconnected' ), 'Disconnected from Supertab.' ),
 			'expired code'        => array( array( 'connect_error' => 'invalid_code' ), 'This connection link expired or was already used. Click Connect my website to try again.' ),
