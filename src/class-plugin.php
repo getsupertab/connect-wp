@@ -21,6 +21,7 @@ use Supertab\Connect\Analytics\AnalyticsTransportInterface;
 use Supertab\Connect\Analytics\CallbackAnalyticsTransport;
 use Supertab\Connect\Analytics\DeferredAnalyticsTransport;
 use Supertab\Connect\Analytics\HttpAnalyticsTransport;
+use Supertab_Connect\Admin\Connect_Flow;
 use Supertab_Connect\Admin\Notices;
 use Supertab_Connect\Admin\Settings_Page;
 use Supertab_Connect\Utils\WP_Http_Client;
@@ -130,6 +131,9 @@ class Plugin {
 		$notices = new Notices( $settings );
 		$notices->register();
 
+		$connect_flow = new Connect_Flow( $settings, new Connect_Api( SUPERTAB_CONNECT_API_BASE_URL ), new Analytics_Queue_Table() );
+		$connect_flow->register();
+
 		add_action( 'admin_init', array( $this, 'add_privacy_policy_content' ) );
 	}
 
@@ -152,6 +156,8 @@ class Plugin {
 		$content .= '<ul>';
 		$content .= '<li>' . __( '<strong>RSL License Serving</strong> — Your Website URN is sent to retrieve the license XML file for your site.', 'supertab-connect' ) . '</li>';
 		$content .= '<li>' . __( '<strong>Crawler Authentication Protocol</strong> — When enabled, page URLs and user agent strings from bot requests are sent to verify license tokens and record usage events.', 'supertab-connect' ) . '</li>';
+		$content .= '<li>' . __( '<strong>Connect my website</strong> — When an administrator connects the site, the site address, title and an admin return address are sent to the Supertab Connect merchant portal, then a one-time code, its verification code, the site title and address are sent to the API in exchange for the Website URN and an API key.', 'supertab-connect' ) . '</li>';
+		$content .= '<li>' . __( '<strong>Disconnect</strong> — When an administrator disconnects the site or deletes the plugin, the API key issued by Connect my website is sent to the API to revoke it.', 'supertab-connect' ) . '</li>';
 		$content .= '</ul>';
 
 		$content .= __( 'No personal data from your site visitors is collected or transmitted. Only bot request metadata (URL and user agent) is sent when the Crawler Authentication Protocol is enabled by the site administrator.', 'supertab-connect' );

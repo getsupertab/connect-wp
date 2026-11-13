@@ -103,6 +103,18 @@ class Analytics_Queue_Table {
 	}
 
 	/**
+	 * Remove every queued event, e.g. when the site disconnects.
+	 *
+	 * @return void
+	 */
+	public function clear(): void {
+		global $wpdb;
+
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.PreparedSQL.InterpolatedNotPrepared -- Empty the plugin's own table; name from $wpdb->prefix.
+		$wpdb->query( "DELETE FROM {$this->name()}" );
+	}
+
+	/**
 	 * Whether the buffer has reached $max_rows.
 	 *
 	 * Uses the id span (MAX - MIN + 1) rather than COUNT(*): rows are inserted

@@ -50,6 +50,13 @@ class Settings {
 	private const OPTION_ACTIVE_PATHS = 'supertab_connect_active_paths';
 
 	/**
+	 * Option name for how the site was connected: { method, website_name, base_url, connected_at }.
+	 *
+	 * @var string
+	 */
+	private const OPTION_CONNECTION = 'supertab_connect_connection';
+
+	/**
 	 * Get the Merchant API Key.
 	 *
 	 * @return string The API key, or empty string if not set.
@@ -193,6 +200,78 @@ class Settings {
 	}
 
 	/**
+	 * Record how the site was connected.
+	 *
+	 * @param string $method       "connect" for keys the connect flow issued, "manual" for pasted ones.
+	 * @param string $website_name Website name in Supertab Connect; empty for manual credentials.
+	 * @param string $base_url     Website base URL in Supertab Connect.
+	 * @return void
+	 */
+	public function save_connection( string $method, string $website_name, string $base_url ): void {
+		update_option(
+			self::OPTION_CONNECTION,
+			array(
+				'method'       => $method,
+				'website_name' => $website_name,
+				'base_url'     => $base_url,
+				'connected_at' => time(),
+			),
+			false
+		);
+	}
+
+	/**
+	 * How the site was connected, or null when nothing is recorded.
+	 *
+	 * @return array{method: string, website_name: string, base_url: string, connected_at: int}|null
+	 */
+	public function get_connection(): ?array {
+		$connection = get_option( self::OPTION_CONNECTION, null );
+		if ( ! is_array( $connection ) ) {
+			return null;
+		}
+
+		return array(
+			'method'       => (string) ( $connection['method'] ?? '' ),
+			'website_name' => (string) ( $connection['website_name'] ?? '' ),
+			'base_url'     => (string) ( $connection['base_url'] ?? '' ),
+			'connected_at' => (int) ( $connection['connected_at'] ?? 0 ),
+		);
+	}
+
+	/**
+	 * "connect" when the connect flow issued the key, otherwise "manual".
+	 *
+	 * Installs set up before the connect flow have no record and count as manual,
+	 * so their pasted keys are never revoked.
+	 *
+	 * @return string
+	 */
+	public function get_connection_method(): string {
+		$connection = $this->get_connection();
+
+		return null !== $connection && 'connect' === $connection['method'] ? 'connect' : 'manual';
+	}
+
+	/**
+	 * Forget the connected website: key, URN and connection record.
+	 *
+	 * CAP and analytics are turned off so a later reconnect doesn't silently
+	 * resume enforcement; active paths are kept.
+	 *
+	 * @return void
+	 */
+	public function clear_connection(): void {
+		delete_option( self::OPTION_MERCHANT_API_KEY );
+		delete_option( self::OPTION_WEBSITE_URN );
+		delete_option( self::OPTION_CONNECTION );
+		$this->set_bot_protection_enabled( false );
+		$this->set_analytics_enabled( false );
+
+		delete_transient( RSL_License_Handler::CACHE_TRANSIENT_KEY );
+	}
+
+	/**
 	 * Delete all stored settings.
 	 *
 	 * @return void
@@ -203,6 +282,7 @@ class Settings {
 		delete_option( self::OPTION_BOT_PROTECTION_ENABLED );
 		delete_option( self::OPTION_ANALYTICS_ENABLED );
 		delete_option( self::OPTION_ACTIVE_PATHS );
+		delete_option( self::OPTION_CONNECTION );
 
 		// Invalidate cached license XML.
 		delete_transient( RSL_License_Handler::CACHE_TRANSIENT_KEY );

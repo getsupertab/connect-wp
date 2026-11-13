@@ -60,6 +60,10 @@ if ( ! defined( 'SUPERTAB_CONNECT_ENVIRONMENT' ) ) {
 	define( 'SUPERTAB_CONNECT_ENVIRONMENT', 'sbx' );
 }
 
+if ( ! defined( 'SUPERTAB_CONNECT_DASHBOARD_URL' ) ) {
+	define( 'SUPERTAB_CONNECT_DASHBOARD_URL', 'https://merchant-connect.sbx.supertab.co' );
+}
+
 if ( ! defined( 'SUPERTAB_CONNECT_API_BASE_URL' ) ) {
 	define( 'SUPERTAB_CONNECT_API_BASE_URL', 'https://api-connect.sbx.supertab.co' );
 }
@@ -288,6 +292,26 @@ if ( ! function_exists( 'wp_remote_get' ) ) {
 		global $wp_test_http_calls, $wp_test_http_response;
 		$wp_test_http_calls[] = [ 'method' => 'GET', 'url' => $url, 'args' => $args ];
 		return $wp_test_http_response ?? [ 'response' => [ 'code' => 200 ], 'body' => 'ok' ];
+	}
+}
+
+if ( ! class_exists( 'WP_Error' ) ) {
+	class WP_Error {
+		private string $message;
+
+		public function __construct( string $code = '', string $message = '' ) {
+			$this->message = $message;
+		}
+
+		public function get_error_message(): string {
+			return $this->message;
+		}
+	}
+}
+
+if ( ! function_exists( 'wp_parse_url' ) ) {
+	function wp_parse_url( string $url, int $component = -1 ) {
+		return parse_url( $url, $component );
 	}
 }
 
