@@ -42,6 +42,11 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
+      # semantic-release's git calls go through .github/bin/git, which retries
+      # a release note push that GitHub rejects.
+      - name: Retry rejected release note pushes
+        run: echo "$GITHUB_WORKSPACE/.github/bin" >> "$GITHUB_PATH"
+
       - name: Run semantic-release
         id: semantic
         uses: cycjimmy/semantic-release-action@v4

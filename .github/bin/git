@@ -1,0 +1,51 @@
+#!/usr/bin/env bash
+#
+# git, as the release job sees it (release.yml puts this directory first on
+# PATH). Every command goes straight to the real git, except semantic-release's
+# push of a release note: git push <repository URL> refs/notes/semantic-release-<tag>
+#
+# GitHub can reject that push with "missing necessary objects". By then the
+# release commit and tag are already pushed, so the run stops without the
+# GitHub release and its zip, and the next run fails on the existing tag
+# (v1.5.0-beta.1). A release note's content repeats earlier ones, so git leaves
+# it out of the push and trusts GitHub to have it. When the push is rejected,
+# this retries it from an empty repository, which sends every object.
+
+set -uo pipefail
+
+self="${BASH_SOURCE[0]}"
+real_git=""
+IFS=: read -ra path_dirs <<< "$PATH"
+for dir in "${path_dirs[@]}"; do
+	if [ -x "$dir/git" ] && ! [ "$dir/git" -ef "$self" ]; then
+		real_git="$dir/git"
+		break
+	fi
+done
+if [ -z "$real_git" ]; then
+	echo "git wrapper: no git found on PATH" >&2
+	exit 127
+fi
+
+if [ "$#" -ne 3 ] || [ "$1" != push ] || [[ "$3" != refs/notes/semantic-release-* ]]; then
+	exec "$real_git" "$@"
+fi
+
+"$real_git" "$@" && exit 0
+
+url="$2"
+ref="$3"
+git_dir="$("$real_git" rev-parse --absolute-git-dir)" || exit 1
+for attempt in 1 2 3; do
+	echo "Push of ${ref} was rejected. Retrying from an empty repository (attempt ${attempt} of 3)." >&2
+	sleep $((attempt * 5))
+	fresh="$(mktemp -d "${git_dir}/note-push.XXXXXX")" || exit 1
+	if "$real_git" init -q --bare "$fresh" &&
+		"$real_git" -C "$fresh" fetch -q "$git_dir" "${ref}:${ref}" &&
+		"$real_git" -C "$fresh" push "$url" "${ref}:${ref}"; then
+		rm -rf "$fresh"
+		exit 0
+	fi
+	rm -rf "$fresh"
+done
+exit 1
