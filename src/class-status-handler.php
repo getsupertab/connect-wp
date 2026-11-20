@@ -133,6 +133,11 @@ class Status_Handler {
 	 * purpose "status-probe", aud = the request origin) gets the live config;
 	 * anything else gets a minimal 404 decoy.
 	 *
+	 * A site with no Website URN has not been set up with Supertab, so it
+	 * gets the decoy without verifying anything. Verifying downloads
+	 * Supertab's signing keys, and the plugin makes no outbound request
+	 * before the site owner configures it.
+	 *
 	 * @param string $authorization_header Raw Authorization header value.
 	 * @param string $expected_audience    Request origin (scheme://host[:port]).
 	 * @return array{status: int, body: string}
@@ -142,7 +147,8 @@ class Status_Handler {
 			? substr( $authorization_header, 7 )
 			: '';
 
-		$verified = '' !== $token
+		$verified = $this->settings->has_website_urn()
+			&& '' !== $token
 			&& '' !== $expected_audience
 			&& $this->verify_challenge( $token, $expected_audience );
 
