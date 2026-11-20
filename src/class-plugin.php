@@ -148,19 +148,20 @@ class Plugin {
 		}
 
 		$content = sprintf(
-			/* translators: 1: link to Supertab Connect privacy policy */
-			__( 'This plugin connects to the Supertab Connect API (%1$s) to provide the following functionality:', 'supertab-connect' ),
-			'<a href="https://www.supertab.co/legal" target="_blank">supertab.co</a>'
+			/* translators: 1: link to Supertab's Terms of Service and Privacy Policy */
+			__( 'This plugin uses Supertab Connect, a service operated by Supertab. Supertab\'s Terms of Service and Privacy Policy are published at %1$s. The plugin sends data to Supertab in these cases:', 'supertab-connect' ),
+			'<a href="https://www.supertab.co/legal" target="_blank">supertab.co/legal</a>'
 		);
 
 		$content .= '<ul>';
-		$content .= '<li>' . __( '<strong>RSL License Serving</strong> — Your Website URN is sent to retrieve the license XML file for your site.', 'supertab-connect' ) . '</li>';
-		$content .= '<li>' . __( '<strong>Crawler Authentication Protocol</strong> — When enabled, page URLs and user agent strings from bot requests are sent to verify license tokens and record usage events.', 'supertab-connect' ) . '</li>';
-		$content .= '<li>' . __( '<strong>Connect my website</strong> — When an administrator connects the site, the site address, title and an admin return address are sent to the Supertab Connect merchant portal, then a one-time code, its verification code, the site title and address are sent to the API in exchange for the Website URN and an API key.', 'supertab-connect' ) . '</li>';
-		$content .= '<li>' . __( '<strong>Disconnect</strong> — When an administrator disconnects the site or deletes the plugin, the API key issued by Connect my website is sent to the API to revoke it.', 'supertab-connect' ) . '</li>';
+		$content .= '<li>' . __( '<strong>License file</strong>: your Website URN is sent to the Supertab Connect API (api-connect.supertab.co) to fetch your site\'s license file, which is cached on your site for 12 hours.', 'supertab-connect' ) . '</li>';
+		$content .= '<li>' . __( '<strong>Connect my website</strong>: when an administrator connects the site, their browser is sent to the Supertab Connect Merchant Portal (merchant-connect.supertab.co) with the site address, the Site Title and an admin return address. The site then sends the API a one-time code, its verification code, the Site Title and the site address, and receives a Website URN and an API key.', 'supertab-connect' ) . '</li>';
+		$content .= '<li>' . __( '<strong>Disconnect</strong>: when an administrator disconnects the site or deletes the plugin, an API key issued by Connect my website is sent to the API so that Supertab revokes it.', 'supertab-connect' ) . '</li>';
+		$content .= '<li>' . __( '<strong>Crawler Authentication Protocol</strong>: when an administrator enables it, the plugin downloads Supertab\'s public signing keys to check license tokens. For each request that presents a license token, it sends the API a usage event with the page address, the user agent, the license ID and the request headers, which can include IP addresses.', 'supertab-connect' ) . '</li>';
+		$content .= '<li>' . __( '<strong>Agent and bot classification</strong>: when an administrator enables it together with the Crawler Authentication Protocol, the plugin sends an event for each visitor request on the covered paths, from people and bots alike, to Supertab\'s analytics service (ingest-connect.supertab.co). Each event contains the visitor\'s IP address and user agent, the requested path, the referring page and other request headers.', 'supertab-connect' ) . '</li>';
 		$content .= '</ul>';
 
-		$content .= __( 'No personal data from your site visitors is collected or transmitted. Only bot request metadata (URL and user agent) is sent when the Crawler Authentication Protocol is enabled by the site administrator.', 'supertab-connect' );
+		$content .= __( 'The plugin sends no information about your site\'s visitors unless an administrator enables the Crawler Authentication Protocol, which is off by default. Visitor data is then sent only as described above.', 'supertab-connect' );
 
 		wp_add_privacy_policy_content(
 			'Supertab Connect',

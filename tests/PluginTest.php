@@ -27,6 +27,19 @@ class PluginTest extends TestCase {
 		parent::tearDown();
 	}
 
+	public function test_privacy_policy_content_discloses_visitor_data(): void {
+		global $wp_test_privacy_policy_content;
+
+		Plugin::instance()->add_privacy_policy_content();
+
+		$content = $wp_test_privacy_policy_content['Supertab Connect'] ?? '';
+
+		$this->assertStringNotContainsString( 'No personal data', $content );
+		$this->assertStringContainsString( 'IP address', $content );
+		$this->assertStringContainsString( 'ingest-connect.supertab.co', $content );
+		$this->assertStringNotContainsString( "\u{2014}", $content, 'No em dashes in the suggested policy text.' );
+	}
+
 	public function test_map_enforcement_mode_value_accepts_current_values(): void {
 		$this->assertSame( EnforcementMode::DISABLED, Plugin::map_enforcement_mode_value( 'disabled' ) );
 		$this->assertSame( EnforcementMode::OBSERVE, Plugin::map_enforcement_mode_value( 'observe' ) );
