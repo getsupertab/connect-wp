@@ -77,7 +77,7 @@ Address: [https://ingest-connect.supertab.co](https://ingest-connect.supertab.co
 
 = Visitor data =
 
-Unless an administrator enables CAP, the plugin sends no information about your site's visitors. Visitor IP addresses, user agents and request details are sent only as described above, after an administrator turns those features on.
+The plugin sends information about the people visiting your site only when an administrator turns on both CAP and "Enable agent & bot classification", as described under Supertab Connect analytics. Both are off by default. With CAP on by itself, only requests that present a Supertab license token are reported, and those come from licensed crawlers and AI agents, not from people's browsers.
 
 = Other environments =
 

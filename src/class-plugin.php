@@ -157,11 +157,11 @@ class Plugin {
 		$content .= '<li>' . __( '<strong>License file</strong>: your Website URN is sent to the Supertab Connect API (api-connect.supertab.co) to fetch your site\'s license file, which is cached on your site for 12 hours.', 'supertab-connect' ) . '</li>';
 		$content .= '<li>' . __( '<strong>Connect my website</strong>: when an administrator connects the site, their browser is sent to the Supertab Connect Merchant Portal (merchant-connect.supertab.co), and the site address and Site Title are sent to Supertab to link the site to their Supertab Connect account.', 'supertab-connect' ) . '</li>';
 		$content .= '<li>' . __( '<strong>Disconnect</strong>: when an administrator disconnects the site or deletes the plugin, an API key issued by Connect my website is sent to the API so that Supertab revokes it.', 'supertab-connect' ) . '</li>';
-		$content .= '<li>' . __( '<strong>Crawler Authentication Protocol</strong>: when an administrator enables it, each request that presents a Supertab license token is reported to Supertab to record licensed use. The report includes the page address, the user agent and the request headers, which can include IP addresses.', 'supertab-connect' ) . '</li>';
+		$content .= '<li>' . __( '<strong>Crawler Authentication Protocol</strong>: when an administrator enables it, each request that presents a Supertab license token is reported to Supertab to record licensed use. Licensed crawlers and AI agents present these tokens; people\'s browsers do not. The report includes the page address, the user agent and the request headers, which can include IP addresses.', 'supertab-connect' ) . '</li>';
 		$content .= '<li>' . __( '<strong>Agent and bot classification</strong>: when an administrator enables it together with the Crawler Authentication Protocol, details of each visitor request on the covered paths, from people and bots alike, are sent to Supertab (ingest-connect.supertab.co) to classify AI agent and bot traffic. They include the visitor\'s IP address and user agent, the requested path, the referring page and other request headers.', 'supertab-connect' ) . '</li>';
 		$content .= '</ul>';
 
-		$content .= __( 'The plugin sends no information about your site\'s visitors unless an administrator enables the Crawler Authentication Protocol, which is off by default. Visitor data is then sent only as described above.', 'supertab-connect' );
+		$content .= __( 'The plugin sends information about the people visiting your site only when an administrator turns on both the Crawler Authentication Protocol and agent and bot classification. Both are off by default.', 'supertab-connect' );
 
 		wp_add_privacy_policy_content(
 			'Supertab Connect',
