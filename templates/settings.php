@@ -267,7 +267,7 @@ $supertab_connect_purged = isset( $_GET['purged'] ) && '1' === sanitize_text_fie
 					echo esc_html(
 						sprintf(
 							/* translators: 1: the site's current address, 2: the address it was connected with */
-							__( "Your site's address is now %1\$s, but it's connected to Supertab as %2\$s. Reconnect to update it.", 'supertab-connect' ),
+							__( "Your site's address is now %1\$s, but it's connected to Supertab Connect as %2\$s. Reconnect to update it.", 'supertab-connect' ),
 							$supertab_connect_home_origin,
 							$supertab_connect_connected_origin
 						)

@@ -200,7 +200,7 @@ class SettingsPageTest extends WP_UnitTestCase {
 		$html = $this->render();
 
 		$this->assertStringContainsString(
-			'Your site&#039;s address is now https://new.example.com, but it&#039;s connected to Supertab as https://palmspringspost.com. Reconnect to update it.',
+			'Your site&#039;s address is now https://new.example.com, but it&#039;s connected to Supertab Connect as https://palmspringspost.com. Reconnect to update it.',
 			$html
 		);
 		$this->assertStringContainsString( 'Reconnect', $html );

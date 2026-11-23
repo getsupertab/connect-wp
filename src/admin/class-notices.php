@@ -69,7 +69,7 @@ class Notices {
 
 		printf(
 			'<div class="notice notice-warning is-dismissible"><p>%s <a href="%s">%s</a></p></div>',
-			esc_html__( 'Connect your site to Supertab.', 'supertab-connect' ),
+			esc_html__( 'Supertab Connect needs to be configured.', 'supertab-connect' ),
 			esc_url( $setup_url ),
 			esc_html__( 'Set up now', 'supertab-connect' )
 		);
