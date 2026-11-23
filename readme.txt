@@ -48,17 +48,46 @@ This allows you to:
 
 == External Services ==
 
-This plugin connects to the [Supertab Connect API](https://api-connect.supertab.co) to provide its functionality:
+This plugin relies on Supertab Connect, a service operated by Supertab ([supertab.co](https://www.supertab.co/)). You need a Supertab Connect account to use it. The plugin uses the service to publish your license file, to connect your site to your Supertab Connect account and, if you turn them on, to verify license tokens and report crawler traffic. It contacts only the three Supertab Connect addresses below and no other external service. Requests from your server identify themselves with the user agent `supertab-connect-sdk-php` followed by a version number.
 
-* **RSL License Serving** — Your Website URN is sent to retrieve your site's license XML file. This happens on every request to `/license.xml` (cached locally after first fetch).
-* **Crawler Authentication Protocol** — When enabled by the site administrator, page URLs and user agent strings from bot requests are sent to verify license tokens and record usage events.
-* **Connect my website** — When an administrator clicks Connect my website, they are sent to the [Supertab Connect merchant portal](https://merchant-connect.supertab.co) with your site's address, its title and the address to return to in your WordPress admin, so they can sign in or create an account and approve the connection.
-* **Connection setup** — After the administrator approves, your site sends the one-time code from the portal, its matching verification code, your site's title and its address to the Supertab Connect API, which returns your Website URN and an API key.
-* **Disconnect** — When an administrator disconnects the site or deletes the plugin, the API key issued by Connect my website is sent to the Supertab Connect API to revoke it.
+= Supertab Connect API =
 
-No personal data from your site visitors is collected or transmitted.
+Address: [https://api-connect.supertab.co](https://api-connect.supertab.co). Used for your license file, for connecting and disconnecting your site, and for checking license tokens.
 
-[Supertab Terms of Use and Privacy Policy](https://www.supertab.co/legal)
+* License file: once a Website URN is saved, when someone requests `/license.xml` on your site and no copy is cached, the plugin requests your license from the API. Only your Website URN is sent, as part of the request address. The license is cached on your site for 12 hours, and fetched again after that or after you change your credentials or purge the cache.
+* Connecting your site: after an administrator approves the connection in the Supertab Connect Merchant Portal, your site sends the API one-time codes that confirm the approval, your Site Title and your site address. The API returns your Website URN and an API key, which the plugin stores in your WordPress database.
+* Disconnecting: when an administrator clicks Disconnect or deletes the plugin, an API key issued by Connect my website is sent to the API for Supertab Connect to revoke it. Keys entered by hand are never sent.
+* Checking license tokens: this happens only after an administrator enables the Crawler Authentication Protocol (CAP), which is off by default. The plugin downloads Supertab's public signing keys from the API, caches them for up to 48 hours and checks each license token on your server. For every request to the paths covered by CAP that presents a license token, the plugin then sends a usage event to the API, authenticated with your API key. The event contains the full address of the requested page (including its query string), the requester's user agent, the license ID, the result of the token check and the request headers. Cookie, authorization, API key, security token and Forwarded headers are left out, but headers that can carry IP addresses, such as X-Forwarded-For and X-Real-IP, are included.
+* Status check: once a Website URN is saved, the plugin answers requests to `/.well-known/supertab/status` for Supertab to confirm which plugin version and settings your site runs. Only a request signed by Supertab gets an answer, which contains the plugin and SDK versions, the CAP enforcement mode and whether analytics is on. To check the signature, the plugin downloads Supertab's public signing keys from the API and caches them for up to 48 hours. This download carries no information about your site or its visitors.
+
+= Supertab Connect Merchant Portal =
+
+Address: [https://merchant-connect.supertab.co](https://merchant-connect.supertab.co). Used only when an administrator clicks Connect my website (or Reconnect), to sign in or create an account and approve the connection.
+
+* The administrator's browser is sent to the portal with your site address, your Site Title, an address in your WordPress admin to return to, and one-time security codes. After the administrator approves or cancels, the portal sends the browser back to that address.
+
+= Supertab Connect analytics =
+
+Address: [https://ingest-connect.supertab.co](https://ingest-connect.supertab.co). Used only when an administrator turns on both CAP and "Enable agent & bot classification". Both are off by default.
+
+* While both are on, the plugin records one event for each front-end request to the paths covered by CAP, from people and bots alike, and sends the events to Supertab with your API key. Supertab uses them to classify AI agent and bot traffic and report it in your Supertab Connect account.
+* Each event contains the visitor's IP address and user agent, the requested path (without the query string), the request method, the referring page, the Accept-Language, Accept and browser hint headers, your host name, the names of the other request headers, whether cookies were present, the length and number of query parameters, any HTTP message signature headers, the time and the result of the license check.
+* Events are kept briefly in a table in your WordPress database and sent in batches every 15 minutes. If the background queue is turned off with `SUPERTAB_CONNECT_USE_WP_QUEUE` in wp-config.php, each event is sent during the request instead.
+
+= Visitor data =
+
+The plugin sends information about the people visiting your site only when an administrator turns on both CAP and "Enable agent & bot classification", as described under Supertab Connect analytics. Both are off by default. With CAP on by itself, only requests that present a Supertab license token are reported, and those come from licensed crawlers and AI agents, not from people's browsers.
+
+= Other environments =
+
+The addresses above are the defaults. A site administrator can point the plugin at another Supertab environment by defining `SUPERTAB_CONNECT_ENVIRONMENT`, `SUPERTAB_CONNECT_API_BASE_URL`, `SUPERTAB_CONNECT_DASHBOARD_URL` or `SUPERTAB_CONNECT_ANALYTICS_BASE_URL` in wp-config.php.
+
+= Terms and privacy =
+
+All three services are provided by Supertab. The Supertab Terms of Service and Privacy Policy are both published on one page:
+
+* Terms of Service: [https://www.supertab.co/legal](https://www.supertab.co/legal)
+* Privacy Policy: [https://www.supertab.co/legal](https://www.supertab.co/legal)
 
 == Installation ==
 

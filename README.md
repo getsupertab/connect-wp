@@ -52,7 +52,7 @@ This plugin connects to the [Supertab Connect API](https://api-connect.supertab.
 
 * **RSL License Serving** — Your Website URN is sent to retrieve your site's license XML file. This happens on every request to `/license.xml` (cached locally after first fetch).
 * **Crawler Authentication Protocol** — When enabled by the site administrator, page URLs and user agent strings from bot requests are sent to verify license tokens and record usage events.
-* **Connect my website** — When an administrator clicks Connect my website, they are sent to the [Supertab Connect merchant portal](https://merchant-connect.supertab.co) with your site's address, its title and the address to return to in your WordPress admin, so they can sign in or create an account and approve the connection.
+* **Connect my website** — When an administrator clicks Connect my website, they are sent to the [Supertab Connect Merchant Portal](https://merchant-connect.supertab.co) with your site's address, its title and the address to return to in your WordPress admin, so they can sign in or create an account and approve the connection.
 * **Connection setup** — After the administrator approves, your site sends the one-time code from the portal, its matching verification code, your site's title and its address to the Supertab Connect API, which returns your Website URN and an API key.
 * **Disconnect** — When an administrator disconnects the site or deletes the plugin, the API key issued by Connect my website is sent to the Supertab Connect API to revoke it.
 

@@ -169,7 +169,7 @@ $wpdb = new WP_Test_Wpdb();
  * Reset all in-memory stores. Call in setUp()/tearDown().
  */
 function wp_stubs_reset(): void {
-	global $wp_test_options, $wp_test_transients, $wp_test_headers_sent, $wp_test_status_code, $wp_test_http_calls, $wp_test_http_response, $wp_test_option_autoload, $wp_test_actions, $wp_test_scheduled_events, $wp_test_cleared_hooks, $wp_test_unscheduled_hooks, $wp_test_schedule_result, $wp_test_doing_cron, $wp_test_as_enqueue_calls, $wp_test_as_unschedule_calls, $wp_test_recurring_events, $wp_test_next_scheduled, $wp_test_as_recurring_calls, $wp_test_as_has_scheduled, $wp_test_is_admin, $wp_test_dbdelta_queries, $wp_test_filters, $wp_test_home_path, $wpdb;
+	global $wp_test_options, $wp_test_transients, $wp_test_headers_sent, $wp_test_status_code, $wp_test_http_calls, $wp_test_http_response, $wp_test_option_autoload, $wp_test_actions, $wp_test_scheduled_events, $wp_test_cleared_hooks, $wp_test_unscheduled_hooks, $wp_test_schedule_result, $wp_test_doing_cron, $wp_test_as_enqueue_calls, $wp_test_as_unschedule_calls, $wp_test_recurring_events, $wp_test_next_scheduled, $wp_test_as_recurring_calls, $wp_test_as_has_scheduled, $wp_test_is_admin, $wp_test_dbdelta_queries, $wp_test_filters, $wp_test_home_path, $wp_test_privacy_policy_content, $wpdb;
 	$wp_test_options        = [];
 	$wp_test_transients     = [];
 	$wp_test_headers_sent   = [];
@@ -193,6 +193,7 @@ function wp_stubs_reset(): void {
 	$wp_test_dbdelta_queries      = [];
 	$wp_test_filters              = [];
 	$wp_test_home_path            = '/tmp/wordpress/';
+	$wp_test_privacy_policy_content = [];
 	$wpdb                         = new WP_Test_Wpdb();
 }
 
@@ -552,5 +553,30 @@ if ( ! function_exists( 'dbDelta' ) ) {
 		global $wp_test_dbdelta_queries;
 		$wp_test_dbdelta_queries[] = $queries;
 		return [];
+	}
+}
+
+/*
+|--------------------------------------------------------------------------
+| Privacy Policy Stubs
+|--------------------------------------------------------------------------
+*/
+
+if ( ! function_exists( '__' ) ) {
+	function __( string $text, string $domain = 'default' ): string {
+		return $text;
+	}
+}
+
+if ( ! function_exists( 'wp_kses_post' ) ) {
+	function wp_kses_post( string $data ): string {
+		return $data;
+	}
+}
+
+if ( ! function_exists( 'wp_add_privacy_policy_content' ) ) {
+	function wp_add_privacy_policy_content( string $plugin_name, string $policy_text ): void {
+		global $wp_test_privacy_policy_content;
+		$wp_test_privacy_policy_content[ $plugin_name ] = $policy_text;
 	}
 }

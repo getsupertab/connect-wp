@@ -39,6 +39,10 @@ class StatusHandlerTest extends TestCase {
 
 		$this->settings    = new Settings();
 		$this->http_client = $this->createMock( HttpClientInterface::class );
+
+		// A site set up with Supertab. The probe is only answered once a
+		// Website URN exists (see test_unconfigured_site_returns_decoy_without_verifying).
+		$this->settings->save_website_urn( 'urn:supertab:website:test' );
 	}
 
 	protected function tearDown(): void {
@@ -191,6 +195,24 @@ class StatusHandlerTest extends TestCase {
 		$this->assertSame( 200, $response['status'] );
 		$this->assertSame( 'observe', $payload['enforcement'] );
 		$this->assertFalse( $payload['eventReporting'], 'eventReporting must be false when analytics is not opt-in enabled.' );
+	}
+
+	public function test_unconfigured_site_returns_decoy_without_verifying(): void {
+		$this->settings->delete();
+
+		$called  = false;
+		$handler = $this->create_handler(
+			static function () use ( &$called ): bool {
+				$called = true;
+				return true;
+			}
+		);
+
+		$response = $handler->build_response( 'Bearer good-token', 'https://example.com' );
+
+		$this->assertSame( 404, $response['status'] );
+		$this->assertSame( array( 'supertab' => true ), json_decode( $response['body'], true ) );
+		$this->assertFalse( $called, 'A site with no Website URN must not download Supertab\'s keys to verify a probe.' );
 	}
 
 	public function test_missing_credentials_reports_disabled(): void {
