@@ -161,7 +161,7 @@ class Plugin {
 		$content .= '<li>' . __( '<strong>Agent and bot classification</strong>: when an administrator enables it together with the Crawler Authentication Protocol, details of each visitor request on the covered paths, from people and bots alike, are sent to Supertab (ingest-connect.supertab.co) to classify AI agent and bot traffic. They include the visitor\'s IP address and user agent, the requested path, the referring page and other request headers.', 'supertab-connect' ) . '</li>';
 		$content .= '</ul>';
 
-		$content .= __( 'The plugin sends information about the people visiting your site only when an administrator turns on both the Crawler Authentication Protocol and agent and bot classification. Both are off by default.', 'supertab-connect' );
+		$content .= __( 'The plugin sends information about the people visiting your site only when an administrator turns on agent and bot classification. Off by default.', 'supertab-connect' );
 
 		wp_add_privacy_policy_content(
 			'Supertab Connect',
