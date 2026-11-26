@@ -2,8 +2,10 @@
 /**
  * Saved robots.txt handler.
  *
- * Looks up the robots.txt the merchant saved in Supertab Connect and keeps
- * the last answer in a transient, so robots.txt requests rarely reach the API.
+ * Answers /robots.txt with the file the merchant saved in Supertab Connect,
+ * when they turned that on. Keeps the last answer from the API in a transient,
+ * so robots.txt requests rarely reach the API, and lets WordPress serve its own
+ * robots.txt whenever there is no saved file to send.
  *
  * @package Supertab_Connect
  */
@@ -19,9 +21,65 @@ if ( ! defined( 'ABSPATH' ) ) {
 use Supertab\Connect\Http\HttpClientInterface;
 
 /**
- * Fetches and caches the robots.txt saved in Supertab Connect.
+ * Serves the robots.txt saved in Supertab Connect.
  */
 class Saved_Robots_Txt_Handler {
+
+	/**
+	 * Status: the setting is off, or no Website URN is saved.
+	 *
+	 * @var string
+	 */
+	public const STATUS_OFF = 'off';
+
+	/**
+	 * Status: WordPress lives in a subdirectory, so it doesn't answer the domain's robots.txt.
+	 *
+	 * @var string
+	 */
+	public const STATUS_SUBDIRECTORY = 'subdirectory';
+
+	/**
+	 * Status: "Discourage search engines from indexing this site" is on.
+	 *
+	 * @var string
+	 */
+	public const STATUS_DISCOURAGED = 'discouraged';
+
+	/**
+	 * Status: the saved file is served.
+	 *
+	 * @var string
+	 */
+	public const STATUS_SERVING = 'serving';
+
+	/**
+	 * Status: nothing is saved in Supertab Connect, so WordPress serves its own file.
+	 *
+	 * @var string
+	 */
+	public const STATUS_NOT_SAVED = 'not_saved';
+
+	/**
+	 * Status: the API couldn't be reached; the last copy received is served.
+	 *
+	 * @var string
+	 */
+	public const STATUS_UNREACHABLE_STALE = 'unreachable_stale';
+
+	/**
+	 * Status: the API couldn't be reached and there is no copy, so WordPress serves its own file.
+	 *
+	 * @var string
+	 */
+	public const STATUS_UNREACHABLE = 'unreachable';
+
+	/**
+	 * The request path this handler intercepts.
+	 *
+	 * @var string
+	 */
+	private const REQUEST_PATH = 'robots.txt';
 
 	/**
 	 * Transient key for the cached lookup record.
@@ -98,6 +156,98 @@ class Saved_Robots_Txt_Handler {
 		$this->settings     = $settings;
 		$this->api_base_url = $api_base_url;
 		$this->http_client  = $http_client;
+	}
+
+	/**
+	 * Register hooks.
+	 *
+	 * Runs at the default priority, after Status_Handler and Bot_Protection, so a
+	 * robots.txt request is handled by them exactly as before.
+	 *
+	 * @return void
+	 */
+	public function register(): void {
+		add_action( 'parse_request', array( $this, 'maybe_serve_robots_txt' ), 10 );
+	}
+
+	/**
+	 * Serve the saved robots.txt if the current request is for robots.txt and there is one to serve.
+	 *
+	 * Otherwise returns, and WordPress answers the request as it would without this plugin.
+	 *
+	 * @param \WP $wp The WordPress environment instance.
+	 * @return void
+	 */
+	public function maybe_serve_robots_txt( \WP $wp ): void {
+		if ( self::REQUEST_PATH !== $wp->request ) {
+			return;
+		}
+
+		$body = $this->body_to_serve();
+		if ( null === $body ) {
+			return;
+		}
+
+		$this->send( $body );
+	}
+
+	/**
+	 * Why the saved file isn't served, before looking it up.
+	 *
+	 * Never makes a request.
+	 *
+	 * @return string|null STATUS_OFF, STATUS_SUBDIRECTORY or STATUS_DISCOURAGED, in that
+	 *                     order, or null when nothing stands in the way.
+	 */
+	public function blocked_by(): ?string {
+		if ( ! $this->settings->is_robots_txt_serving_enabled() || ! $this->settings->has_website_urn() ) {
+			return self::STATUS_OFF;
+		}
+
+		if ( '' !== trim( (string) wp_parse_url( home_url(), PHP_URL_PATH ), '/' ) ) {
+			return self::STATUS_SUBDIRECTORY;
+		}
+
+		// A staging copy of a production site carries the setting; hosts discourage search engines there.
+		if ( '0' === (string) get_option( 'blog_public', '1' ) ) {
+			return self::STATUS_DISCOURAGED;
+		}
+
+		return null;
+	}
+
+	/**
+	 * What /robots.txt answers with, as one of the STATUS_* constants.
+	 *
+	 * May make the one request when the cached record is stale.
+	 *
+	 * @return string
+	 */
+	public function status(): string {
+		$blocked_by = $this->blocked_by();
+		if ( null !== $blocked_by ) {
+			return $blocked_by;
+		}
+
+		$lookup = $this->lookup();
+		if ( null !== $lookup['body'] ) {
+			return $lookup['failed'] ? self::STATUS_UNREACHABLE_STALE : self::STATUS_SERVING;
+		}
+
+		return $lookup['failed'] ? self::STATUS_UNREACHABLE : self::STATUS_NOT_SAVED;
+	}
+
+	/**
+	 * The saved file to send for /robots.txt, or null to let WordPress serve its own.
+	 *
+	 * @return string|null
+	 */
+	public function body_to_serve(): ?string {
+		if ( null !== $this->blocked_by() ) {
+			return null;
+		}
+
+		return $this->lookup()['body'];
 	}
 
 	/**
@@ -183,6 +333,22 @@ class Saved_Robots_Txt_Handler {
 			'failed'   => $failed,
 			'retry_at' => time() + ( $failed ? self::RETRY_AFTER_FAILURE : self::FRESH_FOR ),
 		);
+	}
+
+	/**
+	 * Send the saved robots.txt exactly as received and terminate.
+	 *
+	 * @param string $body The saved file.
+	 * @return void
+	 */
+	private function send( string $body ): void {
+		status_header( 200 );
+		header( 'Content-Type: text/plain; charset=utf-8' );
+		header( 'Cache-Control: public, max-age=300' );
+
+		// phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- Plain-text robots.txt served verbatim with a text/plain type; the API validates it on save.
+		echo $body;
+		exit;
 	}
 
 	/**

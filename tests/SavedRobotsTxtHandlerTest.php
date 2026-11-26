@@ -38,7 +38,7 @@ class SavedRobotsTxtHandlerTest extends TestCase {
 		$this->settings    = new Settings();
 		$this->http_client = $this->createMock( HttpClientInterface::class );
 
-		if ( 'test_no_urn_makes_no_request' !== $this->getName( false ) ) {
+		if ( ! in_array( $this->getName( false ), array( 'test_no_urn_makes_no_request', 'test_off_without_a_urn' ), true ) ) {
 			$this->settings->save_website_urn( self::URN );
 		}
 	}
@@ -218,5 +218,121 @@ class SavedRobotsTxtHandlerTest extends TestCase {
 		$this->api_answers( 404 );
 
 		$this->assertSame( array( 'body' => null, 'failed' => false ), $this->handler()->lookup() );
+	}
+
+	private function on(): void {
+		$this->settings->set_robots_txt_serving_enabled( true );
+	}
+
+	public function test_off_by_default(): void {
+		$this->http_client->expects( $this->never() )->method( 'get' );
+		$handler = $this->handler();
+
+		$this->assertSame( 'off', $handler->blocked_by() );
+		$this->assertNull( $handler->body_to_serve() );
+	}
+
+	public function test_off_without_a_urn(): void {
+		$this->on();
+		$this->http_client->expects( $this->never() )->method( 'get' );
+
+		$this->assertSame( 'off', $this->handler()->blocked_by() );
+	}
+
+	/**
+	 * @dataProvider discouraged_values
+	 *
+	 * @param mixed $blog_public The stored "Discourage search engines" option.
+	 */
+	public function test_discouraged_sites_keep_their_own_file( $blog_public ): void {
+		global $wp_test_options;
+		$this->on();
+		$wp_test_options['blog_public'] = $blog_public;
+		$this->http_client->expects( $this->never() )->method( 'get' );
+		$handler = $this->handler();
+
+		$this->assertSame( 'discouraged', $handler->blocked_by() );
+		$this->assertNull( $handler->body_to_serve() );
+	}
+
+	/**
+	 * @return array<string, array{0: mixed}>
+	 */
+	public static function discouraged_values(): array {
+		return array(
+			'integer 0' => array( 0 ),
+			'string 0'  => array( '0' ),
+		);
+	}
+
+	/**
+	 * @dataProvider public_values
+	 *
+	 * @param mixed $blog_public The stored "Discourage search engines" option, or null for none.
+	 */
+	public function test_public_sites_are_not_blocked( $blog_public ): void {
+		global $wp_test_options;
+		$this->on();
+		if ( null !== $blog_public ) {
+			$wp_test_options['blog_public'] = $blog_public;
+		}
+
+		$this->assertNull( $this->handler()->blocked_by() );
+	}
+
+	/**
+	 * @return array<string, array{0: mixed}>
+	 */
+	public static function public_values(): array {
+		return array(
+			'option missing' => array( null ),
+			'integer 1'      => array( 1 ),
+			'string 1'       => array( '1' ),
+		);
+	}
+
+	public function test_serves_the_saved_file(): void {
+		$this->on();
+		$this->stored( self::FILE, false, 100 );
+		$handler = $this->handler();
+
+		$this->assertSame( 'serving', $handler->status() );
+		$this->assertSame( self::FILE, $handler->body_to_serve() );
+	}
+
+	public function test_nothing_saved(): void {
+		$this->on();
+		$this->stored( null, false, 100 );
+		$handler = $this->handler();
+
+		$this->assertSame( 'not_saved', $handler->status() );
+		$this->assertNull( $handler->body_to_serve() );
+	}
+
+	public function test_unreachable_with_a_previous_file(): void {
+		$this->on();
+		$this->stored( self::FILE, true, 30 );
+		$handler = $this->handler();
+
+		$this->assertSame( 'unreachable_stale', $handler->status() );
+		$this->assertSame( self::FILE, $handler->body_to_serve() );
+	}
+
+	public function test_unreachable_without_a_file(): void {
+		$this->on();
+		$this->stored( null, true, 30 );
+		$handler = $this->handler();
+
+		$this->assertSame( 'unreachable', $handler->status() );
+		$this->assertNull( $handler->body_to_serve() );
+	}
+
+	public function test_registers_on_parse_request_after_bot_protection(): void {
+		global $wp_test_actions;
+
+		$this->handler()->register();
+
+		$this->assertSame( 'parse_request', $wp_test_actions[0]['hook'] );
+		$this->assertSame( 10, $wp_test_actions[0]['priority'] );
 	}
 }

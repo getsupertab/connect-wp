@@ -92,6 +92,9 @@ class Plugin {
 		$license_handler = new RSL_License_Handler( $settings, SUPERTAB_CONNECT_API_BASE_URL, $http_client );
 		$license_handler->register();
 
+		$saved_robots_txt_handler = new Saved_Robots_Txt_Handler( $settings, SUPERTAB_CONNECT_API_BASE_URL, new WP_Http_Client( Saved_Robots_Txt_Handler::FETCH_TIMEOUT ) );
+		$saved_robots_txt_handler->register();
+
 		$status_handler = new Status_Handler( $settings, SUPERTAB_CONNECT_API_BASE_URL, $http_client );
 		$status_handler->register();
 
