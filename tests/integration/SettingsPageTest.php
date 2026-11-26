@@ -380,7 +380,7 @@ class SettingsPageTest extends WP_UnitTestCase {
 		$this->assertTrue( $this->settings->is_robots_txt_serving_enabled() );
 	}
 
-	public function test_purge_clears_both_caches(): void {
+	public function test_purge_drops_license_xml_and_rechecks_robots_txt(): void {
 		$this->connected_via_connect();
 		set_transient( 'supertab_connect_license_xml', '<license/>' );
 		$this->record( self::ROBOTS_FILE, false );
@@ -388,7 +388,9 @@ class SettingsPageTest extends WP_UnitTestCase {
 		$query = $this->submit( array( 'submit-purge-cache' => '1' ) );
 
 		$this->assertFalse( get_transient( 'supertab_connect_license_xml' ) );
-		$this->assertFalse( get_transient( 'supertab_connect_robots_txt' ) );
+		$robots = get_transient( 'supertab_connect_robots_txt' );
+		$this->assertSame( self::ROBOTS_FILE, $robots['body'], 'The copy stays, to serve if the API is down.' );
+		$this->assertLessThanOrEqual( time(), $robots['retry_at'], 'The next request checks the API again.' );
 		$this->assertSame( '1', $query['purged'] );
 	}
 

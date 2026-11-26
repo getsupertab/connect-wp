@@ -275,13 +275,15 @@ class Settings_Page {
 	}
 
 	/**
-	 * Purge the cached license.xml and robots.txt.
+	 * Purge the cached license.xml, and have robots.txt checked again.
+	 *
+	 * The robots.txt copy is kept, so it is still served if the API is down.
 	 *
 	 * @return void
 	 */
 	private function process_purge_cache(): void {
 		delete_transient( RSL_License_Handler::CACHE_TRANSIENT_KEY );
-		delete_transient( Saved_Robots_Txt_Handler::CACHE_TRANSIENT_KEY );
+		Saved_Robots_Txt_Handler::mark_stale();
 
 		$this->redirect( array( 'purged' => '1' ) );
 	}

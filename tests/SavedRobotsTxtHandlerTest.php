@@ -229,6 +229,33 @@ class SavedRobotsTxtHandlerTest extends TestCase {
 		$this->assertGreaterThan( time(), $during_fetch['retry_at'], 'Another request arriving mid-fetch must not fetch too.' );
 	}
 
+	public function test_a_copy_marked_stale_is_fetched_again(): void {
+		$this->stored( 'old', false, 100 );
+		$this->http_client
+			->expects( $this->once() )
+			->method( 'get' )
+			->willReturn( array( 'statusCode' => 200, 'body' => self::FILE ) );
+
+		Saved_Robots_Txt_Handler::mark_stale();
+
+		$this->assertSame( array( 'body' => self::FILE, 'failed' => false ), $this->handler()->lookup() );
+	}
+
+	public function test_a_copy_marked_stale_is_kept_when_the_fetch_fails(): void {
+		$this->stored( self::FILE, false, 100 );
+		$this->api_answers( 503 );
+
+		Saved_Robots_Txt_Handler::mark_stale();
+
+		$this->assertSame( array( 'body' => self::FILE, 'failed' => true ), $this->handler()->lookup() );
+	}
+
+	public function test_marking_stale_without_a_copy_stores_nothing(): void {
+		Saved_Robots_Txt_Handler::mark_stale();
+
+		$this->assertFalse( $this->record() );
+	}
+
 	public function test_nothing_saved_replaces_a_previous_file(): void {
 		$this->stored( self::FILE, false, -1 );
 		$this->api_answers( 404 );

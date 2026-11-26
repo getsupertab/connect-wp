@@ -161,8 +161,8 @@ class Saved_Robots_Txt_Handler {
 	/**
 	 * Register hooks.
 	 *
-	 * Runs at the default priority, after Status_Handler and Bot_Protection, so a
-	 * robots.txt request is handled by them exactly as before.
+	 * Runs at the default priority, after Status_Handler and Bot_Protection.
+	 * Bot_Protection lets robots.txt through, so crawlers always reach it.
 	 *
 	 * @return void
 	 */
@@ -287,6 +287,21 @@ class Saved_Robots_Txt_Handler {
 			'body'   => $record['body'],
 			'failed' => $record['failed'],
 		);
+	}
+
+	/**
+	 * Have the next lookup ask the API again, keeping the cached copy to serve if that fails.
+	 *
+	 * @return void
+	 */
+	public static function mark_stale(): void {
+		$record = self::read_record();
+		if ( null === $record ) {
+			return;
+		}
+
+		$record['retry_at'] = 0;
+		set_transient( self::CACHE_TRANSIENT_KEY, $record, self::RECORD_TTL );
 	}
 
 	/**

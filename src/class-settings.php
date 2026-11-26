@@ -162,7 +162,8 @@ class Settings {
 	/**
 	 * Set whether the site serves the robots.txt saved in Supertab Connect.
 	 *
-	 * A change drops the cached copy, so the next robots.txt request fetches it again.
+	 * A change has the next robots.txt request check the API again; the cached
+	 * copy is kept to serve if that check fails.
 	 *
 	 * @param bool $enabled Whether serving should be enabled.
 	 * @return void
@@ -173,7 +174,7 @@ class Settings {
 		}
 
 		update_option( self::OPTION_SERVE_ROBOTS_TXT, $enabled );
-		delete_transient( Saved_Robots_Txt_Handler::CACHE_TRANSIENT_KEY );
+		Saved_Robots_Txt_Handler::mark_stale();
 	}
 
 	/**
@@ -204,12 +205,14 @@ class Settings {
 	 * @return void
 	 */
 	public function save( string $merchant_api_key, string $website_urn ): void {
+		$previous_urn = $this->get_website_urn();
+
 		update_option( self::OPTION_MERCHANT_API_KEY, $merchant_api_key, false );
 		update_option( self::OPTION_WEBSITE_URN, $website_urn, false );
 
 		// Invalidate cached license XML and robots.txt since credentials changed.
 		delete_transient( RSL_License_Handler::CACHE_TRANSIENT_KEY );
-		delete_transient( Saved_Robots_Txt_Handler::CACHE_TRANSIENT_KEY );
+		$this->recheck_saved_robots_txt( $previous_urn );
 	}
 
 	/**
@@ -219,11 +222,31 @@ class Settings {
 	 * @return void
 	 */
 	public function save_website_urn( string $website_urn ): void {
+		$previous_urn = $this->get_website_urn();
+
 		update_option( self::OPTION_WEBSITE_URN, $website_urn, false );
 
 		// Invalidate cached license XML and robots.txt since URN changed.
 		delete_transient( RSL_License_Handler::CACHE_TRANSIENT_KEY );
-		delete_transient( Saved_Robots_Txt_Handler::CACHE_TRANSIENT_KEY );
+		$this->recheck_saved_robots_txt( $previous_urn );
+	}
+
+	/**
+	 * Have the saved robots.txt checked again after the Website URN was saved.
+	 *
+	 * A different URN drops the cached copy, since it belongs to another website.
+	 * The same URN keeps it to serve if the check fails.
+	 *
+	 * @param string $previous_urn The Website URN stored before the save.
+	 * @return void
+	 */
+	private function recheck_saved_robots_txt( string $previous_urn ): void {
+		if ( $previous_urn !== $this->get_website_urn() ) {
+			delete_transient( Saved_Robots_Txt_Handler::CACHE_TRANSIENT_KEY );
+			return;
+		}
+
+		Saved_Robots_Txt_Handler::mark_stale();
 	}
 
 	/**
