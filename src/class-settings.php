@@ -43,6 +43,13 @@ class Settings {
 	private const OPTION_ANALYTICS_ENABLED = 'supertab_connect_analytics_enabled';
 
 	/**
+	 * Option name for the flag that serves the robots.txt saved in Supertab Connect.
+	 *
+	 * @var string
+	 */
+	private const OPTION_SERVE_ROBOTS_TXT = 'supertab_connect_serve_robots_txt';
+
+	/**
 	 * Option name for active paths.
 	 *
 	 * @var string
@@ -142,6 +149,34 @@ class Settings {
 	}
 
 	/**
+	 * Check if the site serves the robots.txt saved in Supertab Connect.
+	 *
+	 * Opt-in: absent or falsy means disabled.
+	 *
+	 * @return bool True if serving is enabled.
+	 */
+	public function is_robots_txt_serving_enabled(): bool {
+		return (bool) get_option( self::OPTION_SERVE_ROBOTS_TXT, false );
+	}
+
+	/**
+	 * Set whether the site serves the robots.txt saved in Supertab Connect.
+	 *
+	 * A change drops the cached copy, so the next robots.txt request fetches it again.
+	 *
+	 * @param bool $enabled Whether serving should be enabled.
+	 * @return void
+	 */
+	public function set_robots_txt_serving_enabled( bool $enabled ): void {
+		if ( $this->is_robots_txt_serving_enabled() === $enabled ) {
+			return;
+		}
+
+		update_option( self::OPTION_SERVE_ROBOTS_TXT, $enabled );
+		delete_transient( Saved_Robots_Txt_Handler::CACHE_TRANSIENT_KEY );
+	}
+
+	/**
 	 * Get the active paths for bot protection.
 	 *
 	 * @return array<int, string> Array of path patterns. Defaults to ['*'] (all paths).
@@ -172,8 +207,9 @@ class Settings {
 		update_option( self::OPTION_MERCHANT_API_KEY, $merchant_api_key, false );
 		update_option( self::OPTION_WEBSITE_URN, $website_urn, false );
 
-		// Invalidate cached license XML since credentials changed.
+		// Invalidate cached license XML and robots.txt since credentials changed.
 		delete_transient( RSL_License_Handler::CACHE_TRANSIENT_KEY );
+		delete_transient( Saved_Robots_Txt_Handler::CACHE_TRANSIENT_KEY );
 	}
 
 	/**
@@ -185,8 +221,9 @@ class Settings {
 	public function save_website_urn( string $website_urn ): void {
 		update_option( self::OPTION_WEBSITE_URN, $website_urn, false );
 
-		// Invalidate cached license XML since URN changed.
+		// Invalidate cached license XML and robots.txt since URN changed.
 		delete_transient( RSL_License_Handler::CACHE_TRANSIENT_KEY );
+		delete_transient( Saved_Robots_Txt_Handler::CACHE_TRANSIENT_KEY );
 	}
 
 	/**
@@ -256,8 +293,8 @@ class Settings {
 	/**
 	 * Forget the connected website: key, URN and connection record.
 	 *
-	 * CAP and analytics are turned off so a later reconnect doesn't silently
-	 * resume enforcement; active paths are kept.
+	 * CAP, analytics and robots.txt serving are turned off so a later reconnect
+	 * doesn't silently resume them; active paths are kept.
 	 *
 	 * @return void
 	 */
@@ -267,8 +304,10 @@ class Settings {
 		delete_option( self::OPTION_CONNECTION );
 		$this->set_bot_protection_enabled( false );
 		$this->set_analytics_enabled( false );
+		$this->set_robots_txt_serving_enabled( false );
 
 		delete_transient( RSL_License_Handler::CACHE_TRANSIENT_KEY );
+		delete_transient( Saved_Robots_Txt_Handler::CACHE_TRANSIENT_KEY );
 	}
 
 	/**
@@ -283,8 +322,10 @@ class Settings {
 		delete_option( self::OPTION_ANALYTICS_ENABLED );
 		delete_option( self::OPTION_ACTIVE_PATHS );
 		delete_option( self::OPTION_CONNECTION );
+		delete_option( self::OPTION_SERVE_ROBOTS_TXT );
 
-		// Invalidate cached license XML.
+		// Invalidate cached license XML and robots.txt.
 		delete_transient( RSL_License_Handler::CACHE_TRANSIENT_KEY );
+		delete_transient( Saved_Robots_Txt_Handler::CACHE_TRANSIENT_KEY );
 	}
 }
