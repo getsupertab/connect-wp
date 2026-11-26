@@ -27,11 +27,12 @@ use Supertab\Connect\SupertabConnect;
 class Bot_Protection {
 
 	/**
-	 * The request path to exclude from bot protection.
+	 * Request paths excluded from bot protection: the files crawlers read to learn
+	 * the site's terms, so they must always reach them.
 	 *
-	 * @var string
+	 * @var array<int, string>
 	 */
-	private const EXCLUDED_PATH = 'license.xml';
+	private const EXCLUDED_PATHS = array( 'license.xml', 'robots.txt' );
 
 	/**
 	 * SupertabConnect SDK instance.
@@ -82,7 +83,7 @@ class Bot_Protection {
 	 * @return void
 	 */
 	public function maybe_handle_request( \WP $wp ): void {
-		if ( self::EXCLUDED_PATH === $wp->request ) {
+		if ( in_array( $wp->request, self::EXCLUDED_PATHS, true ) ) {
 			return;
 		}
 
