@@ -40,13 +40,6 @@ class Saved_Robots_Txt_Handler {
 	public const STATUS_SUBDIRECTORY = 'subdirectory';
 
 	/**
-	 * Status: "Discourage search engines from indexing this site" is on.
-	 *
-	 * @var string
-	 */
-	public const STATUS_DISCOURAGED = 'discouraged';
-
-	/**
 	 * Status: the saved file is served.
 	 *
 	 * @var string
@@ -196,8 +189,11 @@ class Saved_Robots_Txt_Handler {
 	 *
 	 * Never makes a request.
 	 *
-	 * @return string|null STATUS_OFF, STATUS_SUBDIRECTORY or STATUS_DISCOURAGED, in that
-	 *                     order, or null when nothing stands in the way.
+	 * "Discourage search engines" (blog_public) doesn't stop serving: it only adds a
+	 * noindex tag, and WordPress's own robots.txt allows every crawler either way.
+	 *
+	 * @return string|null STATUS_OFF or STATUS_SUBDIRECTORY, in that order, or null
+	 *                     when nothing stands in the way.
 	 */
 	public function blocked_by(): ?string {
 		if ( ! $this->settings->is_robots_txt_serving_enabled() || ! $this->settings->has_website_urn() ) {
@@ -206,11 +202,6 @@ class Saved_Robots_Txt_Handler {
 
 		if ( '' !== trim( (string) wp_parse_url( home_url(), PHP_URL_PATH ), '/' ) ) {
 			return self::STATUS_SUBDIRECTORY;
-		}
-
-		// A staging copy of a production site carries the setting; hosts discourage search engines there.
-		if ( '0' === (string) get_option( 'blog_public', '1' ) ) {
-			return self::STATUS_DISCOURAGED;
 		}
 
 		return null;

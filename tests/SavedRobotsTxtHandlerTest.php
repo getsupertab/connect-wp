@@ -283,54 +283,33 @@ class SavedRobotsTxtHandlerTest extends TestCase {
 	}
 
 	/**
-	 * @dataProvider discouraged_values
-	 *
-	 * @param mixed $blog_public The stored "Discourage search engines" option.
-	 */
-	public function test_discouraged_sites_keep_their_own_file( $blog_public ): void {
-		global $wp_test_options;
-		$this->on();
-		$wp_test_options['blog_public'] = $blog_public;
-		$this->http_client->expects( $this->never() )->method( 'get' );
-		$handler = $this->handler();
-
-		$this->assertSame( 'discouraged', $handler->blocked_by() );
-		$this->assertNull( $handler->body_to_serve() );
-	}
-
-	/**
-	 * @return array<string, array{0: mixed}>
-	 */
-	public static function discouraged_values(): array {
-		return array(
-			'integer 0' => array( 0 ),
-			'string 0'  => array( '0' ),
-		);
-	}
-
-	/**
-	 * @dataProvider public_values
+	 * @dataProvider search_engine_visibility_values
 	 *
 	 * @param mixed $blog_public The stored "Discourage search engines" option, or null for none.
 	 */
-	public function test_public_sites_are_not_blocked( $blog_public ): void {
+	public function test_search_engine_visibility_does_not_stop_serving( $blog_public ): void {
 		global $wp_test_options;
 		$this->on();
 		if ( null !== $blog_public ) {
 			$wp_test_options['blog_public'] = $blog_public;
 		}
+		$this->stored( self::FILE, false, 100 );
+		$handler = $this->handler();
 
-		$this->assertNull( $this->handler()->blocked_by() );
+		$this->assertNull( $handler->blocked_by() );
+		$this->assertSame( self::FILE, $handler->body_to_serve() );
 	}
 
 	/**
 	 * @return array<string, array{0: mixed}>
 	 */
-	public static function public_values(): array {
+	public static function search_engine_visibility_values(): array {
 		return array(
-			'option missing' => array( null ),
-			'integer 1'      => array( 1 ),
-			'string 1'       => array( '1' ),
+			'option missing'   => array( null ),
+			'public'           => array( '1' ),
+			'discouraged'      => array( '0' ),
+			'discouraged, int' => array( 0 ),
+			'private site'     => array( '-1' ),
 		);
 	}
 

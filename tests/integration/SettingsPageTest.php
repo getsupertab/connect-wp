@@ -435,7 +435,7 @@ class SettingsPageTest extends WP_UnitTestCase {
 				static fn( self $test ) => $test->record( null, false ),
 				'not_saved',
 				'notice-info',
-				'No robots.txt is saved in Supertab Connect yet, so WordPress is serving its own. Save one in the Supertab Connect Merchant Portal and it appears here within a few minutes.',
+				'No robots.txt is saved in Supertab Connect yet, so WordPress is serving its own. Save one in the Supertab Connect Merchant Portal and your website starts serving it within a few minutes.',
 			),
 			'unreachable, copy' => array(
 				static fn( self $test ) => $test->record( self::ROBOTS_FILE, true ),
@@ -458,11 +458,14 @@ class SettingsPageTest extends WP_UnitTestCase {
 				'notice-warning',
 				'Your site has a robots.txt file stored on the server, and your website serves that file instead. Remove it to serve the robots.txt saved in Supertab Connect.',
 			),
-			'discouraged'       => array(
-				static fn() => update_option( 'blog_public', '0' ),
-				'discouraged',
-				'notice-info',
-				'This site is set to discourage search engines (Settings > Reading), so WordPress is serving its own robots.txt.',
+			'serving, search engines discouraged' => array(
+				static function ( self $test ): void {
+					update_option( 'blog_public', '0' );
+					$test->record( self::ROBOTS_FILE, false );
+				},
+				'serving',
+				'notice-success',
+				'Your website is serving the robots.txt saved in Supertab Connect.',
 			),
 			'subdirectory'      => array(
 				static function ( self $test ): void {

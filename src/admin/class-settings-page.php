@@ -369,7 +369,7 @@ class Settings_Page {
 	 * The status line under the robots.txt checkbox, or null while serving is off.
 	 *
 	 * When more than one state applies, the first in this order wins: subdirectory
-	 * install, physical file, discouraged search engines, then the lookup.
+	 * install, physical file, then the lookup.
 	 *
 	 * @return array{status: string, class: string, text: string}|null
 	 */
@@ -389,11 +389,10 @@ class Settings_Page {
 
 		$notices = array(
 			Saved_Robots_Txt_Handler::STATUS_SERVING      => array( 'notice-success', __( 'Your website is serving the robots.txt saved in Supertab Connect.', 'supertab-connect' ) ),
-			Saved_Robots_Txt_Handler::STATUS_NOT_SAVED    => array( 'notice-info', __( 'No robots.txt is saved in Supertab Connect yet, so WordPress is serving its own. Save one in the Supertab Connect Merchant Portal and it appears here within a few minutes.', 'supertab-connect' ) ),
+			Saved_Robots_Txt_Handler::STATUS_NOT_SAVED    => array( 'notice-info', __( 'No robots.txt is saved in Supertab Connect yet, so WordPress is serving its own. Save one in the Supertab Connect Merchant Portal and your website starts serving it within a few minutes.', 'supertab-connect' ) ),
 			Saved_Robots_Txt_Handler::STATUS_UNREACHABLE_STALE => array( 'notice-warning', __( "Couldn't reach Supertab Connect. Your website is serving the last robots.txt it received.", 'supertab-connect' ) ),
 			Saved_Robots_Txt_Handler::STATUS_UNREACHABLE  => array( 'notice-warning', __( "Couldn't reach Supertab Connect, so WordPress is serving its own robots.txt.", 'supertab-connect' ) ),
 			'physical_file'                               => array( 'notice-warning', __( 'Your site has a robots.txt file stored on the server, and your website serves that file instead. Remove it to serve the robots.txt saved in Supertab Connect.', 'supertab-connect' ) ),
-			Saved_Robots_Txt_Handler::STATUS_DISCOURAGED  => array( 'notice-info', __( 'This site is set to discourage search engines (Settings > Reading), so WordPress is serving its own robots.txt.', 'supertab-connect' ) ),
 			Saved_Robots_Txt_Handler::STATUS_SUBDIRECTORY => array( 'notice-info', __( "WordPress is installed in a subdirectory, so it can't serve the robots.txt for your domain.", 'supertab-connect' ) ),
 		);
 		if ( ! isset( $notices[ $status ] ) ) {

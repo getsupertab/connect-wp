@@ -117,11 +117,11 @@ class SavedRobotsTxtTest extends WP_UnitTestCase {
 		$this->assertNull( $this->handler()->blocked_by() );
 	}
 
-	public function test_a_discouraged_site_is_not_served(): void {
+	public function test_a_site_that_discourages_search_engines_is_still_served(): void {
 		$this->on();
 		update_option( 'blog_public', '0' );
 
-		$this->assertSame( 'discouraged', $this->handler()->blocked_by() );
+		$this->assertSame( self::FILE, $this->handler()->body_to_serve() );
 	}
 
 	public function test_with_the_checkbox_off_wordpress_adds_the_license_line(): void {
