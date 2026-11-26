@@ -20,6 +20,9 @@ $supertab_connect_website_urn            = $template_data['website_urn'];
 $supertab_connect_license_url            = $template_data['license_url'];
 $supertab_connect_robots_txt_warning     = $template_data['robots_txt_warning'];
 $supertab_connect_other_license_urls     = $template_data['other_license_urls'];
+$supertab_connect_serve_robots_txt       = $template_data['serve_robots_txt'];
+$supertab_connect_saved_robots_notice    = $template_data['saved_robots_txt_notice'];
+$supertab_connect_robots_txt_editor_url  = $template_data['robots_txt_editor_url'];
 $supertab_connect_bot_protection_enabled = $template_data['bot_protection_enabled'];
 $supertab_connect_analytics_enabled      = $template_data['analytics_enabled'];
 $supertab_connect_active_paths           = $template_data['active_paths'];
@@ -82,7 +85,7 @@ $supertab_connect_purged = isset( $_GET['purged'] ) && '1' === sanitize_text_fie
 
 	<?php if ( $supertab_connect_purged ) : ?>
 		<div class="notice notice-success">
-			<p><?php esc_html_e( 'License cache purged successfully.', 'supertab-connect' ); ?></p>
+			<p><?php esc_html_e( 'Cache purged successfully.', 'supertab-connect' ); ?></p>
 		</div>
 	<?php endif; ?>
 
@@ -334,7 +337,46 @@ $supertab_connect_purged = isset( $_GET['purged'] ) && '1' === sanitize_text_fie
 		<?php endif; ?>
 
 
-		<?php submit_button( __( 'Purge license.xml from cache', 'supertab-connect' ), 'secondary', 'submit-purge-cache', false ); ?>
+		<?php submit_button( __( 'Purge license.xml and robots.txt from cache', 'supertab-connect' ), 'secondary', 'submit-purge-cache', false ); ?>
+
+		<p>&nbsp;</p>
+
+		<!-- Your robots.txt -->
+		<h2><?php esc_html_e( 'Your robots.txt', 'supertab-connect' ); ?></h2>
+
+		<p class="description"><?php esc_html_e( 'Build your robots.txt in Supertab Connect and let this plugin serve it on your website.', 'supertab-connect' ); ?></p>
+
+		<br />
+
+		<input type="hidden" name="robots_txt_setting_present" value="1" />
+
+		<fieldset>
+			<label for="supertab-serve-robots-txt">
+				<input
+					type="checkbox"
+					id="supertab-serve-robots-txt"
+					name="serve_robots_txt"
+					value="1"
+					<?php checked( $supertab_connect_serve_robots_txt ); ?>
+				/>
+				<?php esc_html_e( 'Serve robots.txt from Supertab Connect', 'supertab-connect' ); ?>
+			</label>
+		</fieldset>
+
+		<p class="description"><?php esc_html_e( 'Your website serves the robots.txt you saved in the Supertab Connect Merchant Portal, in place of the one WordPress generates. Saved changes can take a few minutes to appear.', 'supertab-connect' ); ?></p>
+
+		<p>
+			<a href="<?php echo esc_url( $supertab_connect_robots_txt_editor_url ); ?>" target="_blank" rel="noopener noreferrer">
+				<?php esc_html_e( 'Edit robots.txt in Supertab Connect', 'supertab-connect' ); ?>
+				<span class="screen-reader-text"><?php esc_html_e( '(opens in a new tab)', 'supertab-connect' ); ?></span>
+			</a>
+		</p>
+
+		<?php if ( null !== $supertab_connect_saved_robots_notice ) : ?>
+			<div id="supertab-saved-robots-txt-status" class="notice inline <?php echo esc_attr( $supertab_connect_saved_robots_notice['class'] ); ?>" data-status="<?php echo esc_attr( $supertab_connect_saved_robots_notice['status'] ); ?>">
+				<p><?php echo esc_html( $supertab_connect_saved_robots_notice['text'] ); ?></p>
+			</div>
+		<?php endif; ?>
 
 		<p>&nbsp;</p>
 

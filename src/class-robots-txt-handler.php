@@ -105,6 +105,18 @@ class Robots_Txt_Handler {
 	}
 
 	/**
+	 * Whether a physical robots.txt file in the site root hides the one WordPress answers with.
+	 *
+	 * True even when the file can't be read: the web server still returns it.
+	 * False without a website URN, like the other checks here.
+	 *
+	 * @return bool
+	 */
+	public function has_physical_robots_txt(): bool {
+		return null !== $this->read_physical_robots_txt();
+	}
+
+	/**
 	 * License URLs that a physical robots.txt declares instead of this site's license.
 	 *
 	 * Empty when there is no physical file, it declares no license, or one of its

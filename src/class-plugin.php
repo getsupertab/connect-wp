@@ -111,7 +111,7 @@ class Plugin {
 		}
 
 		if ( is_admin() ) {
-			$this->init_admin( $settings, $robots_txt_handler );
+			$this->init_admin( $settings, $robots_txt_handler, $saved_robots_txt_handler );
 			return;
 		}
 
@@ -123,12 +123,13 @@ class Plugin {
 	/**
 	 * Initialize admin components.
 	 *
-	 * @param Settings           $settings           Settings manager.
-	 * @param Robots_Txt_Handler $robots_txt_handler Robots.txt handler, for the physical file check.
+	 * @param Settings                 $settings                 Settings manager.
+	 * @param Robots_Txt_Handler       $robots_txt_handler       Robots.txt handler, for the physical file check.
+	 * @param Saved_Robots_Txt_Handler $saved_robots_txt_handler Saved robots.txt handler, for its status.
 	 * @return void
 	 */
-	private function init_admin( Settings $settings, Robots_Txt_Handler $robots_txt_handler ): void {
-		$settings_page = new Settings_Page( $settings, $robots_txt_handler );
+	private function init_admin( Settings $settings, Robots_Txt_Handler $robots_txt_handler, Saved_Robots_Txt_Handler $saved_robots_txt_handler ): void {
+		$settings_page = new Settings_Page( $settings, $robots_txt_handler, $saved_robots_txt_handler );
 		$settings_page->register();
 
 		$notices = new Notices( $settings );

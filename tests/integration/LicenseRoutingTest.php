@@ -20,7 +20,9 @@ namespace Supertab_Connect\Tests\Integration;
 
 use Supertab_Connect\Admin\Settings_Page;
 use Supertab_Connect\Robots_Txt_Handler;
+use Supertab_Connect\Saved_Robots_Txt_Handler;
 use Supertab_Connect\Settings;
+use Supertab_Connect\Utils\WP_Http_Client;
 use WP_UnitTestCase;
 
 class LicenseRoutingTest extends WP_UnitTestCase {
@@ -89,7 +91,7 @@ class LicenseRoutingTest extends WP_UnitTestCase {
 		);
 
 		$settings = new Settings();
-		$page     = new Settings_Page( $settings, new Robots_Txt_Handler( $settings ) );
+		$page     = new Settings_Page( $settings, new Robots_Txt_Handler( $settings ), new Saved_Robots_Txt_Handler( $settings, 'https://api.test', new WP_Http_Client( 3 ) ) );
 
 		try {
 			$page->handle_activation_redirect();
@@ -120,7 +122,7 @@ class LicenseRoutingTest extends WP_UnitTestCase {
 		);
 
 		$settings = new Settings();
-		$page     = new Settings_Page( $settings, new Robots_Txt_Handler( $settings ) );
+		$page     = new Settings_Page( $settings, new Robots_Txt_Handler( $settings ), new Saved_Robots_Txt_Handler( $settings, 'https://api.test', new WP_Http_Client( 3 ) ) );
 		$page->handle_activation_redirect();
 
 		$this->assertFalse( $redirected, 'Configured site should not be redirected.' );
