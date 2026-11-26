@@ -213,6 +213,22 @@ class SavedRobotsTxtHandlerTest extends TestCase {
 		);
 	}
 
+	public function test_requests_during_a_refresh_keep_the_current_copy(): void {
+		$this->stored( self::FILE, false, -1 );
+		$during_fetch = null;
+		$this->http_client->method( 'get' )->willReturnCallback(
+			function () use ( &$during_fetch ) {
+				$during_fetch = get_transient( self::KEY );
+				return array( 'statusCode' => 503, 'body' => '' );
+			}
+		);
+
+		$this->handler()->lookup();
+
+		$this->assertSame( self::FILE, $during_fetch['body'] );
+		$this->assertGreaterThan( time(), $during_fetch['retry_at'], 'Another request arriving mid-fetch must not fetch too.' );
+	}
+
 	public function test_nothing_saved_replaces_a_previous_file(): void {
 		$this->stored( self::FILE, false, -1 );
 		$this->api_answers( 404 );

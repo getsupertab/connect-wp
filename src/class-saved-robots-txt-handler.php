@@ -270,7 +270,16 @@ class Saved_Robots_Txt_Handler {
 
 		$record = self::read_record();
 		if ( null === $record || $record['retry_at'] <= time() ) {
-			$record = $this->fetch( null !== $record ? $record['body'] : null );
+			$previous_body = null !== $record ? $record['body'] : null;
+
+			if ( null !== $record ) {
+				// Claim the refresh, so requests arriving while it runs keep the current copy
+				// instead of all waiting on the API. Lapses soon if this request dies mid-fetch.
+				$record['retry_at'] = time() + 2 * self::FETCH_TIMEOUT;
+				set_transient( self::CACHE_TRANSIENT_KEY, $record, self::RECORD_TTL );
+			}
+
+			$record = $this->fetch( $previous_body );
 			set_transient( self::CACHE_TRANSIENT_KEY, $record, self::RECORD_TTL );
 		}
 
