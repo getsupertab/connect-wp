@@ -49,7 +49,18 @@ class PluginTest extends TestCase {
 
 		$this->assertStringContainsString( '<strong>robots.txt</strong>', $content );
 		$this->assertStringContainsString( 'Serve robots.txt from Supertab Connect', $content );
+		$this->assertStringContainsString( 'opens the plugin settings page', $content );
+		$this->assertStringContainsString( 'every minute after a failed check', $content );
 		$this->assertStringNotContainsString( "\u{2014}", $content );
+	}
+
+	public function test_readme_says_when_the_robots_txt_request_happens(): void {
+		$readme = (string) file_get_contents( dirname( __DIR__ ) . '/readme.txt' );
+
+		$this->assertSame( 1, preg_match( '/^\* robots\.txt: .*$/m', $readme, $bullet ) );
+		$this->assertStringContainsString( 'opens the plugin settings page', $bullet[0] );
+		$this->assertStringContainsString( '1 minute after a failed check', $bullet[0] );
+		$this->assertStringNotContainsString( "\u{2014}", $bullet[0] );
 	}
 
 	public function test_map_enforcement_mode_value_accepts_current_values(): void {
