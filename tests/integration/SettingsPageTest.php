@@ -362,6 +362,17 @@ class SettingsPageTest extends WP_UnitTestCase {
 		);
 	}
 
+	public function test_the_purge_button_follows_both_files_it_purges(): void {
+		$this->connected_via_connect();
+
+		$html  = $this->render();
+		$purge = strpos( $html, 'id="submit-purge-cache"' );
+
+		$this->assertGreaterThan( strpos( $html, 'License URL' ), $purge );
+		$this->assertGreaterThan( strpos( $html, 'Edit robots.txt in Supertab Connect' ), $purge );
+		$this->assertLessThan( strpos( $html, 'License Verification' ), $purge );
+	}
+
 	public function test_a_new_site_has_no_robots_txt_section(): void {
 		$this->assertStringNotContainsString( 'supertab-serve-robots-txt', $this->render() );
 	}

@@ -336,9 +336,6 @@ $supertab_connect_purged = isset( $_GET['purged'] ) && '1' === sanitize_text_fie
 			</div>
 		<?php endif; ?>
 
-
-		<?php submit_button( __( 'Purge license.xml and robots.txt from cache', 'supertab-connect' ), 'secondary', 'submit-purge-cache', false ); ?>
-
 		<p>&nbsp;</p>
 
 		<!-- Your robots.txt -->
@@ -377,6 +374,8 @@ $supertab_connect_purged = isset( $_GET['purged'] ) && '1' === sanitize_text_fie
 				<p><?php echo esc_html( $supertab_connect_saved_robots_notice['text'] ); ?></p>
 			</div>
 		<?php endif; ?>
+
+		<?php submit_button( __( 'Purge license.xml and robots.txt from cache', 'supertab-connect' ), 'secondary', 'submit-purge-cache', false ); ?>
 
 		<p>&nbsp;</p>
 
