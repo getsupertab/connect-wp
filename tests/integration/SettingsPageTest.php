@@ -357,7 +357,7 @@ class SettingsPageTest extends WP_UnitTestCase {
 		$this->settings->save( 'the-key', 'urn:stc:merchant:system:0f8fad5b-d9cb-469f-a165-70867728950e' );
 
 		$this->assertMatchesRegularExpression(
-			'#<a href="' . preg_quote( SUPERTAB_CONNECT_DASHBOARD_URL, '#' ) . '/websites/0f8fad5b-d9cb-469f-a165-70867728950e/robots"[^>]*>\s*Edit robots.txt in Supertab Connect#',
+			'#<a [^>]*href="' . preg_quote( SUPERTAB_CONNECT_DASHBOARD_URL, '#' ) . '/websites/0f8fad5b-d9cb-469f-a165-70867728950e/robots"[^>]*>\s*Edit robots.txt in Supertab Connect#',
 			$this->render()
 		);
 	}
@@ -371,6 +371,30 @@ class SettingsPageTest extends WP_UnitTestCase {
 		$this->assertGreaterThan( strpos( $html, 'License URL' ), $purge );
 		$this->assertGreaterThan( strpos( $html, 'Edit robots.txt in Supertab Connect' ), $purge );
 		$this->assertLessThan( strpos( $html, 'License Verification' ), $purge );
+	}
+
+	public function test_the_robots_txt_section_is_headed_with_the_file_name(): void {
+		$this->connected_via_connect();
+
+		$this->assertStringContainsString( '<h2>robots.txt</h2>', $this->render() );
+	}
+
+	public function test_the_robots_txt_editor_link_is_marked_as_external(): void {
+		$this->connected_via_connect();
+
+		$this->assertMatchesRegularExpression(
+			'#>\s*Edit robots.txt in Supertab Connect\s*<span class="screen-reader-text">[^<]*</span>\s*<span class="dashicons dashicons-external" aria-hidden="true"></span>\s*</a>#',
+			$this->render()
+		);
+	}
+
+	public function test_the_purge_button_explains_what_it_clears(): void {
+		$this->connected_via_connect();
+
+		$html = $this->render();
+
+		$this->assertMatchesRegularExpression( '#id="submit-purge-cache"[^>]*value="Purge cache"#', $html );
+		$this->assertStringContainsString( 'Clears the cached license.xml and robots.txt, so your website gets the latest versions from Supertab Connect right away.', $html );
 	}
 
 	public function test_a_new_site_has_no_robots_txt_section(): void {

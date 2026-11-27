@@ -336,12 +336,10 @@ $supertab_connect_purged = isset( $_GET['purged'] ) && '1' === sanitize_text_fie
 			</div>
 		<?php endif; ?>
 
-		<p>&nbsp;</p>
+		<!-- robots.txt -->
+		<h2><?php esc_html_e( 'robots.txt', 'supertab-connect' ); ?></h2>
 
-		<!-- Your robots.txt -->
-		<h2><?php esc_html_e( 'Your robots.txt', 'supertab-connect' ); ?></h2>
-
-		<p class="description"><?php esc_html_e( 'Build your robots.txt in Supertab Connect and let this plugin serve it on your website.', 'supertab-connect' ); ?></p>
+		<p class="description"><?php esc_html_e( 'Create your robots.txt in Supertab Connect Merchant Portal and serve it on your website.', 'supertab-connect' ); ?></p>
 
 		<br />
 
@@ -360,12 +358,12 @@ $supertab_connect_purged = isset( $_GET['purged'] ) && '1' === sanitize_text_fie
 			</label>
 		</fieldset>
 
-		<p class="description"><?php esc_html_e( 'Your website serves the robots.txt you saved in the Supertab Connect Merchant Portal, in place of the one WordPress generates. Saved changes can take a few minutes to appear.', 'supertab-connect' ); ?></p>
+		<p class="description"><?php esc_html_e( 'Your website serves the robots.txt you saved in the Supertab Connect Merchant Portal, in place of the one WordPress generates.', 'supertab-connect' ); ?></p>
 
 		<p>
-			<a href="<?php echo esc_url( $supertab_connect_robots_txt_editor_url ); ?>" target="_blank" rel="noopener noreferrer">
-				<?php esc_html_e( 'Edit robots.txt in Supertab Connect', 'supertab-connect' ); ?>
-				<span class="screen-reader-text"><?php esc_html_e( '(opens in a new tab)', 'supertab-connect' ); ?></span>
+			<a class="supertab-external-link" href="<?php echo esc_url( $supertab_connect_robots_txt_editor_url ); ?>" target="_blank" rel="noopener noreferrer">
+				<?php // No whitespace between the text and the icon, or the link's underline runs under it. ?>
+				<?php esc_html_e( 'Edit robots.txt in Supertab Connect', 'supertab-connect' ); ?><span class="screen-reader-text"> <?php esc_html_e( '(opens in a new tab)', 'supertab-connect' ); ?></span><span class="dashicons dashicons-external" aria-hidden="true"></span>
 			</a>
 		</p>
 
@@ -375,7 +373,10 @@ $supertab_connect_purged = isset( $_GET['purged'] ) && '1' === sanitize_text_fie
 			</div>
 		<?php endif; ?>
 
-		<?php submit_button( __( 'Purge license.xml and robots.txt from cache', 'supertab-connect' ), 'secondary', 'submit-purge-cache', false ); ?>
+		<div class="supertab-purge-cache">
+			<?php submit_button( __( 'Purge cache', 'supertab-connect' ), 'secondary', 'submit-purge-cache', false ); ?>
+			<p class="description"><?php esc_html_e( 'Clears the cached license.xml and robots.txt, so your website gets the latest versions from Supertab Connect right away.', 'supertab-connect' ); ?></p>
+		</div>
 
 		<p>&nbsp;</p>
 
