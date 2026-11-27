@@ -452,7 +452,7 @@ class Settings_Page {
 			'other_license_urls'      => $this->robots_txt_handler->get_other_license_urls(),
 			'serve_robots_txt'        => $this->settings->is_robots_txt_serving_enabled(),
 			'saved_robots_txt_notice' => $this->saved_robots_txt_notice(),
-			'robots_txt_editor_url'   => 'https://merchant-connect.supertab.co',
+			'robots_txt_editor_url'   => $this->saved_robots_txt_handler->editor_url(),
 			'bot_protection_enabled'  => $this->settings->is_bot_protection_enabled(),
 			'analytics_enabled'       => $this->settings->is_analytics_enabled(),
 			'active_paths'            => $this->settings->get_active_paths(),

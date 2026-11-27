@@ -353,6 +353,15 @@ class SettingsPageTest extends WP_UnitTestCase {
 		$this->assertStringNotContainsString( 'supertab-saved-robots-txt-status', $html );
 	}
 
+	public function test_the_robots_txt_editor_link_opens_this_websites_editor(): void {
+		$this->settings->save( 'the-key', 'urn:supertab:merchant-system:0f8fad5b-d9cb-469f-a165-70867728950e' );
+
+		$this->assertMatchesRegularExpression(
+			'#<a href="' . preg_quote( SUPERTAB_CONNECT_DASHBOARD_URL, '#' ) . '/websites/0f8fad5b-d9cb-469f-a165-70867728950e/robots"[^>]*>\s*Edit robots.txt in Supertab Connect#',
+			$this->render()
+		);
+	}
+
 	public function test_a_new_site_has_no_robots_txt_section(): void {
 		$this->assertStringNotContainsString( 'supertab-serve-robots-txt', $this->render() );
 	}

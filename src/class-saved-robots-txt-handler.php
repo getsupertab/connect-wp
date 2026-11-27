@@ -118,6 +118,13 @@ class Saved_Robots_Txt_Handler {
 	private const MAX_BODY_BYTES = 1048576;
 
 	/**
+	 * A Website URN that ends in the website's id, which the Supertab Connect Merchant Portal addresses it by.
+	 *
+	 * @var string
+	 */
+	private const WEBSITE_URN_PATTERN = '/\Aurn:supertab:merchant-system:([0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12})\z/i';
+
+	/**
 	 * Settings instance.
 	 *
 	 * @var Settings
@@ -278,6 +285,24 @@ class Saved_Robots_Txt_Handler {
 			'body'   => $record['body'],
 			'failed' => $record['failed'],
 		);
+	}
+
+	/**
+	 * Where the merchant edits this website's robots.txt in the Supertab Connect Merchant Portal.
+	 *
+	 * The portal's home page when the Website URN doesn't end in a website id, such as
+	 * one entered by hand.
+	 *
+	 * @return string
+	 */
+	public function editor_url(): string {
+		$dashboard_url = rtrim( SUPERTAB_CONNECT_DASHBOARD_URL, '/' );
+
+		if ( 1 !== preg_match( self::WEBSITE_URN_PATTERN, $this->settings->get_website_urn(), $matches ) ) {
+			return $dashboard_url;
+		}
+
+		return $dashboard_url . '/websites/' . $matches[1] . '/robots';
 	}
 
 	/**
