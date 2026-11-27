@@ -388,13 +388,27 @@ class SettingsPageTest extends WP_UnitTestCase {
 		);
 	}
 
+	public function test_the_editor_link_comes_before_the_serve_checkbox(): void {
+		$this->connected_via_connect();
+
+		$html = $this->render();
+
+		$this->assertLessThan( strpos( $html, 'id="supertab-serve-robots-txt"' ), strpos( $html, 'Edit robots.txt in Supertab Connect' ) );
+	}
+
+	public function test_the_purge_button_sits_under_a_cache_heading(): void {
+		$this->connected_via_connect();
+
+		$this->assertMatchesRegularExpression( '#<h2>Cache</h2>\s*<input[^>]*id="submit-purge-cache"#', $this->render() );
+	}
+
 	public function test_the_purge_button_explains_what_it_clears(): void {
 		$this->connected_via_connect();
 
 		$html = $this->render();
 
 		$this->assertMatchesRegularExpression( '#id="submit-purge-cache"[^>]*value="Purge cache"#', $html );
-		$this->assertStringContainsString( 'Clears the cached license.xml and robots.txt, so your website gets the latest versions from Supertab Connect right away.', $html );
+		$this->assertStringContainsString( 'Clears the cached license.xml and robots.txt and fetches the latest versions from Supertab Connect on next request.', $html );
 	}
 
 	public function test_a_new_site_has_no_robots_txt_section(): void {

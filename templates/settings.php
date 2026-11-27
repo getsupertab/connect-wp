@@ -297,7 +297,7 @@ $supertab_connect_purged = isset( $_GET['purged'] ) && '1' === sanitize_text_fie
 		<?php wp_nonce_field( $supertab_connect_nonce_action, 'supertab_connect_nonce' ); ?>
 
 		<!-- Your RSL License -->
-		<h2><?php esc_html_e( 'Your RSL License', 'supertab-connect' ); ?></h2>
+		<h2><?php esc_html_e( 'License', 'supertab-connect' ); ?></h2>
 
 		<p class="description"><?php esc_html_e( 'Whenever you update your license in Supertab Connect, the license.xml file on your website is updated automatically. Changes may take some time to appear due to caching. You can purge the cache to see them immediately.', 'supertab-connect' ); ?></p>
 
@@ -339,9 +339,14 @@ $supertab_connect_purged = isset( $_GET['purged'] ) && '1' === sanitize_text_fie
 		<!-- robots.txt -->
 		<h2><?php esc_html_e( 'robots.txt', 'supertab-connect' ); ?></h2>
 
-		<p class="description"><?php esc_html_e( 'Create your robots.txt in Supertab Connect Merchant Portal and serve it on your website.', 'supertab-connect' ); ?></p>
+		<p class="description"><?php esc_html_e( 'Create and maintain your robots.txt in Supertab Connect.', 'supertab-connect' ); ?></p>
 
-		<br />
+		<p>
+			<a class="supertab-external-link" href="<?php echo esc_url( $supertab_connect_robots_txt_editor_url ); ?>" target="_blank" rel="noopener noreferrer">
+				<?php // No whitespace between the text and the icon, or the link's underline runs under it. ?>
+				<?php esc_html_e( 'Edit robots.txt in Supertab Connect', 'supertab-connect' ); ?><span class="screen-reader-text"> <?php esc_html_e( '(opens in a new tab)', 'supertab-connect' ); ?></span><span class="dashicons dashicons-external" aria-hidden="true"></span>
+			</a>
+		</p>
 
 		<input type="hidden" name="robots_txt_setting_present" value="1" />
 
@@ -358,14 +363,7 @@ $supertab_connect_purged = isset( $_GET['purged'] ) && '1' === sanitize_text_fie
 			</label>
 		</fieldset>
 
-		<p class="description"><?php esc_html_e( 'Your website serves the robots.txt you saved in the Supertab Connect Merchant Portal, in place of the one WordPress generates.', 'supertab-connect' ); ?></p>
-
-		<p>
-			<a class="supertab-external-link" href="<?php echo esc_url( $supertab_connect_robots_txt_editor_url ); ?>" target="_blank" rel="noopener noreferrer">
-				<?php // No whitespace between the text and the icon, or the link's underline runs under it. ?>
-				<?php esc_html_e( 'Edit robots.txt in Supertab Connect', 'supertab-connect' ); ?><span class="screen-reader-text"> <?php esc_html_e( '(opens in a new tab)', 'supertab-connect' ); ?></span><span class="dashicons dashicons-external" aria-hidden="true"></span>
-			</a>
-		</p>
+		<p class="description"><?php esc_html_e( 'When checked, your website will serve the robots.txt you saved in the Supertab Connect Merchant Portal, in place of the one WordPress generates.', 'supertab-connect' ); ?></p>
 
 		<?php if ( null !== $supertab_connect_saved_robots_notice ) : ?>
 			<div id="supertab-saved-robots-txt-status" class="notice inline <?php echo esc_attr( $supertab_connect_saved_robots_notice['class'] ); ?>" data-status="<?php echo esc_attr( $supertab_connect_saved_robots_notice['status'] ); ?>">
@@ -374,8 +372,9 @@ $supertab_connect_purged = isset( $_GET['purged'] ) && '1' === sanitize_text_fie
 		<?php endif; ?>
 
 		<div class="supertab-purge-cache">
+			<h2><?php esc_html_e( 'Cache', 'supertab-connect' ); ?></h2>
 			<?php submit_button( __( 'Purge cache', 'supertab-connect' ), 'secondary', 'submit-purge-cache', false ); ?>
-			<p class="description"><?php esc_html_e( 'Clears the cached license.xml and robots.txt, so your website gets the latest versions from Supertab Connect right away.', 'supertab-connect' ); ?></p>
+			<p class="description"><?php esc_html_e( 'Clears the cached license.xml and robots.txt and fetches the latest versions from Supertab Connect on next request.', 'supertab-connect' ); ?></p>
 		</div>
 
 		<p>&nbsp;</p>
