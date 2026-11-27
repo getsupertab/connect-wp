@@ -359,7 +359,7 @@ class SavedRobotsTxtHandlerTest extends TestCase {
 	}
 
 	public function test_the_editor_link_opens_this_websites_robots_txt_in_the_portal(): void {
-		$this->settings->save_website_urn( 'urn:supertab:merchant-system:0f8fad5b-d9cb-469f-a165-70867728950e' );
+		$this->settings->save_website_urn( 'urn:stc:merchant:system:0f8fad5b-d9cb-469f-a165-70867728950e' );
 
 		$this->assertSame(
 			'https://merchant-connect.sbx.supertab.co/websites/0f8fad5b-d9cb-469f-a165-70867728950e/robots',
@@ -382,10 +382,10 @@ class SavedRobotsTxtHandlerTest extends TestCase {
 	public static function urns_without_a_website_id(): array {
 		return array(
 			'no urn'             => array( '' ),
-			'another urn type'   => array( 'urn:supertab:website:0f8fad5b-d9cb-469f-a165-70867728950e' ),
-			'id is not a uuid'   => array( 'urn:supertab:merchant-system:123' ),
-			'path after the id'  => array( 'urn:supertab:merchant-system:0f8fad5b-d9cb-469f-a165-70867728950e/../settings' ),
-			'text around the id' => array( ' urn:supertab:merchant-system:0f8fad5b-d9cb-469f-a165-70867728950e' ),
+			'merchant urn'       => array( 'urn:stc:merchant:0f8fad5b-d9cb-469f-a165-70867728950e' ),
+			'id is not a uuid'   => array( 'urn:stc:merchant:system:123' ),
+			'path after the id'  => array( 'urn:stc:merchant:system:0f8fad5b-d9cb-469f-a165-70867728950e/../settings' ),
+			'text around the id' => array( ' urn:stc:merchant:system:0f8fad5b-d9cb-469f-a165-70867728950e' ),
 		);
 	}
 }

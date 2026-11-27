@@ -122,7 +122,7 @@ class Saved_Robots_Txt_Handler {
 	 *
 	 * @var string
 	 */
-	private const WEBSITE_URN_PATTERN = '/\Aurn:supertab:merchant-system:([0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12})\z/i';
+	private const WEBSITE_URN_PATTERN = '/\Aurn:stc:merchant:system:([0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12})\z/i';
 
 	/**
 	 * Settings instance.
