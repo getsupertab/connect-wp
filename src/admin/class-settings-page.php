@@ -15,6 +15,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 
 use Supertab_Connect\Robots_Txt_Handler;
 use Supertab_Connect\RSL_License_Handler;
+use Supertab_Connect\Saved_Robots_Txt_Handler;
 use Supertab_Connect\Settings;
 use Supertab_Connect\Utils\Site_Address;
 
@@ -52,14 +53,23 @@ class Settings_Page {
 	private Robots_Txt_Handler $robots_txt_handler;
 
 	/**
+	 * Saved robots.txt handler.
+	 *
+	 * @var Saved_Robots_Txt_Handler
+	 */
+	private Saved_Robots_Txt_Handler $saved_robots_txt_handler;
+
+	/**
 	 * Constructor.
 	 *
-	 * @param Settings           $settings           Settings manager.
-	 * @param Robots_Txt_Handler $robots_txt_handler Robots.txt handler.
+	 * @param Settings                 $settings                 Settings manager.
+	 * @param Robots_Txt_Handler       $robots_txt_handler       Robots.txt handler.
+	 * @param Saved_Robots_Txt_Handler $saved_robots_txt_handler Saved robots.txt handler.
 	 */
-	public function __construct( Settings $settings, Robots_Txt_Handler $robots_txt_handler ) {
-		$this->settings           = $settings;
-		$this->robots_txt_handler = $robots_txt_handler;
+	public function __construct( Settings $settings, Robots_Txt_Handler $robots_txt_handler, Saved_Robots_Txt_Handler $saved_robots_txt_handler ) {
+		$this->settings                 = $settings;
+		$this->robots_txt_handler       = $robots_txt_handler;
+		$this->saved_robots_txt_handler = $saved_robots_txt_handler;
 	}
 
 	/**
@@ -187,6 +197,9 @@ class Settings_Page {
 				'active_paths'           => isset( $_POST['active_paths'] ) && is_array( $_POST['active_paths'] )
 					? array_map( 'sanitize_text_field', wp_unslash( $_POST['active_paths'] ) )
 					: array(),
+				// Only the form that renders the robots.txt checkbox may change it.
+				'has_robots_txt_setting' => isset( $_POST['robots_txt_setting_present'] ),
+				'serve_robots_txt'       => isset( $_POST['serve_robots_txt'] ),
 			);
 			$this->process_save_settings( $form_data );
 		}
@@ -254,16 +267,23 @@ class Settings_Page {
 			$this->settings->set_active_paths( $paths );
 		}
 
+		if ( $form_data['has_robots_txt_setting'] ) {
+			$this->settings->set_robots_txt_serving_enabled( $form_data['serve_robots_txt'] );
+		}
+
 		$this->redirect( array( 'setup' => 'success' ) );
 	}
 
 	/**
-	 * Purge the license XML cache.
+	 * Purge the cached license.xml, and have robots.txt checked again.
+	 *
+	 * The robots.txt copy is kept, so it is still served if the API is down.
 	 *
 	 * @return void
 	 */
 	private function process_purge_cache(): void {
 		delete_transient( RSL_License_Handler::CACHE_TRANSIENT_KEY );
+		Saved_Robots_Txt_Handler::mark_stale();
 
 		$this->redirect( array( 'purged' => '1' ) );
 	}
@@ -346,6 +366,47 @@ class Settings_Page {
 	}
 
 	/**
+	 * The status line under the robots.txt checkbox, or null while serving is off.
+	 *
+	 * When more than one state applies, the first in this order wins: subdirectory
+	 * install, physical file, then the lookup.
+	 *
+	 * @return array{status: string, class: string, text: string}|null
+	 */
+	private function saved_robots_txt_notice(): ?array {
+		$blocked_by = $this->saved_robots_txt_handler->blocked_by();
+		if ( Saved_Robots_Txt_Handler::STATUS_OFF === $blocked_by ) {
+			return null;
+		}
+
+		if ( Saved_Robots_Txt_Handler::STATUS_SUBDIRECTORY === $blocked_by ) {
+			$status = $blocked_by;
+		} elseif ( $this->robots_txt_handler->has_physical_robots_txt() ) {
+			$status = 'physical_file';
+		} else {
+			$status = $this->saved_robots_txt_handler->status();
+		}
+
+		$notices = array(
+			Saved_Robots_Txt_Handler::STATUS_SERVING      => array( 'notice-success', __( 'Your website is serving the robots.txt saved in Supertab Connect.', 'supertab-connect' ) ),
+			Saved_Robots_Txt_Handler::STATUS_NOT_SAVED    => array( 'notice-info', __( 'No robots.txt is saved in Supertab Connect yet, so WordPress is serving its own. Save one in the Supertab Connect Merchant Portal and your website starts serving it within a few minutes.', 'supertab-connect' ) ),
+			Saved_Robots_Txt_Handler::STATUS_UNREACHABLE_STALE => array( 'notice-warning', __( "Couldn't reach Supertab Connect. Your website is serving the last robots.txt it received.", 'supertab-connect' ) ),
+			Saved_Robots_Txt_Handler::STATUS_UNREACHABLE  => array( 'notice-warning', __( "Couldn't reach Supertab Connect, so WordPress is serving its own robots.txt.", 'supertab-connect' ) ),
+			'physical_file'                               => array( 'notice-warning', __( 'Your site has a robots.txt file stored on the server, and your website serves that file instead. Remove it to serve the robots.txt saved in Supertab Connect.', 'supertab-connect' ) ),
+			Saved_Robots_Txt_Handler::STATUS_SUBDIRECTORY => array( 'notice-info', __( "WordPress is installed in a subdirectory, so it can't serve the robots.txt for your domain.", 'supertab-connect' ) ),
+		);
+		if ( ! isset( $notices[ $status ] ) ) {
+			return null;
+		}
+
+		return array(
+			'status' => $status,
+			'class'  => $notices[ $status ][0],
+			'text'   => $notices[ $status ][1],
+		);
+	}
+
+	/**
 	 * Render the settings page.
 	 *
 	 * @return void
@@ -366,34 +427,37 @@ class Settings_Page {
 		$method         = $this->settings->get_connection_method();
 
 		$template_data = array(
-			'nonce_action'           => self::NONCE_ACTION,
-			'has_website_urn'        => $this->settings->has_website_urn(),
+			'nonce_action'            => self::NONCE_ACTION,
+			'has_website_urn'         => $this->settings->has_website_urn(),
 			// Back from Connect my website: a success card stands in for the settings until Continue.
-			'just_connected'         => $back_connected && 'connect' === $method && $this->settings->has_website_urn(),
-			'settings_url'           => add_query_arg( 'page', self::PAGE_SLUG, admin_url( 'options-general.php' ) ),
-			'has_merchant_api_key'   => $this->settings->has_merchant_api_key(),
-			'changing_key'           => $changing_key,
-			'connection_method'      => $method,
-			'website_name'           => null !== $connection ? $connection['website_name'] : '',
-			'connected_host'         => Site_Address::host( $connected_base ),
-			'home_origin'            => Site_Address::origin( home_url() ),
-			'connected_origin'       => Site_Address::origin( $connected_base ),
+			'just_connected'          => $back_connected && 'connect' === $method && $this->settings->has_website_urn(),
+			'settings_url'            => add_query_arg( 'page', self::PAGE_SLUG, admin_url( 'options-general.php' ) ),
+			'has_merchant_api_key'    => $this->settings->has_merchant_api_key(),
+			'changing_key'            => $changing_key,
+			'connection_method'       => $method,
+			'website_name'            => null !== $connection ? $connection['website_name'] : '',
+			'connected_host'          => Site_Address::host( $connected_base ),
+			'home_origin'             => Site_Address::origin( home_url() ),
+			'connected_origin'        => Site_Address::origin( $connected_base ),
 			// The API stores the origin only, so a subdirectory install is not a move.
-			'address_changed'        => 'connect' === $method && '' !== $connected_base && Site_Address::origin( home_url() ) !== Site_Address::origin( $connected_base ),
-			'result_notice'          => $this->result_notice(),
-			'disconnect_unreachable' => $disconnect_unreachable,
-			'admin_post_url'         => admin_url( 'admin-post.php' ),
-			'start_action'           => Connect_Flow::START_ACTION,
-			'disconnect_action'      => Connect_Flow::DISCONNECT_ACTION,
-			'website_urn'            => $this->settings->get_website_urn(),
-			'license_url'            => home_url( '/license.xml' ),
-			'robots_txt_warning'     => $this->robots_txt_handler->needs_manual_license_directive(),
-			'other_license_urls'     => $this->robots_txt_handler->get_other_license_urls(),
-			'bot_protection_enabled' => $this->settings->is_bot_protection_enabled(),
-			'analytics_enabled'      => $this->settings->is_analytics_enabled(),
-			'active_paths'           => $this->settings->get_active_paths(),
-			'site_url'               => home_url( '/' ),
-			'resource_links'         => array(
+			'address_changed'         => 'connect' === $method && '' !== $connected_base && Site_Address::origin( home_url() ) !== Site_Address::origin( $connected_base ),
+			'result_notice'           => $this->result_notice(),
+			'disconnect_unreachable'  => $disconnect_unreachable,
+			'admin_post_url'          => admin_url( 'admin-post.php' ),
+			'start_action'            => Connect_Flow::START_ACTION,
+			'disconnect_action'       => Connect_Flow::DISCONNECT_ACTION,
+			'website_urn'             => $this->settings->get_website_urn(),
+			'license_url'             => home_url( '/license.xml' ),
+			'robots_txt_warning'      => $this->robots_txt_handler->needs_manual_license_directive(),
+			'other_license_urls'      => $this->robots_txt_handler->get_other_license_urls(),
+			'serve_robots_txt'        => $this->settings->is_robots_txt_serving_enabled(),
+			'saved_robots_txt_notice' => $this->saved_robots_txt_notice(),
+			'robots_txt_editor_url'   => $this->saved_robots_txt_handler->editor_url(),
+			'bot_protection_enabled'  => $this->settings->is_bot_protection_enabled(),
+			'analytics_enabled'       => $this->settings->is_analytics_enabled(),
+			'active_paths'            => $this->settings->get_active_paths(),
+			'site_url'                => home_url( '/' ),
+			'resource_links'          => array(
 				array(
 					'url'   => 'https://supertab-connect.mintlify.app/introduction/overview',
 					'label' => __( 'Documentation', 'supertab-connect' ),

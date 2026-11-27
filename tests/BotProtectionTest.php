@@ -278,4 +278,40 @@ class BotProtectionTest extends TestCase {
 		$this->assertSame( 'Mozilla/5.0 (compatible; "Exa")', $seen->userAgent );
 		$this->assertSame( '"https://crawler.exa.ai"', $seen->headers['signature-agent'] );
 	}
+
+	/**
+	 * @dataProvider files_crawlers_always_reach
+	 *
+	 * @param string $request The request path.
+	 */
+	public function test_files_crawlers_need_are_never_checked( string $request ): void {
+		$_SERVER['HTTP_HOST']       = 'example.com';
+		$_SERVER['REQUEST_URI']     = '/' . $request;
+		$_SERVER['HTTP_USER_AGENT'] = 'GPTBot/1.0';
+		unset( $_SERVER['HTTP_AUTHORIZATION'], $_SERVER['REDIRECT_HTTP_AUTHORIZATION'] );
+
+		$detector = $this->createMock( BotDetectorInterface::class );
+		$detector->expects( $this->never() )->method( 'isBot' );
+
+		$bot = new Bot_Protection(
+			new SupertabConnect( apiKey: 'test-key', enforcement: EnforcementMode::ENFORCE, botDetector: $detector ),
+			$this->settings
+		);
+
+		$wp          = new \WP();
+		$wp->request = $request;
+		$bot->maybe_handle_request( $wp );
+
+		$this->assertSame( array(), $bot->add_signal_headers( array() ) );
+	}
+
+	/**
+	 * @return array<string, array{0: string}>
+	 */
+	public static function files_crawlers_always_reach(): array {
+		return array(
+			'license.xml' => array( 'license.xml' ),
+			'robots.txt'  => array( 'robots.txt' ),
+		);
+	}
 }

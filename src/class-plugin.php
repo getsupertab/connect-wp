@@ -92,6 +92,9 @@ class Plugin {
 		$license_handler = new RSL_License_Handler( $settings, SUPERTAB_CONNECT_API_BASE_URL, $http_client );
 		$license_handler->register();
 
+		$saved_robots_txt_handler = new Saved_Robots_Txt_Handler( $settings, SUPERTAB_CONNECT_API_BASE_URL, new WP_Http_Client( Saved_Robots_Txt_Handler::FETCH_TIMEOUT ) );
+		$saved_robots_txt_handler->register();
+
 		$status_handler = new Status_Handler( $settings, SUPERTAB_CONNECT_API_BASE_URL, $http_client );
 		$status_handler->register();
 
@@ -108,7 +111,7 @@ class Plugin {
 		}
 
 		if ( is_admin() ) {
-			$this->init_admin( $settings, $robots_txt_handler );
+			$this->init_admin( $settings, $robots_txt_handler, $saved_robots_txt_handler );
 			return;
 		}
 
@@ -120,12 +123,13 @@ class Plugin {
 	/**
 	 * Initialize admin components.
 	 *
-	 * @param Settings           $settings           Settings manager.
-	 * @param Robots_Txt_Handler $robots_txt_handler Robots.txt handler, for the physical file check.
+	 * @param Settings                 $settings                 Settings manager.
+	 * @param Robots_Txt_Handler       $robots_txt_handler       Robots.txt handler, for the physical file check.
+	 * @param Saved_Robots_Txt_Handler $saved_robots_txt_handler Saved robots.txt handler, for its status.
 	 * @return void
 	 */
-	private function init_admin( Settings $settings, Robots_Txt_Handler $robots_txt_handler ): void {
-		$settings_page = new Settings_Page( $settings, $robots_txt_handler );
+	private function init_admin( Settings $settings, Robots_Txt_Handler $robots_txt_handler, Saved_Robots_Txt_Handler $saved_robots_txt_handler ): void {
+		$settings_page = new Settings_Page( $settings, $robots_txt_handler, $saved_robots_txt_handler );
 		$settings_page->register();
 
 		$notices = new Notices( $settings );
@@ -155,6 +159,7 @@ class Plugin {
 
 		$content .= '<ul>';
 		$content .= '<li>' . __( '<strong>License file</strong>: your Website URN is sent to the Supertab Connect API (api-connect.supertab.co) to fetch your site\'s license file, which is cached on your site for 12 hours.', 'supertab-connect' ) . '</li>';
+		$content .= '<li>' . __( '<strong>robots.txt</strong>: when an administrator turns on Serve robots.txt from Supertab Connect, your Website URN is sent to the Supertab Connect API (api-connect.supertab.co) to fetch the robots.txt you saved in Supertab Connect. This happens when someone requests your robots.txt or an administrator opens the plugin settings page, at most every 5 minutes (every minute after a failed check). The file is stored on your site.', 'supertab-connect' ) . '</li>';
 		$content .= '<li>' . __( '<strong>Connect my website</strong>: when an administrator connects the site, their browser is sent to the Supertab Connect Merchant Portal (merchant-connect.supertab.co), and the site address and Site Title are sent to Supertab to link the site to their Supertab Connect account.', 'supertab-connect' ) . '</li>';
 		$content .= '<li>' . __( '<strong>Disconnect</strong>: when an administrator disconnects the site or deletes the plugin, an API key issued by Connect my website is sent to the API so that Supertab revokes it.', 'supertab-connect' ) . '</li>';
 		$content .= '<li>' . __( '<strong>Crawler Authentication Protocol</strong>: when an administrator enables it, each request that presents a Supertab license token is reported to Supertab to record licensed use. Licensed crawlers and AI agents present these tokens; people\'s browsers do not. The report includes the page address, the user agent and the request headers, which can include IP addresses.', 'supertab-connect' ) . '</li>';

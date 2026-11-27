@@ -12,7 +12,9 @@ namespace Supertab_Connect\Tests\Integration;
 
 use Supertab_Connect\Admin\Settings_Page;
 use Supertab_Connect\Robots_Txt_Handler;
+use Supertab_Connect\Saved_Robots_Txt_Handler;
 use Supertab_Connect\Settings;
+use Supertab_Connect\Utils\WP_Http_Client;
 use WP_UnitTestCase;
 
 class RobotsTxtTest extends WP_UnitTestCase {
@@ -120,7 +122,7 @@ class RobotsTxtTest extends WP_UnitTestCase {
 		wp_set_current_user( self::factory()->user->create( array( 'role' => 'administrator' ) ) );
 
 		$settings = new Settings();
-		$page     = new Settings_Page( $settings, new Robots_Txt_Handler( $settings ) );
+		$page     = new Settings_Page( $settings, new Robots_Txt_Handler( $settings ), new Saved_Robots_Txt_Handler( $settings, 'https://api.test', new WP_Http_Client( 3 ) ) );
 
 		ob_start();
 		$page->render_page();

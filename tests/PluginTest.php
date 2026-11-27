@@ -40,6 +40,29 @@ class PluginTest extends TestCase {
 		$this->assertStringNotContainsString( "\u{2014}", $content, 'No em dashes in the suggested policy text.' );
 	}
 
+	public function test_privacy_policy_content_discloses_the_robots_txt_request(): void {
+		global $wp_test_privacy_policy_content;
+
+		Plugin::instance()->add_privacy_policy_content();
+
+		$content = $wp_test_privacy_policy_content['Supertab Connect'] ?? '';
+
+		$this->assertStringContainsString( '<strong>robots.txt</strong>', $content );
+		$this->assertStringContainsString( 'Serve robots.txt from Supertab Connect', $content );
+		$this->assertStringContainsString( 'opens the plugin settings page', $content );
+		$this->assertStringContainsString( 'every minute after a failed check', $content );
+		$this->assertStringNotContainsString( "\u{2014}", $content );
+	}
+
+	public function test_readme_says_when_the_robots_txt_request_happens(): void {
+		$readme = (string) file_get_contents( dirname( __DIR__ ) . '/readme.txt' );
+
+		$this->assertSame( 1, preg_match( '/^\* robots\.txt: .*$/m', $readme, $bullet ) );
+		$this->assertStringContainsString( 'opens the plugin settings page', $bullet[0] );
+		$this->assertStringContainsString( '1 minute after a failed check', $bullet[0] );
+		$this->assertStringNotContainsString( "\u{2014}", $bullet[0] );
+	}
+
 	public function test_map_enforcement_mode_value_accepts_current_values(): void {
 		$this->assertSame( EnforcementMode::DISABLED, Plugin::map_enforcement_mode_value( 'disabled' ) );
 		$this->assertSame( EnforcementMode::OBSERVE, Plugin::map_enforcement_mode_value( 'observe' ) );

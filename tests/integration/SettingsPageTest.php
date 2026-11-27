@@ -11,20 +11,35 @@ namespace Supertab_Connect\Tests\Integration;
 
 use Supertab_Connect\Admin\Settings_Page;
 use Supertab_Connect\Robots_Txt_Handler;
+use Supertab_Connect\Saved_Robots_Txt_Handler;
 use Supertab_Connect\Settings;
+use Supertab_Connect\Utils\WP_Http_Client;
 use WP_UnitTestCase;
 
 class SettingsPageTest extends WP_UnitTestCase {
+
+	private const ROBOTS_FILE = "User-agent: *\nDisallow: /private/\n";
 
 	private Settings $settings;
 
 	private Settings_Page $page;
 
+	/**
+	 * A physical robots.txt a test wrote, removed in tearDown().
+	 *
+	 * @var string
+	 */
+	private string $physical_robots_txt = '';
+
 	protected function setUp(): void {
 		parent::setUp();
 		catch_redirects();
 		$this->settings = new Settings();
-		$this->page     = new Settings_Page( $this->settings, new Robots_Txt_Handler( $this->settings ) );
+		$this->page     = new Settings_Page(
+			$this->settings,
+			new Robots_Txt_Handler( $this->settings ),
+			new Saved_Robots_Txt_Handler( $this->settings, 'https://api.test', new WP_Http_Client( 3 ) )
+		);
 		wp_set_current_user( self::factory()->user->create( array( 'role' => 'administrator' ) ) );
 		$this->use_home( 'https://palmspringspost.com' );
 	}
@@ -32,6 +47,9 @@ class SettingsPageTest extends WP_UnitTestCase {
 	protected function tearDown(): void {
 		$_GET  = array();
 		$_POST = array();
+		if ( '' !== $this->physical_robots_txt && file_exists( $this->physical_robots_txt ) ) {
+			unlink( $this->physical_robots_txt );
+		}
 		parent::tearDown();
 	}
 
@@ -288,5 +306,234 @@ class SettingsPageTest extends WP_UnitTestCase {
 		wp_set_current_user( self::factory()->user->create( array( 'role' => 'editor' ) ) );
 
 		$this->assertSame( '', $this->render() );
+	}
+
+	/**
+	 * Store a lookup record for the saved robots.txt, fresh for five minutes.
+	 */
+	private function record( ?string $body, bool $failed ): void {
+		set_transient(
+			'supertab_connect_robots_txt',
+			array(
+				'body'     => $body,
+				'failed'   => $failed,
+				'retry_at' => time() + 300,
+			)
+		);
+	}
+
+	/**
+	 * Write a physical robots.txt in the site root; tearDown() removes it.
+	 */
+	private function write_physical_robots_txt(): void {
+		require_once ABSPATH . 'wp-admin/includes/file.php';
+		$this->physical_robots_txt = get_home_path() . 'robots.txt';
+		file_put_contents( $this->physical_robots_txt, "User-agent: *\n" );
+	}
+
+	/**
+	 * Connect the site and turn robots.txt serving on, with the API unreachable
+	 * so a lookup the test didn't arrange never leaves the machine.
+	 */
+	private function robots_txt_serving_on(): void {
+		$this->connected_via_connect();
+		$this->settings->set_robots_txt_serving_enabled( true );
+		add_filter( 'pre_http_request', static fn() => new \WP_Error( 'http_request_failed', 'blocked in tests' ) );
+	}
+
+	public function test_a_connected_site_can_turn_on_robots_txt_serving(): void {
+		$this->connected_via_connect();
+
+		$html = $this->render();
+
+		$this->assertStringContainsString( 'id="supertab-serve-robots-txt"', $html );
+		$this->assertStringContainsString( 'Serve robots.txt from Supertab Connect', $html );
+		$this->assertStringContainsString( 'Edit robots.txt in Supertab Connect', $html );
+		$this->assertDoesNotMatchRegularExpression( '/<input[^>]*id="supertab-serve-robots-txt"[^>]*checked/s', $html );
+		$this->assertStringNotContainsString( 'supertab-saved-robots-txt-status', $html );
+	}
+
+	public function test_the_robots_txt_editor_link_opens_this_websites_editor(): void {
+		$this->settings->save( 'the-key', 'urn:stc:merchant:system:0f8fad5b-d9cb-469f-a165-70867728950e' );
+
+		$this->assertMatchesRegularExpression(
+			'#<a [^>]*href="' . preg_quote( SUPERTAB_CONNECT_DASHBOARD_URL, '#' ) . '/websites/0f8fad5b-d9cb-469f-a165-70867728950e/robots"[^>]*>\s*Edit robots.txt in Supertab Connect#',
+			$this->render()
+		);
+	}
+
+	public function test_the_purge_button_follows_both_files_it_purges(): void {
+		$this->connected_via_connect();
+
+		$html  = $this->render();
+		$purge = strpos( $html, 'id="submit-purge-cache"' );
+
+		$this->assertGreaterThan( strpos( $html, 'License URL' ), $purge );
+		$this->assertGreaterThan( strpos( $html, 'Edit robots.txt in Supertab Connect' ), $purge );
+		$this->assertLessThan( strpos( $html, 'License Verification' ), $purge );
+	}
+
+	public function test_the_robots_txt_section_is_headed_with_the_file_name(): void {
+		$this->connected_via_connect();
+
+		$this->assertStringContainsString( '<h2>robots.txt</h2>', $this->render() );
+	}
+
+	public function test_the_robots_txt_editor_link_is_marked_as_external(): void {
+		$this->connected_via_connect();
+
+		$this->assertMatchesRegularExpression(
+			'#>\s*Edit robots.txt in Supertab Connect\s*<span class="screen-reader-text">[^<]*</span>\s*<span class="dashicons dashicons-external" aria-hidden="true"></span>\s*</a>#',
+			$this->render()
+		);
+	}
+
+	public function test_the_editor_link_comes_before_the_serve_checkbox(): void {
+		$this->connected_via_connect();
+
+		$html = $this->render();
+
+		$this->assertLessThan( strpos( $html, 'id="supertab-serve-robots-txt"' ), strpos( $html, 'Edit robots.txt in Supertab Connect' ) );
+	}
+
+	public function test_the_purge_button_sits_under_a_cache_heading(): void {
+		$this->connected_via_connect();
+
+		$this->assertMatchesRegularExpression( '#<h2>Cache</h2>\s*<input[^>]*id="submit-purge-cache"#', $this->render() );
+	}
+
+	public function test_the_purge_button_explains_what_it_clears(): void {
+		$this->connected_via_connect();
+
+		$html = $this->render();
+
+		$this->assertMatchesRegularExpression( '#id="submit-purge-cache"[^>]*value="Purge cache"#', $html );
+		$this->assertStringContainsString( 'Clears the cached license.xml and robots.txt and fetches the latest versions from Supertab Connect on next request.', $html );
+	}
+
+	public function test_a_new_site_has_no_robots_txt_section(): void {
+		$this->assertStringNotContainsString( 'supertab-serve-robots-txt', $this->render() );
+	}
+
+	public function test_saving_turns_robots_txt_serving_on_and_off(): void {
+		$this->connected_via_connect();
+
+		$this->submit(
+			array(
+				'robots_txt_setting_present' => '1',
+				'serve_robots_txt'           => '1',
+			)
+		);
+		$this->assertTrue( $this->settings->is_robots_txt_serving_enabled() );
+
+		$this->submit( array( 'robots_txt_setting_present' => '1' ) );
+		$this->assertFalse( $this->settings->is_robots_txt_serving_enabled() );
+	}
+
+	public function test_a_form_without_the_checkbox_leaves_it_alone(): void {
+		$this->settings->set_robots_txt_serving_enabled( true );
+
+		$this->submit( array( 'merchant_api_key' => 'new-key' ) );
+
+		$this->assertTrue( $this->settings->is_robots_txt_serving_enabled() );
+	}
+
+	public function test_purge_drops_license_xml_and_rechecks_robots_txt(): void {
+		$this->connected_via_connect();
+		set_transient( 'supertab_connect_license_xml', '<license/>' );
+		$this->record( self::ROBOTS_FILE, false );
+
+		$query = $this->submit( array( 'submit-purge-cache' => '1' ) );
+
+		$this->assertFalse( get_transient( 'supertab_connect_license_xml' ) );
+		$robots = get_transient( 'supertab_connect_robots_txt' );
+		$this->assertSame( self::ROBOTS_FILE, $robots['body'], 'The copy stays, to serve if the API is down.' );
+		$this->assertLessThanOrEqual( time(), $robots['retry_at'], 'The next request checks the API again.' );
+		$this->assertSame( '1', $query['purged'] );
+	}
+
+	public function test_the_purge_notice_names_no_single_file(): void {
+		$this->connected_via_connect();
+
+		$this->assertStringContainsString( 'Cache purged successfully.', $this->render( array( 'purged' => '1' ) ) );
+	}
+
+	/**
+	 * @dataProvider robots_txt_states
+	 *
+	 * @param callable(self): void $arrange Puts the site in the state.
+	 * @param string               $status  The notice's data-status.
+	 * @param string               $class   The notice class.
+	 * @param string               $text    The message, unescaped.
+	 */
+	public function test_each_robots_txt_state_shows_its_message( callable $arrange, string $status, string $class, string $text ): void {
+		$this->robots_txt_serving_on();
+		$arrange( $this );
+
+		$html = $this->render();
+
+		$this->assertMatchesRegularExpression(
+			'#<div id="supertab-saved-robots-txt-status" class="notice inline ' . $class . '" data-status="' . $status . '">\s*<p>' . preg_quote( esc_html( $text ), '#' ) . '</p>#',
+			$html
+		);
+	}
+
+	/**
+	 * @return array<string, array{0: callable(self): void, 1: string, 2: string, 3: string}>
+	 */
+	public static function robots_txt_states(): array {
+		return array(
+			'serving'           => array(
+				static fn( self $test ) => $test->record( self::ROBOTS_FILE, false ),
+				'serving',
+				'notice-success',
+				'Your website is serving the robots.txt saved in Supertab Connect.',
+			),
+			'not saved'         => array(
+				static fn( self $test ) => $test->record( null, false ),
+				'not_saved',
+				'notice-info',
+				'No robots.txt is saved in Supertab Connect yet, so WordPress is serving its own. Save one in the Supertab Connect Merchant Portal and your website starts serving it within a few minutes.',
+			),
+			'unreachable, copy' => array(
+				static fn( self $test ) => $test->record( self::ROBOTS_FILE, true ),
+				'unreachable_stale',
+				'notice-warning',
+				"Couldn't reach Supertab Connect. Your website is serving the last robots.txt it received.",
+			),
+			'unreachable'       => array(
+				static fn( self $test ) => $test->record( null, true ),
+				'unreachable',
+				'notice-warning',
+				"Couldn't reach Supertab Connect, so WordPress is serving its own robots.txt.",
+			),
+			'physical file'     => array(
+				static function ( self $test ): void {
+					$test->write_physical_robots_txt();
+					$test->record( self::ROBOTS_FILE, false );
+				},
+				'physical_file',
+				'notice-warning',
+				'Your site has a robots.txt file stored on the server, and your website serves that file instead. Remove it to serve the robots.txt saved in Supertab Connect.',
+			),
+			'serving, search engines discouraged' => array(
+				static function ( self $test ): void {
+					update_option( 'blog_public', '0' );
+					$test->record( self::ROBOTS_FILE, false );
+				},
+				'serving',
+				'notice-success',
+				'Your website is serving the robots.txt saved in Supertab Connect.',
+			),
+			'subdirectory'      => array(
+				static function ( self $test ): void {
+					$test->use_home( 'https://example.org/blog' );
+					$test->write_physical_robots_txt();
+				},
+				'subdirectory',
+				'notice-info',
+				"WordPress is installed in a subdirectory, so it can't serve the robots.txt for your domain.",
+			),
+		);
 	}
 }

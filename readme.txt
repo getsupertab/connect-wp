@@ -41,6 +41,7 @@ This allows you to:
 
 * Automatically serves your license file at /license.xml
 * Adds the License directive to your robots.txt so crawlers can find your license
+* Optionally serves the robots.txt you build in Supertab Connect
 * Caches license XML locally for performance
 * No infrastructure changes required
 * Optional verification for connected partners via the Crawler Authentication Protocol
@@ -48,13 +49,14 @@ This allows you to:
 
 == External Services ==
 
-This plugin relies on Supertab Connect, a service operated by Supertab ([supertab.co](https://www.supertab.co/)). You need a Supertab Connect account to use it. The plugin uses the service to publish your license file, to connect your site to your Supertab Connect account and, if you turn them on, to verify license tokens and report crawler traffic. It contacts only the three Supertab Connect addresses below and no other external service. Requests from your server identify themselves with the user agent `supertab-connect-sdk-php` followed by a version number.
+This plugin relies on Supertab Connect, a service operated by Supertab ([supertab.co](https://www.supertab.co/)). You need a Supertab Connect account to use it. The plugin uses the service to publish your license file, to serve your robots.txt if you turn that on, to connect your site to your Supertab Connect account and, if you turn them on, to verify license tokens and report crawler traffic. It contacts only the three Supertab Connect addresses below and no other external service. Requests from your server identify themselves with the user agent `supertab-connect-sdk-php` followed by a version number.
 
 = Supertab Connect API =
 
-Address: [https://api-connect.supertab.co](https://api-connect.supertab.co). Used for your license file, for connecting and disconnecting your site, and for checking license tokens.
+Address: [https://api-connect.supertab.co](https://api-connect.supertab.co). Used for your license file, for your robots.txt, for connecting and disconnecting your site, and for checking license tokens.
 
 * License file: once a Website URN is saved, when someone requests `/license.xml` on your site and no copy is cached, the plugin requests your license from the API. Only your Website URN is sent, as part of the request address. The license is cached on your site for 12 hours, and fetched again after that or after you change your credentials or purge the cache.
+* robots.txt: only when "Serve robots.txt from Supertab Connect" is turned on. When someone requests `/robots.txt` on your site, or an administrator opens the plugin settings page, and the plugin last checked more than 5 minutes ago (1 minute after a failed check), the plugin requests the robots.txt you saved in Supertab Connect from the API. Only your Website URN is sent, as part of the request address. The file is stored on your site until the next check, and checked again right away after you change your credentials, turn the setting on or off, or purge the cache.
 * Connecting your site: after an administrator approves the connection in the Supertab Connect Merchant Portal, your site sends the API one-time codes that confirm the approval, your Site Title and your site address. The API returns your Website URN and an API key, which the plugin stores in your WordPress database.
 * Disconnecting: when an administrator clicks Disconnect or deletes the plugin, an API key issued by Connect my website is sent to the API for Supertab Connect to revoke it. Keys entered by hand are never sent.
 * Checking license tokens: this happens only after an administrator enables the Crawler Authentication Protocol (CAP), which is off by default. The plugin downloads Supertab's public signing keys from the API, caches them for up to 48 hours and checks each license token on your server. For every request to the paths covered by CAP that presents a license token, the plugin then sends a usage event to the API, authenticated with your API key. The event contains the full address of the requested page (including its query string), the requester's user agent, the license ID, the result of the token check and the request headers. Cookie, authorization, API key, security token and Forwarded headers are left out, but headers that can carry IP addresses, such as X-Forwarded-For and X-Real-IP, are included.
@@ -106,7 +108,7 @@ An RSL is a machine-readable license file that declares how crawlers and AI agen
 
 = Do I need to edit my robots.txt? =
 
-Usually not. The plugin adds a `License:` line pointing to your license.xml to the robots.txt that WordPress generates, unless it already has one. If your server has a physical robots.txt file, WordPress can't change it, so the plugin settings page shows the line to add by hand, or tells you when the file points to a different license.
+Usually not. The plugin adds a `License:` line pointing to your license.xml to the robots.txt that WordPress generates, unless it already has one. If your server has a physical robots.txt file, WordPress can't change it, so the plugin settings page shows the line to add by hand, or tells you when the file points to a different license. If you turn on "Serve robots.txt from Supertab Connect" in the plugin settings, your site serves the robots.txt you saved in Supertab Connect instead, and the License line comes from that file.
 
 = What is Crawler Authentication Protocol (CAP)? =
 

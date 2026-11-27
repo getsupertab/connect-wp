@@ -40,10 +40,12 @@ delete_option( 'supertab_connect_bot_protection_enabled' );
 delete_option( 'supertab_connect_analytics_enabled' );
 delete_option( 'supertab_connect_active_paths' );
 delete_option( 'supertab_connect_connection' );
+delete_option( 'supertab_connect_serve_robots_txt' );
 
 // Remove transients.
 delete_transient( 'supertab_connect_activating' );
 delete_transient( 'supertab_connect_license_xml' );
+delete_transient( 'supertab_connect_robots_txt' );
 
 // Remove the analytics queue table and its schema-version option.
 global $wpdb;

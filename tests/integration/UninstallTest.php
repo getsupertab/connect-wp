@@ -100,4 +100,21 @@ class UninstallTest extends WP_UnitTestCase {
 		$this->assertSame( array(), $this->requests );
 		$this->assert_options_gone();
 	}
+
+	public function test_uninstall_removes_the_robots_txt_setting_and_cache(): void {
+		update_option( 'supertab_connect_serve_robots_txt', true );
+		set_transient(
+			'supertab_connect_robots_txt',
+			array(
+				'body'     => "User-agent: *\n",
+				'failed'   => false,
+				'retry_at' => time() + 300,
+			)
+		);
+
+		$this->uninstall();
+
+		$this->assertFalse( get_option( 'supertab_connect_serve_robots_txt' ) );
+		$this->assertFalse( get_transient( 'supertab_connect_robots_txt' ) );
+	}
 }

@@ -241,4 +241,18 @@ class RobotsTxtHandlerTest extends TestCase {
 
 		$this->assertSame( array(), ( new Robots_Txt_Handler( $this->settings ) )->get_other_license_urls() );
 	}
+
+	public function test_reports_a_physical_robots_txt(): void {
+		$this->configure_urn();
+		$this->use_home_dir( "User-agent: *\n" );
+
+		$this->assertTrue( ( new Robots_Txt_Handler( $this->settings ) )->has_physical_robots_txt() );
+	}
+
+	public function test_reports_no_physical_robots_txt(): void {
+		$this->configure_urn();
+		$this->use_home_dir();
+
+		$this->assertFalse( ( new Robots_Txt_Handler( $this->settings ) )->has_physical_robots_txt() );
+	}
 }

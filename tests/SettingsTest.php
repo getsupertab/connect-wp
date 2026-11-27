@@ -309,4 +309,129 @@ class SettingsTest extends TestCase {
 
 		$this->assertSame( array( '*' ), $settings->get_active_paths() );
 	}
+
+	public function test_robots_txt_serving_is_off_by_default(): void {
+		$this->assertFalse( ( new Settings() )->is_robots_txt_serving_enabled() );
+	}
+
+	public function test_robots_txt_serving_can_be_turned_on_and_off(): void {
+		$settings = new Settings();
+
+		$settings->set_robots_txt_serving_enabled( true );
+		$this->assertTrue( $settings->is_robots_txt_serving_enabled() );
+
+		$settings->set_robots_txt_serving_enabled( false );
+		$this->assertFalse( $settings->is_robots_txt_serving_enabled() );
+	}
+
+	/**
+	 * Store a fresh copy of the saved robots.txt.
+	 */
+	private function cached_robots_txt(): void {
+		set_transient(
+			'supertab_connect_robots_txt',
+			array(
+				'body'     => "User-agent: *\n",
+				'failed'   => false,
+				'retry_at' => time() + 300,
+			)
+		);
+	}
+
+	/**
+	 * Assert the cached copy is still there but due to be checked again.
+	 */
+	private function assert_robots_txt_kept_but_stale(): void {
+		$record = get_transient( 'supertab_connect_robots_txt' );
+
+		$this->assertIsArray( $record );
+		$this->assertSame( "User-agent: *\n", $record['body'] );
+		$this->assertLessThanOrEqual( time(), $record['retry_at'] );
+	}
+
+	public function test_changing_robots_txt_serving_keeps_the_cached_file_but_checks_again(): void {
+		$this->cached_robots_txt();
+
+		( new Settings() )->set_robots_txt_serving_enabled( true );
+
+		$this->assert_robots_txt_kept_but_stale();
+	}
+
+	/**
+	 * @dataProvider same_urn_saves
+	 *
+	 * @param callable(Settings): void $save Saves the Website URN already stored.
+	 */
+	public function test_saving_the_same_urn_keeps_the_cached_robots_txt_but_checks_again( callable $save ): void {
+		$settings = new Settings();
+		$settings->save_website_urn( 'urn' );
+		$this->cached_robots_txt();
+
+		$save( $settings );
+
+		$this->assert_robots_txt_kept_but_stale();
+	}
+
+	/**
+	 * @return array<string, array{0: callable(Settings): void}>
+	 */
+	public static function same_urn_saves(): array {
+		return array(
+			'save'             => array( static fn( Settings $settings ) => $settings->save( 'k', 'urn' ) ),
+			'save_website_urn' => array( static fn( Settings $settings ) => $settings->save_website_urn( 'urn' ) ),
+		);
+	}
+
+	public function test_saving_the_same_robots_txt_choice_keeps_the_cached_file(): void {
+		$settings = new Settings();
+		$settings->set_robots_txt_serving_enabled( true );
+		set_transient( 'supertab_connect_robots_txt', 'x' );
+
+		$settings->set_robots_txt_serving_enabled( true );
+
+		$this->assertSame( 'x', get_transient( 'supertab_connect_robots_txt' ) );
+	}
+
+	/**
+	 * @dataProvider urn_changes
+	 *
+	 * @param callable(Settings): void $change A change to the stored connection.
+	 */
+	public function test_a_urn_change_drops_the_cached_robots_txt( callable $change ): void {
+		set_transient( 'supertab_connect_robots_txt', 'x' );
+
+		$change( new Settings() );
+
+		$this->assertFalse( get_transient( 'supertab_connect_robots_txt' ) );
+	}
+
+	/**
+	 * @return array<string, array{0: callable(Settings): void}>
+	 */
+	public static function urn_changes(): array {
+		return array(
+			'save'             => array( static fn( Settings $settings ) => $settings->save( 'k', 'urn' ) ),
+			'save_website_urn' => array( static fn( Settings $settings ) => $settings->save_website_urn( 'urn' ) ),
+			'clear_connection' => array( static fn( Settings $settings ) => $settings->clear_connection() ),
+			'delete'           => array( static fn( Settings $settings ) => $settings->delete() ),
+		);
+	}
+
+	public function test_disconnect_turns_robots_txt_serving_off(): void {
+		$settings = new Settings();
+		$settings->set_robots_txt_serving_enabled( true );
+
+		$settings->clear_connection();
+
+		$this->assertFalse( $settings->is_robots_txt_serving_enabled() );
+	}
+
+	public function test_delete_removes_the_robots_txt_setting(): void {
+		$settings = new Settings();
+		$settings->set_robots_txt_serving_enabled( true );
+
+		$settings->delete();
+
+		$this->assertFalse( get_option( 'supertab_connect_serve_robots_txt' ) );
+	}
 }
